@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>T&amp;T EXPLO MOBILE // LICENSE MASTER PRO v2.2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'surface-dark': '#0D0F11',
+            'surface-card': '#121417',
+            'surface-elevated': '#181B20',
+            'surface-high': '#22262E',
+            'border-subtle': '#252A34',
+            'border-light': '#333842',
+            'mine-yellow': '#FFB703',
+            'mine-orange': '#FB8500',
+            'mine-cyan': '#00F0FF',
+            'mine-green': '#00E676',
+            'mine-red': '#FF5252',
+            'text-primary': '#F1F3F5',
+            'text-secondary': '#A0AEC0',
+            'text-muted': '#6B7280'
+          },
+          fontFamily: {
+            headline: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            body: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .grid-bg {
+      background-size: 28px 28px;
+      background-image:
+        linear-gradient(to right, rgba(37, 42, 52, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(37, 42, 52, 0.35) 1px, transparent 1px);
+    }
+    .glow-yellow { box-shadow: 0 0 20px rgba(255, 183, 3, 0.25); }
+    .reticle-corner { position: relative; }
+    .reticle-corner::before {
+      content: ''; position: absolute; top: -3px; left: -3px;
+      width: 10px; height: 10px;
+      border-top: 2px solid #00F0FF; border-left: 2px solid #00F0FF;
+    }
+    .reticle-corner::after {
+      content: ''; position: absolute; bottom: -3px; right: -3px;
+      width: 10px; height: 10px;
+      border-bottom: 2px solid #00F0FF; border-right: 2px solid #00F0FF;
+    }
+    @media print {
+      body * { visibility: hidden; }
+      #printable-certificate, #printable-certificate * { visibility: visible; }
+      #printable-certificate { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-surface-dark text-text-primary font-body min-h-screen flex flex-col selection:bg-mine-yellow selection:text-surface-dark">
+
+  <header class="w-full bg-surface-dark border-b border-border-subtle px-4 lg:px-8 py-3 flex flex-wrap justify-between items-center z-40 sticky top-0 backdrop-blur-md bg-opacity-95">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded bg-mine-yellow text-surface-dark flex items-center justify-center font-black font-headline text-lg shadow-md">
+        T&amp;T
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-headline text-lg font-bold tracking-tight text-mine-yellow uppercase leading-none">
+            T&amp;T EXPLO MOBILE
+          </span>
+          <span class="bg-surface-high text-mine-cyan px-2 py-0.5 rounded text-[11px] font-mono tracking-wider border border-border-light">
+            v2.2 PROD (SHORT + FULL)
+          </span>
+        </div>
+        <p class="font-mono text-[10px] text-text-secondary uppercase tracking-widest mt-0.5">
+          LICENSE MASTER PRO // INDUSTRIAL CRYPTOGRAPHIC GENERATOR
+        </p>
+      </div>
+    </div>
+
+    <div class="hidden md:flex items-center gap-4 bg-surface-card px-4 py-1.5 border border-border-subtle rounded-md">
+      <div class="flex items-center gap-2">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mine-green opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-mine-green"></span>
+        </span>
+        <span class="font-mono text-xs text-mine-green font-semibold uppercase tracking-wider">
+          MOTOR CRIPTOGRÁFICO 100% OFFLINE
+        </span>
+      </div>
+      <div class="h-3.5 w-px bg-border-subtle"></div>
+      <div class="flex items-center gap-1.5 text-xs font-mono text-text-secondary">
+        <span class="material-symbols-outlined text-sm text-mine-yellow">verified_user</span>
+        <span>HMAC-SHA256 CLAVE CORTA + TOKEN</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="resetFormDefaults()" class="bg-surface-elevated hover:bg-surface-high text-text-secondary hover:text-text-primary border border-border-subtle px-3 py-1.5 rounded text-xs font-mono flex items-center gap-1 transition-all">
+        <span class="material-symbols-outlined text-sm">restart_alt</span>
+        <span class="hidden sm:inline">RESTAURAR</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full max-w-7xl mx-auto p-4 lg:p-6 grid-bg">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <section class="lg:col-span-7 flex flex-col gap-5">
+
+        <div class="bg-surface-card border border-border-subtle rounded-lg p-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-3 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-mine-yellow">domain</span>
+              <h2 class="font-headline text-base font-bold uppercase tracking-wide text-text-primary">
+                1. Datos de la Operación Minera &amp; Candado
+              </h2>
+            </div>
+            <span class="text-[10px] font-mono bg-surface-elevated text-mine-cyan px-2 py-0.5 rounded border border-border-subtle">
+              ENTITLEMENT ENGINE
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-text-secondary uppercase mb-1.5 flex justify-between">
+                <span>Empresa / Razón Social</span>
+                <span class="text-mine-yellow">*OBLIGATORIO</span>
+              </label>
+              <input id="input-client" type="text" value="Minera San Julián S.A. de C.V."
+                class="w-full bg-surface-dark border border-border-subtle rounded px-3 py-2 text-sm text-text-primary focus:border-mine-cyan focus:outline-none transition-all"/>
+            </div>
+
+            <div>
+              <label class="block font-mono text-xs text-text-secondary uppercase mb-1.5 flex justify-between">
+                <span>Unidad Minera / Faena</span>
+                <span class="text-mine-yellow">*OBLIGATORIO</span>
+              </label>
+              <input id="input-mine" type="text" value="Mina Subterránea - Polvorín Principal"
+                class="w-full bg-surface-dark border border-border-subtle rounded px-3 py-2 text-sm text-text-primary focus:border-mine-cyan focus:outline-none transition-all"/>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="block font-mono text-xs text-text-secondary uppercase mb-1.5">
+                Supervisor / Responsable de Polvorín
+              </label>
+              <input id="input-supervisor" type="text" value="Ing. Roberto Almonte (Jefe de Voladuras)"
+                class="w-full bg-surface-dark border border-border-subtle rounded px-3 py-2 text-sm text-text-primary focus:border-mine-cyan focus:outline-none transition-all"/>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-border-subtle bg-surface-elevated/70 p-3.5 rounded border border-border-subtle">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-mine-cyan">phonelink_lock</span>
+                <span class="font-headline text-sm font-bold uppercase text-text-primary">Candado por Dispositivo (Device ID)</span>
+              </div>
+              <label class="inline-flex items-center cursor-pointer gap-2">
+                <input id="toggle-hardware-lock" type="checkbox" checked class="sr-only peer" onchange="handleHardwareLockToggle()"/>
+                <div class="w-10 h-5 bg-surface-dark peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-mine-yellow after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mine-cyan/20 border border-border-subtle relative"></div>
+                <span id="label-hardware-mode" class="font-mono text-xs text-mine-cyan font-bold uppercase">Dispositivo Único</span>
+              </label>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 mt-2">
+              <input id="input-device-id" type="text" value="*" placeholder="Ej. F020-F600-E29C-76D6 o *"
+                class="flex-1 bg-surface-dark border border-border-subtle rounded px-3 py-2 text-sm font-mono text-mine-cyan font-bold tracking-wider focus:border-mine-cyan focus:outline-none uppercase"/>
+              <button onclick="setAnyDevice()" class="bg-surface-high hover:bg-border-light text-text-secondary hover:text-text-primary border border-border-subtle px-3 py-2 rounded text-xs font-mono transition-all">
+                Cualquier Terminal (*)
+              </button>
+            </div>
+            <p class="text-[11px] text-text-muted mt-1.5 font-mono">
+              * Tanto la Clave Corta como el Token Largo quedan firmados para este Device ID (o * para cualquier terminal).
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-surface-card border border-border-subtle rounded-lg p-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-3 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-mine-yellow">hourglass_top</span>
+              <h2 class="font-headline text-base font-bold uppercase tracking-wide text-text-primary">
+                2. Tipo de Licencia &amp; Vigencia
+              </h2>
+            </div>
+            <span class="text-[10px] font-mono text-mine-yellow font-bold uppercase">VIGENCIA DINÁMICA</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3" id="tier-selector-container">
+            <label onclick="selectTier('DEMO')" class="tier-card relative p-3 rounded-lg border border-border-subtle bg-surface-dark hover:border-mine-yellow/50 cursor-pointer transition-all flex flex-col justify-between">
+              <input type="radio" name="tier_radio" value="DEMO" class="sr-only"/>
+              <div>
+                <div class="flex justify-between items-start mb-1">
+                  <span class="font-mono text-xs font-bold text-text-secondary uppercase">Demo</span>
+                  <span class="material-symbols-outlined text-sm text-text-muted">science</span>
+                </div>
+                <div class="font-headline text-lg font-bold text-text-primary">30 DÍAS</div>
+                <p class="text-[11px] text-text-muted mt-1 leading-snug">Evaluación y pruebas en polvorín.</p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-border-subtle text-[10px] font-mono text-mine-yellow">PRUEBA GRATUITA</div>
+            </label>
+
+            <label onclick="selectTier('ANUAL')" class="tier-card active relative p-3 rounded-lg border-2 border-mine-yellow bg-surface-elevated cursor-pointer transition-all flex flex-col justify-between glow-yellow">
+              <input type="radio" name="tier_radio" value="ANUAL" checked class="sr-only"/>
+              <div class="absolute -top-2.5 right-2 bg-mine-yellow text-surface-dark font-mono text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">MÁS UTILIZADO</div>
+              <div>
+                <div class="flex justify-between items-start mb-1">
+                  <span class="font-mono text-xs font-bold text-mine-yellow uppercase">Anual</span>
+                  <span class="material-symbols-outlined text-sm text-mine-yellow">verified</span>
+                </div>
+                <div class="font-headline text-lg font-bold text-mine-yellow">365 DÍAS</div>
+                <p class="text-[11px] text-text-secondary mt-1 leading-snug">Suscripción anual con soporte completo.</p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-border-subtle text-[10px] font-mono text-mine-yellow font-bold">RENOVABLE</div>
+            </label>
+
+            <label onclick="selectTier('TEMPORAL')" class="tier-card relative p-3 rounded-lg border border-border-subtle bg-surface-dark hover:border-mine-yellow/50 cursor-pointer transition-all flex flex-col justify-between">
+              <input type="radio" name="tier_radio" value="TEMPORAL" class="sr-only"/>
+              <div>
+                <div class="flex justify-between items-start mb-1">
+                  <span class="font-mono text-xs font-bold text-text-secondary uppercase">Proyecto</span>
+                  <span class="material-symbols-outlined text-sm text-text-muted">date_range</span>
+                </div>
+                <div class="font-headline text-lg font-bold text-text-primary">TEMPORAL</div>
+                <p class="text-[11px] text-text-muted mt-1 leading-snug">Campaña de voladura con fecha específica.</p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-border-subtle text-[10px] font-mono text-text-secondary">PERSONALIZABLE</div>
+            </label>
+
+            <label onclick="selectTier('PERPETUAL')" class="tier-card relative p-3 rounded-lg border border-border-subtle bg-surface-dark hover:border-mine-yellow/50 cursor-pointer transition-all flex flex-col justify-between">
+              <input type="radio" name="tier_radio" value="PERPETUAL" class="sr-only"/>
+              <div>
+                <div class="flex justify-between items-start mb-1">
+                  <span class="font-mono text-xs font-bold text-mine-cyan uppercase">Vitalicia</span>
+                  <span class="material-symbols-outlined text-sm text-mine-cyan">all_inclusive</span>
+                </div>
+                <div class="font-headline text-lg font-bold text-mine-cyan">ILIMITADA</div>
+                <p class="text-[11px] text-text-muted mt-1 leading-snug">Sin fecha de caducidad. Pago único.</p>
+              </div>
+              <div class="mt-3 pt-2 border-t border-border-subtle text-[10px] font-mono text-mine-cyan font-bold">PERPETUA</div>
+            </label>
+          </div>
+
+          <div id="custom-date-container" class="hidden mt-4 pt-3 border-t border-border-subtle flex flex-col sm:flex-row items-center gap-3 bg-surface-dark p-3 rounded">
+            <label class="font-mono text-xs text-text-secondary uppercase whitespace-nowrap">Fecha de Expiración:</label>
+            <input id="input-custom-date" type="date" class="bg-surface-elevated border border-border-subtle rounded px-3 py-1.5 text-sm font-mono text-mine-yellow focus:border-mine-yellow focus:outline-none" onchange="updateCalculatedDates()"/>
+          </div>
+
+          <div class="mt-4 p-3 rounded bg-surface-dark border border-border-subtle flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            <div class="flex items-center gap-2">
+              <span class="text-text-muted">EMISIÓN:</span>
+              <span id="display-issued-date" class="text-text-primary font-bold">--</span>
+            </div>
+            <span class="text-border-light hidden sm:inline">➔</span>
+            <div class="flex items-center gap-2">
+              <span class="text-text-muted">VENCIMIENTO:</span>
+              <span id="display-expiry-date" class="text-mine-yellow font-bold">--</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-mine-cyan">
+              <span class="material-symbols-outlined text-sm">timer</span>
+              <span id="display-days-left">-- DÍAS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-surface-card border border-border-subtle rounded-lg p-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-3 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-mine-yellow">toggle_on</span>
+              <h2 class="font-headline text-base font-bold uppercase tracking-wide text-text-primary">
+                3. Módulos Operativos Autorizados
+              </h2>
+            </div>
+            <button onclick="toggleAllModules()" class="text-xs font-mono text-mine-cyan hover:underline uppercase">[Alternar Todos]</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="flex items-start gap-3 p-3 rounded bg-surface-dark border border-border-subtle hover:border-border-light cursor-pointer">
+              <input id="mod-entradas" type="checkbox" checked class="mt-0.5 rounded bg-surface-high border-border-light text-mine-yellow focus:ring-0"/>
+              <div>
+                <span class="font-headline text-sm font-bold uppercase text-text-primary">1. Entradas de Alto y Agente</span>
+                <p class="text-[11px] text-text-muted mt-0.5">Recepción y almacenamiento en polvorín.</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-3 rounded bg-surface-dark border border-border-subtle hover:border-border-light cursor-pointer">
+              <input id="mod-salidas" type="checkbox" checked class="mt-0.5 rounded bg-surface-high border-border-light text-mine-yellow focus:ring-0"/>
+              <div>
+                <span class="font-headline text-sm font-bold uppercase text-text-primary">2. Salidas / Despacho a Mina</span>
+                <p class="text-[11px] text-text-muted mt-0.5">Despacho a bancos de voladura e impresión POS.</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-3 rounded bg-surface-dark border border-border-subtle hover:border-border-light cursor-pointer">
+              <input id="mod-accesorios" type="checkbox" checked class="mt-0.5 rounded bg-surface-high border-border-light text-mine-yellow focus:ring-0"/>
+              <div>
+                <span class="font-headline text-sm font-bold uppercase text-text-primary">3. Artificios y Accesorios</span>
+                <p class="text-[11px] text-text-muted mt-0.5">Cordón detonante, boosters y guías.</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-3 rounded bg-surface-dark border border-border-subtle hover:border-border-light cursor-pointer">
+              <input id="mod-devoluciones" type="checkbox" checked class="mt-0.5 rounded bg-surface-high border-border-light text-mine-yellow focus:ring-0"/>
+              <div>
+                <span class="font-headline text-sm font-bold uppercase text-text-primary">4. Devoluciones de Explosivo</span>
+                <p class="text-[11px] text-text-muted mt-0.5">Retorno de remanente seguro a polvorín.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="generateLicense()" id="btn-generate"
+          class="w-full bg-mine-yellow hover:bg-yellow-400 text-surface-dark font-headline text-base md:text-lg font-bold py-4 px-6 rounded-lg flex items-center justify-between shadow-xl glow-yellow transition-all transform active:scale-[0.99]">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-2xl">verified_user</span>
+            <span>GENERAR CLAVE CORTA, TOKEN Y QR</span>
+          </div>
+          <span class="font-mono text-xs bg-surface-dark/20 px-3 py-1 rounded text-surface-dark font-bold uppercase">FIRMAR ➔</span>
+        </button>
+
+      </section>
+
+      <!-- COLUMNA DERECHA -->
+      <section class="lg:col-span-5 flex flex-col gap-5">
+        <div class="bg-surface-card border border-border-subtle rounded-lg p-5 shadow-sm relative overflow-hidden">
+          <div class="flex items-center justify-between border-b border-border-subtle pb-3 mb-4">
+            <div>
+              <span class="text-[10px] font-mono text-text-muted uppercase tracking-widest">EMISIÓN ACTIVA</span>
+              <div id="license-id-display" class="font-mono text-sm font-bold text-mine-cyan">#LCN-202611-0001</div>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-mine-green/20 text-mine-green border border-mine-green/40 text-xs font-mono font-bold">
+              <span class="material-symbols-outlined text-sm">check_circle</span>
+              <span>FIRMADA &amp; LISTA</span>
+            </div>
+          </div>
+
+          <div class="bg-surface-dark border border-border-subtle rounded-lg p-5 flex flex-col items-center justify-center relative reticle-corner">
+            <div id="qrcode-wrapper" class="p-3 bg-white rounded-md shadow-2xl flex items-center justify-center relative">
+              <div id="qrcode-canvas"></div>
+            </div>
+            <div class="mt-3 text-center">
+              <div class="font-mono text-xs text-mine-cyan font-bold tracking-wider uppercase flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">qr_code_scanner</span>
+                <span>ESCANEAR CON LA APP O PISTOLA ZEBRA</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CLAVE CORTA FIRMADA (ESCRIBIBLE A MANO) -->
+          <div class="mt-4 bg-surface-dark border border-mine-yellow/50 rounded-lg p-3.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-mono text-[10px] text-mine-yellow font-bold uppercase tracking-widest">Clave Corta Firmada (Escribible a Mano)</span>
+              <span class="font-mono text-[10px] text-mine-green">HMAC-SHA256 VÁLIDA</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 bg-surface-high px-3 py-2.5 rounded border border-border-subtle">
+              <span id="license-key-text" class="font-mono text-mine-yellow font-bold text-sm tracking-wider break-all select-all">
+                --
+              </span>
+              <button onclick="copyShortKey()" id="copy-short-btn" class="bg-mine-yellow hover:bg-yellow-400 text-surface-dark px-2.5 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1 transition-all shrink-0">
+                <span id="copy-short-icon" class="material-symbols-outlined text-sm">content_copy</span>
+                <span id="copy-short-label">COPIAR</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TOKEN COMPLETO (CON CLIENTE, MINA Y SUPERVISOR) -->
+          <div class="mt-3 bg-surface-dark border border-border-subtle rounded-lg p-3.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-mono text-[10px] text-text-muted uppercase tracking-widest">Token Completo (Cliente + Mina + Firma 32)</span>
+              <span class="font-mono text-[10px] text-mine-cyan">TTEX:...</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 bg-surface-high px-3 py-2 rounded border border-border-subtle">
+              <span id="license-token-preview" class="font-mono text-text-secondary text-[11px] truncate select-all">
+                TTEX:...
+              </span>
+              <button onclick="copyLicenseToken()" id="copy-btn" class="bg-surface-dark hover:bg-surface-elevated text-text-primary border border-border-subtle px-2.5 py-1 rounded text-xs font-mono flex items-center gap-1 transition-all shrink-0">
+                <span id="copy-icon" class="material-symbols-outlined text-sm">content_copy</span>
+                <span id="copy-label">COPIAR TOKEN</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 mt-4">
+            <button onclick="downloadQrImage()" class="bg-surface-elevated hover:bg-surface-high text-text-primary border border-border-subtle hover:border-mine-cyan p-2.5 rounded text-xs font-mono flex flex-col items-center justify-center gap-1 transition-all">
+              <span class="material-symbols-outlined text-mine-cyan text-lg">download</span>
+              <span class="font-bold">DESCARGAR QR</span>
+              <span class="text-[9px] text-text-muted">(PNG HD)</span>
+            </button>
+            <button onclick="exportLicFile()" class="bg-surface-elevated hover:bg-surface-high text-text-primary border border-border-subtle hover:border-mine-yellow p-2.5 rounded text-xs font-mono flex flex-col items-center justify-center gap-1 transition-all">
+              <span class="material-symbols-outlined text-mine-yellow text-lg">file_download</span>
+              <span class="font-bold">GUARDAR .LIC</span>
+              <span class="text-[9px] text-text-muted">(ARCHIVO)</span>
+            </button>
+            <button onclick="printCertificate()" class="bg-surface-elevated hover:bg-surface-high text-text-primary border border-border-subtle hover:border-mine-orange p-2.5 rounded text-xs font-mono flex flex-col items-center justify-center gap-1 transition-all">
+              <span class="material-symbols-outlined text-mine-orange text-lg">print</span>
+              <span class="font-bold">CERTIFICADO</span>
+              <span class="text-[9px] text-text-muted">(IMPRIMIR)</span>
+            </button>
+          </div>
+
+          <div class="mt-4 border-t border-border-subtle pt-3">
+            <div class="bg-surface-dark border border-border-subtle rounded p-2.5 grid grid-cols-2 gap-2 font-mono text-[11px]">
+              <div>
+                <span class="text-text-muted text-[9px] block uppercase">Algoritmo</span>
+                <span class="text-mine-cyan font-bold">HMAC-SHA256 Offline</span>
+              </div>
+              <div>
+                <span class="text-text-muted text-[9px] block uppercase">Hardware Vinculado</span>
+                <span id="meta-device" class="text-text-primary truncate block font-bold">*</span>
+              </div>
+              <div>
+                <span class="text-text-muted text-[9px] block uppercase">Fecha Emisión</span>
+                <span id="meta-issued" class="text-text-secondary truncate block">--</span>
+              </div>
+              <div>
+                <span class="text-text-muted text-[9px] block uppercase">Fecha Vencimiento</span>
+                <span id="meta-expiry" class="text-mine-yellow truncate block font-bold">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="mt-8 bg-surface-card border border-border-subtle rounded-lg p-5">
+      <div class="flex items-center justify-between mb-4 border-b border-border-subtle pb-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-mine-yellow">history</span>
+          <h3 class="font-headline text-base font-bold uppercase text-text-primary">Registro Histórico de Licencias Emitidas</h3>
+        </div>
+        <button onclick="clearHistory()" class="text-xs font-mono text-text-muted hover:text-mine-red">[Limpiar Historial]</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left font-mono text-xs">
+          <thead>
+            <tr class="text-text-muted border-b border-border-subtle text-[11px] uppercase">
+              <th class="py-2 px-3">ID Licencia</th>
+              <th class="py-2 px-3">Clave Corta</th>
+              <th class="py-2 px-3">Cliente</th>
+              <th class="py-2 px-3">Modalidad</th>
+              <th class="py-2 px-3">Dispositivo</th>
+              <th class="py-2 px-3 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody" class="divide-y divide-border-subtle text-text-secondary"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="printable-certificate" class="hidden print:block p-8 bg-white text-black font-sans">
+    <div style="border: 3px solid #111; padding: 24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #333; padding-bottom: 12px;">
+        <div>
+          <h1 style="font-size: 24px; font-weight: bold; margin: 0;">T&amp;T EXPLO MOBILE</h1>
+          <p style="font-size: 13px; color: #555; margin: 2px 0 0;">CERTIFICADO OFICIAL DE LICENCIA DE SOFTWARE EN MINA</p>
+        </div>
+        <div id="cert-qr-holder"></div>
+      </div>
+      <div style="margin: 20px 0; font-size: 13px; line-height: 1.6;">
+        <p><strong>Razón Social:</strong> <span id="cert-client"></span></p>
+        <p><strong>Unidad Minera:</strong> <span id="cert-mine"></span></p>
+        <p><strong>Supervisor Autorizado:</strong> <span id="cert-supervisor"></span></p>
+        <p><strong>Hardware ID (Dispositivo):</strong> <span id="cert-device"></span></p>
+        <p><strong>Modalidad de Licencia:</strong> <span id="cert-tier"></span></p>
+        <p><strong>Vigencia:</strong> <span id="cert-dates"></span></p>
+        <p><strong>Clave Corta de Activación:</strong> <span id="cert-key" style="font-family: monospace; font-size: 15px; font-weight: bold;"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR CODE LIBRARY INLINE -->
+  <script>
+var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this.parsedData=[];for(var b=[],d=0,e=this.data.length;e>d;d++){var f=this.data.charCodeAt(d);f>65536?(b[0]=240|(1835008&f)>>>18,b[1]=128|(258048&f)>>>12,b[2]=128|(4032&f)>>>6,b[3]=128|63&f):f>2048?(b[0]=224|(61440&f)>>>12,b[1]=128|(4032&f)>>>6,b[2]=128|63&f):f>128?(b[0]=192|(1984&f)>>>6,b[1]=128|63&f):b[0]=f,this.parsedData=this.parsedData.concat(b)}this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}function b(a,b){this.typeNumber=a,this.errorCorrectLevel=b,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function i(a,b){if(void 0==a.length)throw new Error(a.length+"/"+b);for(var c=0;c<a.length&&0==a[c];)c++;this.num=new Array(a.length-c+b);for(var d=0;d<a.length-c;d++)this.num[d]=a[d+c]}function j(a,b){this.totalCount=a,this.dataCount=b}function k(){this.buffer=[],this.length=0}function m(){return"undefined"!=typeof CanvasRenderingContext2D}function n(){var a=!1,b=navigator.userAgent;return/android/i.test(b)&&(a=!0,aMat=b.toString().match(/android ([0-9]\.[0-9])/i),aMat&&aMat[1]&&(a=parseFloat(aMat[1]))),a}function r(a,b){for(var c=1,e=s(a),f=0,g=l.length;g>=f;f++){var h=0;switch(b){case d.L:h=l[f][0];break;case d.M:h=l[f][1];break;case d.Q:h=l[f][2];break;case d.H:h=l[f][3]}if(h>=e)break;c++}if(c>l.length)throw new Error("Too long data");return c}function s(a){var b=encodeURI(a).toString().replace(/\%[0-9a-fA-F]{2}/g,"a");return b.length+(b.length!=a?3:0)}a.prototype={getLength:function(){return this.parsedData.length},write:function(a){for(var b=0,c=this.parsedData.length;c>b;b++)a.put(this.parsedData[b],8)}},b.prototype={addData:function(b){var c=new a(b);this.dataList.push(c),this.dataCache=null},isDark:function(a,b){if(0>a||this.moduleCount<=a||0>b||this.moduleCount<=b)throw new Error(a+","+b);return this.modules[a][b]},getModuleCount:function(){return this.moduleCount},make:function(){this.makeImpl(!1,this.getBestMaskPattern())},makeImpl:function(a,c){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var d=0;d<this.moduleCount;d++){this.modules[d]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[d][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(a,c),this.typeNumber>=7&&this.setupTypeNumber(a),null==this.dataCache&&(this.dataCache=b.createData(this.typeNumber,this.errorCorrectLevel,this.dataList)),this.mapData(this.dataCache,c)},setupPositionProbePattern:function(a,b){for(var c=-1;7>=c;c++)if(!(-1>=a+c||this.moduleCount<=a+c))for(var d=-1;7>=d;d++)-1>=b+d||this.moduleCount<=b+d||(this.modules[a+c][b+d]=c>=0&&6>=c&&(0==d||6==d)||d>=0&&6>=d&&(0==c||6==c)||c>=2&&4>=c&&d>=2&&4>=d?!0:!1)},getBestMaskPattern:function(){for(var a=0,b=0,c=0;8>c;c++){this.makeImpl(!0,c);var d=f.getLostPoint(this);(0==c||a>d)&&(a=d,b=c)}return b},setupTimingPattern:function(){for(var a=8;a<this.moduleCount-8;a++)null==this.modules[a][6]&&(this.modules[a][6]=0==a%2);for(var b=8;b<this.moduleCount-8;b++)null==this.modules[6][b]&&(this.modules[6][b]=0==b%2)},setupPositionAdjustPattern:function(){for(var a=f.getPatternPosition(this.typeNumber),b=0;b<a.length;b++)for(var c=0;c<a.length;c++){var d=a[b],e=a[c];if(null==this.modules[d][e])for(var g=-2;2>=g;g++)for(var h=-2;2>=h;h++)this.modules[d+g][e+h]=-2==g||2==g||-2==h||2==h||0==g&&0==h?!0:!1}},setupTypeNumber:function(a){for(var b=f.getBCHTypeNumber(this.typeNumber),c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[Math.floor(c/3)][c%3+this.moduleCount-8-3]=d}for(var c=0;18>c;c++){var d=!a&&1==(1&b>>c);this.modules[c%3+this.moduleCount-8-3][Math.floor(c/3)]=d}},setupTypeInfo:function(a,b){for(var c=this.errorCorrectLevel<<3|b,d=f.getBCHTypeInfo(c),e=0;15>e;e++){var g=!a&&1==(1&d>>e);6>e?this.modules[e][8]=g:8>e?this.modules[e+1][8]=g:this.modules[this.moduleCount-15+e][8]=g}for(var e=0;15>e;e++){var g=!a&&1==(1&d>>e);8>e?this.modules[8][this.moduleCount-e-1]=g:9>e?this.modules[8][15-e-1+1]=g:this.modules[8][15-e-1]=g}this.modules[this.moduleCount-8][8]=!a},mapData:function(a,b){for(var c=-1,d=this.moduleCount-1,e=7,g=0,h=this.moduleCount-1;h>0;h-=2)for(6==h&&h--;;){for(var i=0;2>i;i++)if(null==this.modules[d][h-i]){var j=!1;g<a.length&&(j=1==(1&a[g]>>>e));var k=f.getMask(b,d,h-i);k&&(j=!j),this.modules[d][h-i]=j,e--,-1==e&&(g++,e=7)}if(d+=c,0>d||this.moduleCount<=d){d-=c,c=-c;break}}}},b.PAD0=236,b.PAD1=17,b.createData=function(a,c,d){for(var e=j.getRSBlocks(a,c),g=new k,h=0;h<d.length;h++){var i=d[h];g.put(i.mode,4),g.put(i.getLength(),f.getLengthInBits(i.mode,a)),i.write(g)}for(var l=0,h=0;h<e.length;h++)l+=e[h].dataCount;if(g.getLengthInBits()>8*l)throw new Error("code length overflow");for(g.getLengthInBits()+4<=8*l&&g.put(0,4);0!=g.getLengthInBits()%8;)g.putBit(!1);for(;;){if(g.getLengthInBits()>=8*l)break;if(g.put(b.PAD0,8),g.getLengthInBits()>=8*l)break;g.put(b.PAD1,8)}return b.createBytes(g,e)},b.createBytes=function(a,b){for(var c=0,d=0,e=0,g=new Array(b.length),h=new Array(b.length),j=0;j<b.length;j++){var k=b[j].dataCount,l=b[j].totalCount-k;d=Math.max(d,k),e=Math.max(e,l),g[j]=new Array(k);for(var m=0;m<g[j].length;m++)g[j][m]=255&a.buffer[m+c];c+=k;var n=f.getErrorCorrectPolynomial(l),o=new i(g[j],n.getLength()-1),p=o.mod(n);h[j]=new Array(n.getLength()-1);for(var m=0;m<h[j].length;m++){var q=m+p.getLength()-h[j].length;h[j][m]=q>=0?p.get(q):0}}for(var r=0,m=0;m<b.length;m++)r+=b[m].totalCount;for(var s=new Array(r),t=0,m=0;d>m;m++)for(var j=0;j<b.length;j++)m<g[j].length&&(s[t++]=g[j][m]);for(var m=0;e>m;m++)for(var j=0;j<b.length;j++)m<h[j].length&&(s[t++]=h[j][m]);return s};for(var c={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},d={L:1,M:0,Q:3,H:2},e={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},f={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(a){for(var b=a<<10;f.getBCHDigit(b)-f.getBCHDigit(f.G15)>=0;)b^=f.G15<<f.getBCHDigit(b)-f.getBCHDigit(f.G15);return(a<<10|b)^f.G15_MASK},getBCHTypeNumber:function(a){for(var b=a<<12;f.getBCHDigit(b)-f.getBCHDigit(f.G18)>=0;)b^=f.G18<<f.getBCHDigit(b)-f.getBCHDigit(f.G18);return a<<12|b},getBCHDigit:function(a){for(var b=0;0!=a;)b++,a>>>=1;return b},getPatternPosition:function(a){return f.PATTERN_POSITION_TABLE[a-1]},getMask:function(a,b,c){switch(a){case e.PATTERN000:return 0==(b+c)%2;case e.PATTERN001:return 0==b%2;case e.PATTERN010:return 0==c%3;case e.PATTERN011:return 0==(b+c)%3;case e.PATTERN100:return 0==(Math.floor(b/2)+Math.floor(c/3))%2;case e.PATTERN101:return 0==b*c%2+b*c%3;case e.PATTERN110:return 0==(b*c%2+b*c%3)%2;case e.PATTERN111:return 0==(b*c%3+(b+c)%2)%2;default:throw new Error("bad maskPattern:"+a)}},getErrorCorrectPolynomial:function(a){for(var b=new i([1],0),c=0;a>c;c++)b=b.multiply(new i([1,g.gexp(c)],0));return b},getLengthInBits:function(a,b){if(b>=1&&10>b)switch(a){case c.MODE_NUMBER:return 10;case c.MODE_ALPHA_NUM:return 9;case c.MODE_8BIT_BYTE:return 8;case c.MODE_KANJI:return 8;default:throw new Error("mode:"+a)}else if(27>b)switch(a){case c.MODE_NUMBER:return 12;case c.MODE_ALPHA_NUM:return 11;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 10;default:throw new Error("mode:"+a)}else{if(!(41>b))throw new Error("type:"+b);switch(a){case c.MODE_NUMBER:return 14;case c.MODE_ALPHA_NUM:return 13;case c.MODE_8BIT_BYTE:return 16;case c.MODE_KANJI:return 12;default:throw new Error("mode:"+a)}}},getLostPoint:function(a){for(var b=a.getModuleCount(),c=0,d=0;b>d;d++)for(var e=0;b>e;e++){for(var f=0,g=a.isDark(d,e),h=-1;1>=h;h++)if(!(0>d+h||d+h>=b))for(var i=-1;1>=i;i++)0>e+i||e+i>=b||(0!=h||0!=i)&&g==a.isDark(d+h,e+i)&&f++;f>5&&(c+=3+f-5)}for(var d=0;b-1>d;d++)for(var e=0;b-1>e;e++){var j=0;a.isDark(d,e)&&j++,a.isDark(d+1,e)&&j++,a.isDark(d,e+1)&&j++,a.isDark(d+1,e+1)&&j++,(0==j||4==j)&&(c+=3)}for(var d=0;b>d;d++)for(var e=0;b-6>e;e++)a.isDark(d,e)&&!a.isDark(d,e+1)&&a.isDark(d,e+2)&&a.isDark(d,e+3)&&a.isDark(d,e+4)&&!a.isDark(d,e+5)&&a.isDark(d,e+6)&&(c+=40);for(var e=0;b>e;e++)for(var d=0;b-6>d;d++)a.isDark(d,e)&&!a.isDark(d+1,e)&&a.isDark(d+2,e)&&a.isDark(d+3,e)&&a.isDark(d+4,e)&&!a.isDark(d+5,e)&&a.isDark(d+6,e)&&(c+=40);for(var k=0,e=0;b>e;e++)for(var d=0;b>d;d++)a.isDark(d,e)&&k++;var l=Math.abs(100*k/b/b-50)/5;return c+=10*l}},g={glog:function(a){if(1>a)throw new Error("glog("+a+")");return g.LOG_TABLE[a]},gexp:function(a){for(;0>a;)a+=255;for(;a>=256;)a-=255;return g.EXP_TABLE[a]},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)},h=0;8>h;h++)g.EXP_TABLE[h]=1<<h;for(var h=8;256>h;h++)g.EXP_TABLE[h]=g.EXP_TABLE[h-4]^g.EXP_TABLE[h-5]^g.EXP_TABLE[h-6]^g.EXP_TABLE[h-8];for(var h=0;255>h;h++)g.LOG_TABLE[g.EXP_TABLE[h]]=h;i.prototype={get:function(a){return this.num[a]},getLength:function(){return this.num.length},multiply:function(a){for(var b=new Array(this.getLength()+a.getLength()-1),c=0;c<this.getLength();c++)for(var d=0;d<a.getLength();d++)b[c+d]^=g.gexp(g.glog(this.get(c))+g.glog(a.get(d)));return new i(b,0)},mod:function(a){if(this.getLength()-a.getLength()<0)return this;for(var b=g.glog(this.get(0))-g.glog(a.get(0)),c=new Array(this.getLength()),d=0;d<this.getLength();d++)c[d]=this.get(d);for(var d=0;d<a.getLength();d++)c[d]^=g.gexp(g.glog(a.get(d))+b);return new i(c,0).mod(a)}},j.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],j.getRSBlocks=function(a,b){var c=j.getRsBlockTable(a,b);if(void 0==c)throw new Error("bad rs block");for(var d=c.length/3,e=[],f=0;d>f;f++)for(var g=c[3*f+0],h=c[3*f+1],i=c[3*f+2],k=0;g>k;k++)e.push(new j(h,i));return e},j.getRsBlockTable=function(a,b){switch(b){case d.L:return j.RS_BLOCK_TABLE[4*(a-1)+0];case d.M:return j.RS_BLOCK_TABLE[4*(a-1)+1];case d.Q:return j.RS_BLOCK_TABLE[4*(a-1)+2];case d.H:return j.RS_BLOCK_TABLE[4*(a-1)+3];default:return void 0}},k.prototype={get:function(a){var b=Math.floor(a/8);return 1==(1&this.buffer[b]>>>7-a%8)},put:function(a,b){for(var c=0;b>c;c++)this.putBit(1==(1&a>>>b-c-1))},getLengthInBits:function(){return this.length},putBit:function(a){var b=Math.floor(this.length/8);this.buffer.length<=b&&this.buffer.push(0),a&&(this.buffer[b]|=128>>>this.length%8),this.length++}};var l=[[17,14,11,7],[32,26,20,14],[53,42,32,24],[78,62,46,34],[106,84,60,44],[134,106,74,58],[154,122,86,64],[192,152,108,84],[230,180,130,98],[271,213,151,119],[321,251,177,137],[367,287,203,155],[425,331,241,177],[458,362,258,194],[520,412,292,220],[586,450,322,250],[644,504,364,280],[718,560,394,310],[792,624,442,338],[858,666,482,382],[929,711,509,403],[1003,779,565,439],[1091,857,611,461],[1171,911,661,511],[1273,997,715,535],[1367,1059,751,593],[1465,1125,805,625],[1528,1190,868,658],[1628,1264,908,698],[1732,1370,982,742],[1840,1452,1030,790],[1952,1538,1112,842],[2068,1628,1168,898],[2188,1722,1228,958],[2303,1809,1283,983],[2431,1911,1351,1051],[2563,1989,1423,1093],[2699,2099,1499,1139],[2809,2213,1579,1219],[2953,2331,1663,1273]],o=function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){function g(a,b){var c=document.createElementNS("http://www.w3.org/2000/svg",a);for(var d in b)b.hasOwnProperty(d)&&c.setAttribute(d,b[d]);return c}var b=this._htOption,c=this._el,d=a.getModuleCount();this.clear();var h=g("svg",{viewBox:"0 0 "+String(d)+" "+String(d),width:"100%",height:"100%",fill:b.colorLight});h.setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xlink","http://www.w3.org/1999/xlink"),c.appendChild(h),h.appendChild(g("rect",{fill:b.colorDark,width:"1",height:"1",id:"template"}));for(var i=0;d>i;i++)for(var j=0;d>j;j++)if(a.isDark(i,j)){var k=g("use",{x:String(i),y:String(j)});k.setAttributeNS("http://www.w3.org/1999/xlink","href","#template"),h.appendChild(k)}},a.prototype.clear=function(){for(;this._el.hasChildNodes();)this._el.removeChild(this._el.lastChild)},a}(),p="svg"===document.documentElement.tagName.toLowerCase(),q=p?o:m()?function(){function a(){this._elImage.src=this._elCanvas.toDataURL("image/png"),this._elImage.style.display="block",this._elCanvas.style.display="none"}function d(a,b){var c=this;if(c._fFail=b,c._fSuccess=a,null===c._bSupportDataURI){var d=document.createElement("img"),e=function(){c._bSupportDataURI=!1,c._fFail&&c._fFail.call(c)},f=function(){c._bSupportDataURI=!0,c._fSuccess&&c._fSuccess.call(c)};return d.onabort=e,d.onerror=e,d.onload=f,d.src="data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",void 0}c._bSupportDataURI===!0&&c._fSuccess?c._fSuccess.call(c):c._bSupportDataURI===!1&&c._fFail&&c._fFail.call(c)}var e=function(a,b){this._bIsPainted=!1,this._android=n(),this._htOption=b,this._elCanvas=document.createElement("canvas"),this._elCanvas.width=b.width,this._elCanvas.height=b.height,a.appendChild(this._elCanvas),this._el=a,this._oContext=this._elCanvas.getContext("2d"),this._elImage=document.createElement("img"),this._elImage.style.display="none",this._el.appendChild(this._elImage),this._bSupportDataURI=null};return e.prototype.draw=function(a){var b=this._elImage,c=this._oContext,d=this._htOption,e=a.getModuleCount(),f=d.width/e,g=d.height/e,h=Math.round(f),i=Math.round(g);b.style.display="none",this.clear();for(var j=0;e>j;j++)for(var k=0;e>k;k++){var l=a.isDark(j,k),m=k*f,n=j*g;c.strokeStyle=l?d.colorDark:d.colorLight,c.lineWidth=1,c.fillStyle=l?d.colorDark:d.colorLight,c.fillRect(m,n,f,g),c.strokeRect(Math.floor(m)+.5,Math.floor(n)+.5,h,i),c.strokeRect(Math.ceil(m)-.5,Math.ceil(n)-.5,h,i)}this._bIsPainted=!0},e.prototype.makeImage=function(){this._bIsPainted&&d.call(this,a)},e.prototype.isPainted=function(){return this._bIsPainted},e.prototype.clear=function(){this._oContext.clearRect(0,0,this._elCanvas.width,this._elCanvas.height),this._bIsPainted=!1},e}():function(){var a=function(a,b){this._el=a,this._htOption=b};return a.prototype.draw=function(a){for(var b=this._htOption,c=this._el,d=a.getModuleCount(),e=Math.floor(b.width/d),f=Math.floor(b.height/d),g=['<table style="border:0;border-collapse:collapse;">'],h=0;d>h;h++){g.push("<tr>");for(var i=0;d>i;i++)g.push('<td style="border:0;border-collapse:collapse;padding:0;margin:0;width:'+e+"px;height:"+f+"px;background-color:"+(a.isDark(h,i)?b.colorDark:b.colorLight)+';"></td>');g.push("</tr>")}g.push("</table>"),c.innerHTML=g.join("")},a.prototype.clear=function(){this._el.innerHTML=""},a}();QRCode=function(a,b){if(this._htOption={width:256,height:256,typeNumber:4,colorDark:"#000000",colorLight:"#ffffff",correctLevel:d.H},"string"==typeof b&&(b={text:b}),b)for(var c in b)this._htOption[c]=b[c];"string"==typeof a&&(a=document.getElementById(a)),this._android=n(),this._el=a,this._oQRCode=null,this._oDrawing=new q(this._el,this._htOption),this._htOption.text&&this.makeCode(this._htOption.text)},QRCode.prototype.makeCode=function(a){this._oQRCode=new b(r(a,this._htOption.correctLevel),this._htOption.correctLevel),this._oQRCode.addData(a),this._oQRCode.make(),this._el.title=a,this._oDrawing.draw(this._oQRCode),this.makeImage()},QRCode.prototype.makeImage=function(){"function"==typeof this._oDrawing.makeImage&&(!this._android||this._android>=3)&&this._oDrawing.makeImage()},QRCode.prototype.clear=function(){this._oDrawing.clear()},QRCode.CorrectLevel=d}();
+  </script>
+
+  <!-- LÓGICA DE APLICACIÓN + HMAC-SHA256 PURO JS (FUNCIONA EN file:// Y HTTPS) -->
+  <script>
+    const MASTER_SECRET = "TTEXPLO_2026_MASTER_SECRET_KEY_MINING_AUTHORIZATION_98124";
+
+    let currentTier = "ANUAL";
+    let currentPayload = null;
+    let currentToken = "";
+    let currentShortKey = "";
+
+    // Implementación pura de SHA-256 + HMAC-SHA256 para operar 100% offline (incluso desde file:// sin crypto.subtle)
+    function sha256Bytes(bytes) {
+      const K = [
+        0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+        0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+        0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+        0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+        0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+        0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+        0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+        0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+      ];
+      let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+      const len = bytes.length;
+      const bitLen = len * 8;
+      const paddedLen = Math.ceil((len + 9) / 64) * 64;
+      const padded = new Uint8Array(paddedLen);
+      padded.set(bytes);
+      padded[len] = 0x80;
+      const dv = new DataView(padded.buffer);
+      dv.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
+      dv.setUint32(paddedLen - 4, bitLen >>> 0, false);
+
+      const W = new Uint32Array(64);
+      for (let i = 0; i < paddedLen; i += 64) {
+        for (let t = 0; t < 16; t++) W[t] = dv.getUint32(i + t * 4, false);
+        for (let t = 16; t < 64; t++) {
+          const s0 = ((W[t-15] >>> 7) | (W[t-15] << 25)) ^ ((W[t-15] >>> 18) | (W[t-15] << 14)) ^ (W[t-15] >>> 3);
+          const s1 = ((W[t-2] >>> 17) | (W[t-2] << 15)) ^ ((W[t-2] >>> 19) | (W[t-2] << 13)) ^ (W[t-2] >>> 10);
+          W[t] = (W[t-16] + s0 + W[t-7] + s1) >>> 0;
+        }
+        let [a, b, c, d, e, f, g, h] = H;
+        for (let t = 0; t < 64; t++) {
+          const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+          const ch = (e & f) ^ ((~e) & g);
+          const temp1 = (h + S1 + ch + K[t] + W[t]) >>> 0;
+          const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (S0 + maj) >>> 0;
+          h = g; g = f; f = e; e = (d + temp1) >>> 0;
+          d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
+        }
+        H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+        H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+      }
+      const out = new Uint8Array(32);
+      const odv = new DataView(out.buffer);
+      for (let i = 0; i < 8; i++) odv.setUint32(i * 4, H[i], false);
+      return out;
+    }
+
+    function hmacSha256HexSync(message, secret) {
+      const enc = new TextEncoder();
+      let key = enc.encode(secret);
+      const msg = enc.encode(message);
+      if (key.length > 64) key = sha256Bytes(key);
+      const oKeyPad = new Uint8Array(64);
+      const iKeyPad = new Uint8Array(64);
+      for (let i = 0; i < 64; i++) {
+        const kb = i < key.length ? key[i] : 0;
+        oKeyPad[i] = kb ^ 0x5c;
+        iKeyPad[i] = kb ^ 0x36;
+      }
+      const inner = new Uint8Array(64 + msg.length);
+      inner.set(iKeyPad); inner.set(msg, 64);
+      const innerHash = sha256Bytes(inner);
+      const outer = new Uint8Array(64 + 32);
+      outer.set(oKeyPad); outer.set(innerHash, 64);
+      const finalHash = sha256Bytes(outer);
+      return Array.from(finalHash).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function computeHMACSHA256(message, secret) {
+      if (window.crypto && window.crypto.subtle) {
+        try {
+          const enc = new TextEncoder();
+          const cryptoKey = await window.crypto.subtle.importKey(
+            'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+          );
+          const signature = await window.crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));
+          return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (_) {}
+      }
+      return hmacSha256HexSync(message, secret);
+    }
+
+    function copyTextFallback(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        });
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Promise.resolve();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      const customDateInput = document.getElementById('input-custom-date');
+      if (customDateInput) {
+        customDateInput.min = today.toISOString().split('T')[0];
+        const nextQuarter = new Date();
+        nextQuarter.setDate(nextQuarter.getDate() + 90);
+        customDateInput.value = nextQuarter.toISOString().split('T')[0];
+      }
+      document.getElementById('toggle-hardware-lock').checked = false;
+      handleHardwareLockToggle();
+      updateCalculatedDates();
+      generateLicense();
+      renderHistory();
+    });
+
+    function selectTier(tier) {
+      currentTier = tier;
+      document.querySelectorAll('.tier-card').forEach(card => {
+        card.classList.remove('active', 'border-2', 'border-mine-yellow', 'glow-yellow', 'bg-surface-elevated');
+        card.classList.add('border-border-subtle', 'bg-surface-dark');
+      });
+      const clickedRadio = document.querySelector(`input[name="tier_radio"][value="${tier}"]`);
+      if (clickedRadio) {
+        clickedRadio.checked = true;
+        const parentCard = clickedRadio.closest('.tier-card');
+        if (parentCard) {
+          parentCard.classList.add('active', 'border-2', 'border-mine-yellow', 'glow-yellow', 'bg-surface-elevated');
+          parentCard.classList.remove('border-border-subtle', 'bg-surface-dark');
+        }
+      }
+      const customDateContainer = document.getElementById('custom-date-container');
+      customDateContainer.classList.toggle('hidden', tier !== 'TEMPORAL');
+      updateCalculatedDates();
+    }
+
+    function handleHardwareLockToggle() {
+      const toggle = document.getElementById('toggle-hardware-lock');
+      const label = document.getElementById('label-hardware-mode');
+      const devInput = document.getElementById('input-device-id');
+      if (toggle.checked) {
+        label.innerText = 'Dispositivo Único';
+        label.className = 'font-mono text-xs text-mine-cyan font-bold uppercase';
+        if (devInput.value === '*' || !devInput.value.trim()) devInput.value = 'F020-F600-E29C-76D6';
+      } else {
+        label.innerText = 'Todas las Terminales (*)';
+        label.className = 'font-mono text-xs text-mine-yellow font-bold uppercase';
+        devInput.value = '*';
+      }
+    }
+
+    function setAnyDevice() {
+      document.getElementById('toggle-hardware-lock').checked = false;
+      handleHardwareLockToggle();
+    }
+
+    function toggleAllModules() {
+      const ids = ['mod-entradas', 'mod-salidas', 'mod-accesorios', 'mod-devoluciones'];
+      const allChecked = ids.every(id => document.getElementById(id).checked);
+      ids.forEach(id => document.getElementById(id).checked = !allChecked);
+    }
+
+    function getSelectedModules() {
+      const mods = [];
+      if (document.getElementById('mod-entradas').checked) mods.push('ENTRADAS');
+      if (document.getElementById('mod-salidas').checked) mods.push('SALIDAS');
+      if (document.getElementById('mod-accesorios').checked) mods.push('ACCESORIOS');
+      if (document.getElementById('mod-devoluciones').checked) mods.push('DEVOLUCIONES');
+      return mods;
+    }
+
+    function updateCalculatedDates() {
+      const now = new Date();
+      let expiry = new Date();
+      let days = 0;
+      if (currentTier === 'DEMO') { days = 30; expiry.setDate(now.getDate() + 30); }
+      else if (currentTier === 'ANUAL') { days = 365; expiry.setDate(now.getDate() + 365); }
+      else if (currentTier === 'TEMPORAL') {
+        const customDateVal = document.getElementById('input-custom-date').value;
+        if (customDateVal) {
+          expiry = new Date(customDateVal + 'T23:59:59Z');
+          days = Math.max(1, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+        } else { days = 90; expiry.setDate(now.getDate() + 90); }
+      } else if (currentTier === 'PERPETUAL') {
+        days = 9999; expiry.setFullYear(now.getFullYear() + 50);
+      }
+      document.getElementById('display-issued-date').innerText = formatDate(now);
+      document.getElementById('display-expiry-date').innerText = currentTier === 'PERPETUAL' ? 'SIN CADUCIDAD' : formatDate(expiry);
+      document.getElementById('display-days-left').innerText = currentTier === 'PERPETUAL' ? 'VITALICIA' : `${days} DÍAS`;
+      return { issued: now, expiry: expiry, days: days };
+    }
+
+    function formatDate(d) { return d.toISOString().split('T')[0]; }
+
+    async function buildSignedShortKey(tier, expiryDateObj, deviceId) {
+      let tierExpCode;
+      if (tier === 'PERPETUAL') {
+        tierExpCode = 'PERP';
+      } else {
+        const tChar = tier === 'DEMO' ? 'D' : (tier === 'TEMPORAL' ? 'T' : 'A');
+        const iso = formatDate(expiryDateObj); // YYYY-MM-DD
+        tierExpCode = tChar + iso.substring(2, 4) + iso.substring(5, 7) + iso.substring(8, 10);
+      }
+      const cleanDev = (deviceId || '*').replace(/[^A-Za-z0-9*]/g, '').toUpperCase();
+      const isWildcard = !cleanDev || cleanDev === '*' || cleanDev === 'ALL' || cleanDev === 'TODOS';
+      const canonicalDev = isWildcard ? '*' : cleanDev;
+      const devTag = isWildcard ? 'ALL' : cleanDev.substring(0, 4);
+      const sig = await computeHMACSHA256(`SHORT|V1|${tierExpCode}|${canonicalDev}`, MASTER_SECRET);
+      return `TTEX-${tierExpCode}-${devTag}-${sig.substring(0, 8).toUpperCase()}`;
+    }
+
+    async function generateLicense() {
+      const dates = updateCalculatedDates();
+      const client = document.getElementById('input-client').value.trim() || 'Cliente Sin Nombre';
+      const mine = document.getElementById('input-mine').value.trim() || 'Mina Principal';
+      const supervisor = document.getElementById('input-supervisor').value.trim() || 'Supervisor';
+      const deviceId = document.getElementById('input-device-id').value.trim() || '*';
+      const modules = getSelectedModules();
+
+      const licId = 'LCN-' + new Date().toISOString().substring(0, 10).replace(/-/g, '') + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      document.getElementById('license-id-display').innerText = '#' + licId;
+
+      currentPayload = {
+        v: 1, id: licId, client, mine, supervisor,
+        dev: deviceId, tier: currentTier,
+        issued: dates.issued.toISOString(),
+        expires: currentTier === 'PERPETUAL' ? 'PERPETUAL' : dates.expiry.toISOString(),
+        mods: modules
+      };
+
+      const payloadStr = JSON.stringify(currentPayload);
+      const signatureHex = await computeHMACSHA256(payloadStr, MASTER_SECRET);
+      const b64Payload = btoa(unescape(encodeURIComponent(payloadStr)));
+      currentToken = `TTEX:${b64Payload}.${signatureHex.substring(0, 32)}`;
+      currentShortKey = await buildSignedShortKey(currentTier, dates.expiry, deviceId);
+
+      document.getElementById('license-key-text').innerText = currentShortKey;
+      document.getElementById('license-token-preview').innerText = currentToken;
+      document.getElementById('meta-device').innerText = deviceId;
+      document.getElementById('meta-issued').innerText = formatDate(dates.issued);
+      document.getElementById('meta-expiry').innerText = currentTier === 'PERPETUAL' ? 'VITALICIA' : formatDate(dates.expiry);
+
+      renderQrCode(currentToken);
+      saveToHistory({
+        id: licId, client, mine, tier: currentTier, device: deviceId,
+        expires: currentTier === 'PERPETUAL' ? 'VITALICIA' : formatDate(dates.expiry),
+        key: currentShortKey, token: currentToken
+      });
+    }
+
+    function renderQrCode(textToEncode) {
+      const container = document.getElementById('qrcode-canvas');
+      container.innerHTML = '';
+      new QRCode(container, {
+        text: textToEncode, width: 220, height: 220,
+        colorDark: '#0D0F11', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function copyShortKey() {
+      copyTextFallback(currentShortKey).then(() => {
+        document.getElementById('copy-short-icon').innerText = 'check';
+        document.getElementById('copy-short-label').innerText = '¡COPIADA!';
+        setTimeout(() => {
+          document.getElementById('copy-short-icon').innerText = 'content_copy';
+          document.getElementById('copy-short-label').innerText = 'COPIAR';
+        }, 2000);
+      });
+    }
+
+    function copyLicenseToken() {
+      copyTextFallback(currentToken).then(() => {
+        document.getElementById('copy-icon').innerText = 'check';
+        document.getElementById('copy-label').innerText = '¡COPIADO!';
+        setTimeout(() => {
+          document.getElementById('copy-icon').innerText = 'content_copy';
+          document.getElementById('copy-label').innerText = 'COPIAR TOKEN';
+        }, 2000);
+      });
+    }
+
+    function downloadQrImage() {
+      const img = document.querySelector('#qrcode-canvas img');
+      const canvas = document.querySelector('#qrcode-canvas canvas');
+      const dataUrl = (img && img.src && img.src.startsWith('data:image')) ? img.src : (canvas ? canvas.toDataURL('image/png') : '');
+      if (!dataUrl) return;
+      const link = document.createElement('a');
+      link.download = `Licencia_TTExplo_${(currentPayload?.client || 'cliente').replace(/[^a-zA-Z0-9]/g, '_')}_QR.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    function exportLicFile() {
+      if (!currentPayload || !currentToken) return;
+      const fileData = JSON.stringify({
+        shortKey: currentShortKey,
+        licenseKey: currentShortKey,
+        activationToken: currentToken,
+        details: currentPayload
+      }, null, 2);
+      const blob = new Blob([fileData], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.download = `TTExplo_${(currentPayload?.client || 'cliente').replace(/[^a-zA-Z0-9]/g, '_')}.lic`;
+      link.href = URL.createObjectURL(blob);
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    function printCertificate() {
+      if (!currentPayload) return;
+      document.getElementById('cert-client').innerText = currentPayload.client;
+      document.getElementById('cert-mine').innerText = currentPayload.mine;
+      document.getElementById('cert-supervisor').innerText = currentPayload.supervisor;
+      document.getElementById('cert-device').innerText = currentPayload.dev;
+      document.getElementById('cert-tier').innerText = currentPayload.tier;
+      document.getElementById('cert-dates').innerText = `${formatDate(new Date(currentPayload.issued))} hasta ${currentPayload.expires === 'PERPETUAL' ? 'VITALICIA' : formatDate(new Date(currentPayload.expires))}`;
+      document.getElementById('cert-key').innerText = currentShortKey;
+      const holder = document.getElementById('cert-qr-holder');
+      holder.innerHTML = '';
+      const img = document.querySelector('#qrcode-canvas img');
+      if (img && img.src) {
+        const cloneImg = document.createElement('img');
+        cloneImg.src = img.src; cloneImg.style.width = '120px'; cloneImg.style.height = '120px';
+        holder.appendChild(cloneImg);
+      }
+      window.print();
+    }
+
+    function saveToHistory(record) {
+      let history = [];
+      try { history = JSON.parse(localStorage.getItem('aria_lic_history') || '[]'); } catch (_) {}
+      history.unshift(record);
+      if (history.length > 15) history.pop();
+      localStorage.setItem('aria_lic_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById('history-tbody');
+      tbody.innerHTML = '';
+      let history = [];
+      try { history = JSON.parse(localStorage.getItem('aria_lic_history') || '[]'); } catch (_) {}
+      if (!history.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-text-muted">No hay licencias registradas aún.</td></tr>';
+        return;
+      }
+      history.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surface-elevated/40';
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-mine-cyan">${item.id}</td>
+          <td class="py-2.5 px-3 text-mine-yellow font-bold">${item.key}</td>
+          <td class="py-2.5 px-3 text-text-primary">${item.client}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-surface-high border border-border-subtle text-mine-yellow font-bold text-[10px]">${item.tier}</span></td>
+          <td class="py-2.5 px-3 text-text-secondary">${item.device}</td>
+          <td class="py-2.5 px-3 text-right"><button onclick="reloadFromHistory(${idx})" class="text-xs text-mine-cyan hover:underline">Cargar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function reloadFromHistory(index) {
+      const history = JSON.parse(localStorage.getItem('aria_lic_history') || '[]');
+      const item = history[index];
+      if (!item) return;
+      document.getElementById('input-client').value = item.client;
+      document.getElementById('input-mine').value = item.mine;
+      document.getElementById('input-device-id').value = item.device;
+      selectTier(item.tier);
+      currentToken = item.token;
+      currentShortKey = item.key;
+      document.getElementById('license-key-text').innerText = item.key;
+      document.getElementById('license-token-preview').innerText = item.token;
+      document.getElementById('license-id-display').innerText = '#' + item.id;
+      renderQrCode(item.token);
+    }
+
+    function clearHistory() {
+      if (confirm('¿Desea borrar el historial de licencias guardadas localmente?')) {
+        localStorage.removeItem('aria_lic_history');
+        renderHistory();
+      }
+    }
+
+    function resetFormDefaults() {
+      document.getElementById('input-client').value = 'Minera San Julián S.A. de C.V.';
+      document.getElementById('input-mine').value = 'Mina Subterránea - Polvorín Principal';
+      document.getElementById('input-supervisor').value = 'Ing. Roberto Almonte (Jefe de Voladuras)';
+      document.getElementById('toggle-hardware-lock').checked = false;
+      handleHardwareLockToggle();
+      selectTier('ANUAL');
+      generateLicense();
+    }
+  </script>
+</body>
+</html>
