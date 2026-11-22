@@ -673,16 +673,56 @@ private fun PrinterProfileEditorDialog(
                     }
                 }
 
-                // Ancho de papel (58mm / 80mm / 104mm)
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Ancho de papel:", color = MineTextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Ancho de papel (58mm / 2", 80mm / 3", 104mm / 4")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Ancho de papel (mm / pulgadas):",
+                        color = MineTextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         PaperWidth.entries.forEach { width ->
-                            FilterChip(
-                                selected = paperWidth == width,
+                            val isSelected = paperWidth == width
+                            Surface(
                                 onClick = { paperWidth = width },
-                                label = { Text(width.shortLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-                            )
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 50.dp)
+                                    .testTag("printer_width_${width.name.lowercase()}"),
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSelected) MineSafetyYellow.copy(alpha = 0.16f) else MineDarkBackground,
+                                border = BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) MineSafetyYellow else MineBorderGray
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = width.shortLabel,
+                                        color = if (isSelected) MineSafetyYellow else MineTextPrimary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        text = width.inchesText,
+                                        color = if (isSelected) MineSafetyYellow else MineTextSecondary,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
                         }
                     }
                 }

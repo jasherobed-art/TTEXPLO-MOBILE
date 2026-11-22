@@ -12,11 +12,16 @@ enum class PaperWidth(
     val lineLength: Int,
     val cpclDots: Int,
     val shortLabel: String,
+    val inchesLabel: String,
+    val inchesText: String,
     val displayLabel: String
 ) {
-    WIDTH_2_INCH(32, 384, "58mm", "2 Pulgadas (58mm)"),
-    WIDTH_3_INCH(42, 576, "80mm", "3 Pulgadas (80mm)"),
-    WIDTH_4_INCH(56, 832, "104mm", "4 Pulgadas (104mm)");
+    WIDTH_2_INCH(32, 384, "58mm", "2\"", "2 pulg.", "2 Pulgadas (58mm)"),
+    WIDTH_3_INCH(42, 576, "80mm", "3\"", "3 pulg.", "3 Pulgadas (80mm)"),
+    WIDTH_4_INCH(56, 832, "104mm", "4\"", "4 pulg.", "4 Pulgadas (104mm)");
+
+    val combinedLabel: String
+        get() = "$shortLabel ($inchesLabel)"
 
     companion object {
         fun fromNameOrDefault(name: String?): PaperWidth {

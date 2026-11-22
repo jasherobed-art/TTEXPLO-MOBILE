@@ -51,7 +51,6 @@ import com.ttexplo.mobile.domain.model.*
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.printer.BluetoothPrinterManager
 import com.ttexplo.mobile.printer.ValePrintHelper
-import com.ttexplo.mobile.ui.common.ActivePrinterMiniBar
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.QuickPrinterSelectorDialog
 import com.ttexplo.mobile.ui.theme.*
@@ -854,14 +853,6 @@ fun ValesHistoryScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Spacer(modifier = Modifier.height(2.dp))
-
-            ActivePrinterMiniBar(
-                activeProfile = activeProfile,
-                totalProfiles = savedProfiles.size,
-                onChangePrinterClick = {
-                    withBluetoothPermission { showPrinterSelector = true }
-                }
-            )
 
             HistoryTypeFilterRow(
                 options = typeFilterOptions,

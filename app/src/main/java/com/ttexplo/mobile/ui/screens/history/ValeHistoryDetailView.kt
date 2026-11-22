@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ttexplo.mobile.printer.PrinterProfile
-import com.ttexplo.mobile.ui.common.ActivePrinterMiniBar
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.theme.*
 
@@ -162,12 +161,6 @@ fun ValeHistoryDetailView(
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ActivePrinterMiniBar(
-                        activeProfile = activeProfile,
-                        totalProfiles = totalProfiles,
-                        onChangePrinterClick = onChangePrinterClick
-                    )
-
                     if (copiesPrinted > 0) {
                         Row(
                             modifier = Modifier

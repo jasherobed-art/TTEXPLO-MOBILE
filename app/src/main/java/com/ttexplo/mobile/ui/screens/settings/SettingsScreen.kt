@@ -774,7 +774,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AutoShrinkText("Salida térmica:", modifier = Modifier.weight(0.4f), color = MineTextSecondary, targetTextSize = 12.sp, minTextSize = 8.sp)
-                        AutoShrinkText("CPCL • ESC/POS • 58/80/104mm", modifier = Modifier.weight(0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.End, color = MineTextPrimary, fontWeight = FontWeight.Bold, targetTextSize = 12.sp, minTextSize = 8.sp)
+                        AutoShrinkText("CPCL • ESC/POS • 58/80/104mm (2\"/3\"/4\")", modifier = Modifier.weight(0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.End, color = MineTextPrimary, fontWeight = FontWeight.Bold, targetTextSize = 12.sp, minTextSize = 8.sp)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),

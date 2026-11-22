@@ -26,7 +26,7 @@ data class PrinterProfile(
         else -> protocol
     }
 
-    fun shortSpecSummary(): String = "${paperWidth.shortLabel} · ${protocolLabel()}"
+    fun shortSpecSummary(): String = "${paperWidth.combinedLabel} · ${protocolLabel()}"
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)

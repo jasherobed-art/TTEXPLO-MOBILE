@@ -384,12 +384,6 @@ fun SavedValeReprintDialog(
                     fontSize = 12.sp
                 )
 
-                ActivePrinterMiniBar(
-                    activeProfile = activeProfile,
-                    totalProfiles = totalProfiles,
-                    onChangePrinterClick = onChangePrinterClick
-                )
-
                 if (copiesPrinted > 0) {
                     Row(
                         modifier = Modifier

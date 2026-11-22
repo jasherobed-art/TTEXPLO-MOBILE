@@ -68,7 +68,6 @@ import com.ttexplo.mobile.printer.BluetoothPrinterManager
 import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
-import com.ttexplo.mobile.ui.common.ActivePrinterMiniBar
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.CompactScanMetricsRibbon
@@ -836,14 +835,6 @@ fun DevolucionScreen(
                         }
                     }
                 }
-
-                ActivePrinterMiniBar(
-                    activeProfile = activeProfile,
-                    totalProfiles = savedProfiles.size,
-                    onChangePrinterClick = {
-                        withBluetoothPermission { showPrinterPickerDialog = true }
-                    }
-                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
