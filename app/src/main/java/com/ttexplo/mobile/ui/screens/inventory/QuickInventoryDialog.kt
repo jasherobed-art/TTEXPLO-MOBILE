@@ -206,6 +206,7 @@ fun QuickInventoryDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
+                .imePadding()
                 .heightIn(max = 780.dp),
             shape = RoundedCornerShape(14.dp),
             color = MineDarkSurface,

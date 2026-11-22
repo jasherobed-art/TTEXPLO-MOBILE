@@ -53,7 +53,7 @@ class TicketGeneratorTest {
         assertThat(text).contains("CANTIDAD: 2")
         assertThat(text).contains("EMULEX C")
         assertThat(text).contains("CANTIDAD: 1")
-        assertThat(text).contains("TOTAL DE PIEZAS / BULTOS: 3")
+        assertThat(text).contains("TOTAL DE MATERIALES: 3 PZAS")
         assertThat(text).contains("ENTREGO:")
         assertThat(text).contains("RECIBIO:")
     }
@@ -81,7 +81,7 @@ class TicketGeneratorTest {
         assertThat(text).contains("ACC7712")
         assertThat(text).contains("X100182000000009   CANT: 2")
         assertThat(text).contains("X100183000000010   CANT: 5")
-        assertThat(text).contains("TOTAL ACCESORIOS: 7 PZAS")
+        assertThat(text).contains("TOTAL DE MATERIALES: 7 PZAS")
         assertThat(text).contains("ENTREGO:")
         assertThat(text).contains("RECIBIO:")
     }

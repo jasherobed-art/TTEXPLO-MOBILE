@@ -1,7 +1,10 @@
 package com.ttexplo.mobile.ui.screens.history
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,13 +14,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -26,18 +34,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.ttexplo.mobile.TTExploApp
+import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
+import com.ttexplo.mobile.data.repository.SettingsRepository
 import com.ttexplo.mobile.domain.export.FlatFileFormatter
 import com.ttexplo.mobile.domain.inventory.InventoryReferenceType
 import com.ttexplo.mobile.domain.model.*
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
+import com.ttexplo.mobile.printer.BluetoothPrinterManager
+import com.ttexplo.mobile.printer.ValePrintHelper
+import com.ttexplo.mobile.ui.common.ActivePrinterMiniBar
 import com.ttexplo.mobile.ui.common.AutoShrinkText
+import com.ttexplo.mobile.ui.common.QuickPrinterSelectorDialog
 import com.ttexplo.mobile.ui.theme.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -66,15 +82,293 @@ fun ValesHistoryScreen(
     val app = context.applicationContext as TTExploApp
     val db = app.database
     val inventoryRepo = app.inventoryRepository
+    val catalogRepo = remember { CatalogRepositoryImpl(db.productoDao()) }
+    val settingsRepo = remember { SettingsRepository(context) }
+    val printerManager = remember { BluetoothPrinterManager(context) }
 
     var valesList by remember { mutableStateOf<List<ValeSummaryItem>>(emptyList()) }
     val selectedIds = remember { mutableStateListOf<Pair<String, Long>>() }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
 
+    var savedProfiles by remember { mutableStateOf(settingsRepo.getPrinterProfiles()) }
+    var activeProfile by remember { mutableStateOf(settingsRepo.getActivePrinterProfile()) }
+    var showPrinterSelector by remember { mutableStateOf(false) }
+    var printingValeKey by remember { mutableStateOf<Pair<String, Long>?>(null) }
+    var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    var selectedDetailData by remember { mutableStateOf<ValeDetailData?>(null) }
+    var detailCopiesPrinted by remember { mutableStateOf(0) }
+    var detailPrintStatusMessage by remember { mutableStateOf<String?>(null) }
+    var selectedTypeFilter by remember { mutableStateOf<String?>(null) }
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     var valesToDelete by remember { mutableStateOf<List<ValeSummaryItem>>(emptyList()) }
     var securityCode by remember { mutableStateOf("") }
     var inputCode by remember { mutableStateOf("") }
+
+    fun refreshPrinters() {
+        savedProfiles = settingsRepo.getPrinterProfiles()
+        activeProfile = settingsRepo.getActivePrinterProfile()
+    }
+
+    val btPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions[Manifest.permission.BLUETOOTH_CONNECT] == true
+        } else true
+        if (granted) {
+            pendingBtAction?.invoke()
+            pendingBtAction = null
+        } else {
+            pendingBtAction = null
+            Toast.makeText(context, "Se requiere permiso de Bluetooth para reimprimir", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun withBluetoothPermission(action: () -> Unit) {
+        val hasPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else true
+        if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            pendingBtAction = action
+            btPermissionLauncher.launch(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
+            )
+        } else {
+            action()
+        }
+    }
+
+    fun reprintVale(
+        vale: ValeSummaryItem,
+        onFinished: ((ValePrintHelper.PrintOutcome) -> Unit)? = null
+    ) {
+        withBluetoothPermission {
+            refreshPrinters()
+            if (activeProfile == null && printerManager.getPairedPrinters().size > 1) {
+                showPrinterSelector = true
+                return@withBluetoothPermission
+            }
+            scope.launch {
+                printingValeKey = vale.tipo to vale.id
+                val outcome = when (vale.tipo) {
+                    "DESPACHO" -> {
+                        val d = db.despachoDao().getAllDespachos().find { it.id == vale.id }
+                        if (d == null) ValePrintHelper.PrintOutcome(false, "Vale de despacho no encontrado")
+                        else {
+                            val items = db.despachoDao().getItemsForDespacho(d.id).map {
+                                val fallback = if (it.productoNombre.isBlank() || it.presentacion.isBlank()) {
+                                    catalogRepo.lookupBarcode(it.codigoBarras)
+                                } else null
+                                ScannedCodeRecord(
+                                    code = it.codigoBarras,
+                                    timestamp = it.fechaEscaneo,
+                                    productName = it.productoNombre.ifBlank { fallback?.name ?: "" },
+                                    presentation = it.presentacion.ifBlank { fallback?.presentation ?: "" }
+                                )
+                            }
+                            ValePrintHelper.printDespacho(
+                                context,
+                                DespachoRecord(d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura, items),
+                                activeProfile
+                            )
+                        }
+                    }
+                    "ENTRADA" -> {
+                        val e = db.entradaDao().getAllEntradas().find { it.id == vale.id }
+                        if (e == null) ValePrintHelper.PrintOutcome(false, "Vale de entrada no encontrado")
+                        else {
+                            val items = db.entradaDao().getItemsForEntrada(e.id).map {
+                                val p = catalogRepo.lookupBarcode(it.codigoBarras)
+                                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, p.name, p.presentation)
+                            }
+                            ValePrintHelper.printEntrada(
+                                context,
+                                EntradaRecord(e.proveedor, e.polvorin, e.factura, items),
+                                activeProfile
+                            )
+                        }
+                    }
+                    "ACCESORIOS", "DEV. ACCESORIOS" -> {
+                        val a = db.accesorioDao().getAllVales().find { it.id == vale.id }
+                        if (a == null) ValePrintHelper.PrintOutcome(false, "Vale de accesorios no encontrado")
+                        else {
+                            val items = db.accesorioDao().getItemsForVale(a.id).map {
+                                AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
+                            }
+                            val cleanEmpresa = if (a.empresa.startsWith("DEV:")) a.empresa.removePrefix("DEV: ") else a.empresa
+                            ValePrintHelper.printAccesorios(
+                                context,
+                                AccesoriosRecord(a.vale, cleanEmpresa, a.lugar, a.transportista, a.turno, a.recibio, a.entrego, a.voladura, items),
+                                activeProfile
+                            )
+                        }
+                    }
+                    "DEVOLUCION" -> {
+                        val dev = db.devolucionDao().getAllDevoluciones().find { it.id == vale.id }
+                        if (dev == null) ValePrintHelper.PrintOutcome(false, "Vale de devolución no encontrado")
+                        else {
+                            val items = db.devolucionDao().getItemsForDevolucion(dev.id).map {
+                                val p = catalogRepo.lookupBarcode(it.codigoBarras)
+                                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, p.name, p.presentation)
+                            }
+                            ValePrintHelper.printDevolucion(
+                                context,
+                                DevolucionRecord(dev.empleadoEntrega, dev.empleadoRecibe, items),
+                                activeProfile
+                            )
+                        }
+                    }
+                    else -> ValePrintHelper.PrintOutcome(false, "Tipo de vale no soportado para impresión")
+                }
+                printingValeKey = null
+                onFinished?.invoke(outcome)
+                Toast.makeText(context, outcome.message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun openValeDetails(vale: ValeSummaryItem) {
+        scope.launch {
+            val detail: ValeDetailData? = when (vale.tipo) {
+                "DESPACHO" -> {
+                    val d = db.despachoDao().getAllDespachos().find { it.id == vale.id }
+                    d?.let {
+                        val dbItems = db.despachoDao().getItemsForDespacho(it.id)
+                        val codes = dbItems.mapIndexed { idx, row ->
+                            val fallback = if (row.productoNombre.isBlank() || row.presentacion.isBlank()) {
+                                catalogRepo.lookupBarcode(row.codigoBarras)
+                            } else null
+                            ValeDetailCodeItem(
+                                index = idx + 1,
+                                code = row.codigoBarras,
+                                productTitle = row.productoNombre.ifBlank { fallback?.name ?: "Material ID ${row.codigoBarras.take(3)}" },
+                                presentation = row.presentacion.ifBlank { fallback?.presentation ?: "Pieza" },
+                                timestamp = row.fechaEscaneo
+                            )
+                        }
+                        val grouped = codes.groupBy { "${it.productTitle} (${it.presentation})" }
+                            .map { (k, v) -> k to v.size }
+                            .sortedByDescending { it.second }
+                        ValeDetailData(
+                            summary = vale,
+                            headerFields = listOf(
+                                "Folio" to vale.folio,
+                                "Empresa" to it.empresa,
+                                "Lugar / Frente" to it.lugar,
+                                "Transportista" to it.transportista,
+                                "Turno / Voladura" to "Turno ${it.turno} • Vol. ${it.voladura}",
+                                "Fecha" to it.fechaCreacion
+                            ),
+                            groupedSummary = grouped,
+                            codes = codes
+                        )
+                    }
+                }
+                "ENTRADA" -> {
+                    val e = db.entradaDao().getAllEntradas().find { it.id == vale.id }
+                    e?.let {
+                        val dbItems = db.entradaDao().getItemsForEntrada(it.id)
+                        val codes = dbItems.mapIndexed { idx, row ->
+                            val p = catalogRepo.lookupBarcode(row.codigoBarras)
+                            ValeDetailCodeItem(
+                                index = idx + 1,
+                                code = row.codigoBarras,
+                                productTitle = p.name.ifBlank { "Material ID ${row.codigoBarras.take(3)}" },
+                                presentation = p.presentation.ifBlank { "Pieza" },
+                                timestamp = row.fechaEscaneo
+                            )
+                        }
+                        val grouped = codes.groupBy { "${it.productTitle} (${it.presentation})" }
+                            .map { (k, v) -> k to v.size }
+                            .sortedByDescending { it.second }
+                        ValeDetailData(
+                            summary = vale,
+                            headerFields = listOf(
+                                "Proveedor" to it.proveedor,
+                                "Polvorín" to it.polvorin,
+                                "Factura / Remisión" to it.factura,
+                                "Fecha" to it.fechaCreacion
+                            ),
+                            groupedSummary = grouped,
+                            codes = codes
+                        )
+                    }
+                }
+                "ACCESORIOS", "DEV. ACCESORIOS" -> {
+                    val a = db.accesorioDao().getAllVales().find { it.id == vale.id }
+                    a?.let {
+                        val dbItems = db.accesorioDao().getItemsForVale(it.id)
+                        val cleanEmpresa = if (it.empresa.startsWith("DEV:")) it.empresa.removePrefix("DEV: ") else it.empresa
+                        val codes = dbItems.mapIndexed { idx, row ->
+                            ValeDetailCodeItem(
+                                index = idx + 1,
+                                code = row.codigoAccesorio,
+                                productTitle = if (vale.tipo == "DEV. ACCESORIOS") "Accesorio Devuelto" else "Accesorio Despachado",
+                                presentation = "",
+                                timestamp = row.fechaEscaneo,
+                                quantity = row.cantidad
+                            )
+                        }
+                        val grouped = dbItems.groupBy { it.codigoAccesorio }
+                            .map { (k, v) -> k to v.sumOf { item -> item.cantidad } }
+                            .sortedByDescending { kotlin.math.abs(it.second) }
+                        ValeDetailData(
+                            summary = vale,
+                            headerFields = listOf(
+                                "Folio" to vale.folio,
+                                "Empresa" to cleanEmpresa,
+                                "Lugar" to it.lugar,
+                                "Entregó" to it.entrego,
+                                "Recibió" to it.recibio,
+                                "Turno / Voladura" to "Turno ${it.turno} • Vol. ${it.voladura}",
+                                "Fecha" to it.fechaCreacion
+                            ),
+                            groupedSummary = grouped,
+                            codes = codes
+                        )
+                    }
+                }
+                "DEVOLUCION" -> {
+                    val dev = db.devolucionDao().getAllDevoluciones().find { it.id == vale.id }
+                    dev?.let {
+                        val dbItems = db.devolucionDao().getItemsForDevolucion(it.id)
+                        val codes = dbItems.mapIndexed { idx, row ->
+                            val p = catalogRepo.lookupBarcode(row.codigoBarras)
+                            ValeDetailCodeItem(
+                                index = idx + 1,
+                                code = row.codigoBarras,
+                                productTitle = p.name.ifBlank { "Material ID ${row.codigoBarras.take(3)}" },
+                                presentation = p.presentation.ifBlank { "Pieza" },
+                                timestamp = row.fechaEscaneo
+                            )
+                        }
+                        val grouped = codes.groupBy { "${it.productTitle} (${it.presentation})" }
+                            .map { (k, v) -> k to v.size }
+                            .sortedByDescending { it.second }
+                        ValeDetailData(
+                            summary = vale,
+                            headerFields = listOf(
+                                "Entrega (Mina)" to it.empleadoEntrega,
+                                "Recibe (Polvorín)" to it.empleadoRecibe,
+                                "Fecha" to it.fechaCreacion
+                            ),
+                            groupedSummary = grouped,
+                            codes = codes
+                        )
+                    }
+                }
+                else -> null
+            }
+            if (detail != null) {
+                refreshPrinters()
+                detailCopiesPrinted = 0
+                detailPrintStatusMessage = null
+                selectedDetailData = detail
+            }
+        }
+    }
 
     fun loadVales() {
         scope.launch {
@@ -351,13 +645,157 @@ fun ValesHistoryScreen(
         }
     }
 
+    val currentDetail = selectedDetailData
+    if (currentDetail != null) {
+        ValeHistoryDetailView(
+            detail = currentDetail,
+            activeProfile = activeProfile,
+            totalProfiles = savedProfiles.size,
+            isPrinting = printingValeKey == (currentDetail.summary.tipo to currentDetail.summary.id),
+            copiesPrinted = detailCopiesPrinted,
+            printStatusMessage = detailPrintStatusMessage,
+            onBack = { selectedDetailData = null },
+            onReprintClick = {
+                reprintVale(currentDetail.summary) { outcome ->
+                    if (outcome.success) {
+                        detailCopiesPrinted += 1
+                    }
+                    detailPrintStatusMessage = outcome.message
+                }
+            },
+            onChangePrinterClick = {
+                withBluetoothPermission { showPrinterSelector = true }
+            },
+            onEditClick = {
+                val target = currentDetail.summary
+                selectedDetailData = null
+                when (target.tipo) {
+                    "DESPACHO" -> onEditDespacho(target.id)
+                    "ENTRADA" -> onEditEntrada(target.id)
+                    "ACCESORIOS" -> onEditAccesorios(target.id)
+                    "DEV. ACCESORIOS" -> onEditDevolucionAccesorios(target.id)
+                    "DEVOLUCION" -> onEditDevolucion(target.id)
+                }
+            },
+            onShareClick = { shareVale(currentDetail.summary) }
+        )
+        if (showPrinterSelector) {
+            QuickPrinterSelectorDialog(
+                onSelectProfile = { selected ->
+                    refreshPrinters()
+                    activeProfile = selected
+                    showPrinterSelector = false
+                    Toast.makeText(context, "Impresora activa: ${selected.displayTitle()}", Toast.LENGTH_SHORT).show()
+                },
+                onDismiss = { showPrinterSelector = false }
+            )
+        }
+        return
+    }
+
+    val typeFilterOptions = remember(valesList) {
+        listOf(
+            HistoryTypeFilterOption(
+                key = null,
+                label = "Todos",
+                count = valesList.size,
+                accentColor = MineSafetyYellow
+            ),
+            HistoryTypeFilterOption(
+                key = "DESPACHO",
+                label = "Salidas",
+                count = valesList.count { it.tipo == "DESPACHO" },
+                accentColor = MineHighExplosiveOrange
+            ),
+            HistoryTypeFilterOption(
+                key = "ENTRADA",
+                label = "Entradas",
+                count = valesList.count { it.tipo == "ENTRADA" },
+                accentColor = MineSuccessGreenLight
+            ),
+            HistoryTypeFilterOption(
+                key = "ACCESORIOS_ALL",
+                label = "Accesorios",
+                count = valesList.count { it.tipo == "ACCESORIOS" || it.tipo == "DEV. ACCESORIOS" },
+                accentColor = MineAccessoryPurpleLight
+            ),
+            HistoryTypeFilterOption(
+                key = "DEVOLUCION",
+                label = "Devoluciones",
+                count = valesList.count { it.tipo == "DEVOLUCION" },
+                accentColor = MineAgentCyan
+            )
+        )
+    }
+
+    val filteredVales = remember(valesList, selectedTypeFilter) {
+        when (selectedTypeFilter) {
+            null -> valesList
+            "ACCESORIOS_ALL" -> valesList.filter { it.tipo == "ACCESORIOS" || it.tipo == "DEV. ACCESORIOS" }
+            else -> valesList.filter { it.tipo == selectedTypeFilter }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial de Vales", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text(
+                            text = "Vales Registrados",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
+                        )
+                        Text(
+                            text = if (selectedIds.isNotEmpty()) {
+                                "${selectedIds.size} seleccionados de ${valesList.size}"
+                            } else {
+                                "${filteredVales.size} de ${valesList.size} registros"
+                            },
+                            color = if (selectedIds.isNotEmpty()) MineSafetyYellow else MineTextSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                    }
+                },
+                actions = {
+                    val anySelected = selectedIds.isNotEmpty()
+                    if (anySelected) {
+                        IconButton(
+                            onClick = {
+                                val selectedVales = valesList.filter { selectedIds.contains(it.tipo to it.id) }
+                                promptDelete(selectedVales)
+                            },
+                            modifier = Modifier.testTag("history_bulk_delete_button")
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Eliminar selección",
+                                tint = MineErrorRedLight
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            if (anySelected) {
+                                selectedIds.clear()
+                            } else {
+                                selectedIds.clear()
+                                filteredVales.forEach { selectedIds.add(it.tipo to it.id) }
+                            }
+                        },
+                        enabled = filteredVales.isNotEmpty(),
+                        modifier = Modifier.testTag("history_select_all_button")
+                    ) {
+                        Icon(
+                            Icons.Default.SelectAll,
+                            contentDescription = if (anySelected) "Deseleccionar todos" else "Seleccionar todos",
+                            tint = if (anySelected) MineSafetyYellow else MineTextSecondary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -370,30 +808,38 @@ fun ValesHistoryScreen(
         bottomBar = {
             Surface(
                 color = MineDarkSurface,
-                modifier = Modifier.fillMaxWidth()
+                tonalElevation = 4.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
             ) {
                 Button(
                     onClick = { exportConsolidated() },
+                    enabled = valesList.isNotEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(54.dp),
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .height(48.dp)
+                        .testTag("history_export_consolidated_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MineSafetyYellow,
                         contentColor = MineDarkBackground
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(Icons.Default.Download, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
+                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    AutoShrinkText(
                         text = if (selectedIds.isEmpty()) {
-                            "GUARDAR ARCHIVO CONSOLIDADO (${valesList.size} VALES)"
+                            "EXPORTAR CONSOLIDADO (${valesList.size} VALES)"
                         } else {
-                            "GUARDAR ARCHIVO CONSOLIDADO (${selectedIds.size} SELECCIONADOS)"
+                            "EXPORTAR SELECCIONADOS (${selectedIds.size})"
                         },
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MineDarkBackground,
+                        targetTextSize = 13.sp,
+                        minTextSize = 10.sp,
+                        maxLines = 1
                     )
                 }
             }
@@ -404,208 +850,99 @@ fun ValesHistoryScreen(
                 .fillMaxSize()
                 .background(MineDarkBackground)
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // Barra de conteo y seleccionar todo
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "VALES REGISTRADOS (${valesList.size})",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MineSafetyYellow,
-                    fontWeight = FontWeight.Bold
-                )
+            ActivePrinterMiniBar(
+                activeProfile = activeProfile,
+                totalProfiles = savedProfiles.size,
+                onChangePrinterClick = {
+                    withBluetoothPermission { showPrinterSelector = true }
+                }
+            )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val anySelected = selectedIds.isNotEmpty()
-                    TextButton(onClick = {
-                        if (anySelected) {
-                            selectedIds.clear()
-                        } else {
-                            selectedIds.clear()
-                            valesList.forEach { selectedIds.add(it.tipo to it.id) }
-                        }
-                    }) {
-                        Text(
-                            text = if (anySelected) "Deseleccionar" else "Seleccionar todos",
-                            color = MineTextSecondary,
-                            fontSize = 13.sp
+            HistoryTypeFilterRow(
+                options = typeFilterOptions,
+                selectedKey = selectedTypeFilter,
+                onSelect = { selectedTypeFilter = it }
+            )
+
+            if (filteredVales.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Inventory2,
+                            contentDescription = null,
+                            tint = MineTextMuted,
+                            modifier = Modifier.size(40.dp)
                         )
-                    }
-
-                    if (anySelected) {
-                        IconButton(onClick = {
-                            val selectedVales = valesList.filter { selectedIds.contains(it.tipo to it.id) }
-                            promptDelete(selectedVales)
-                        }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Eliminar selección",
-                                tint = MineErrorRed
-                            )
+                        Text(
+                            text = if (selectedTypeFilter != null) {
+                                "Sin vales en esta categoría"
+                            } else {
+                                "No hay vales registrados todavía"
+                            },
+                            color = MineTextSecondary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        if (selectedTypeFilter != null) {
+                            TextButton(onClick = { selectedTypeFilter = null }) {
+                                Text("Ver todos los vales", color = MineSafetyYellow, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(valesList) { vale ->
-                    val isSelected = selectedIds.contains(vale.tipo to vale.id)
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (isSelected) {
-                                    selectedIds.remove(vale.tipo to vale.id)
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("history_vales_lazy_column"),
+                    contentPadding = PaddingValues(top = 2.dp, bottom = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(filteredVales, key = { "${it.tipo}_${it.id}" }) { vale ->
+                        val isSelected = selectedIds.contains(vale.tipo to vale.id)
+                        ValeHistoryCard(
+                            vale = vale,
+                            isSelected = isSelected,
+                            isPrintingThis = printingValeKey == (vale.tipo to vale.id),
+                            isAnyPrinting = printingValeKey != null,
+                            onToggleSelect = { checked ->
+                                if (checked) {
+                                    if (!selectedIds.contains(vale.tipo to vale.id)) {
+                                        selectedIds.add(vale.tipo to vale.id)
+                                    }
                                 } else {
-                                    selectedIds.add(vale.tipo to vale.id)
+                                    selectedIds.remove(vale.tipo to vale.id)
                                 }
                             },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) MineDarkSurface.copy(alpha = 0.9f) else MineDarkSurface
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) MineSafetyYellow else MineBorderGray
+                            onOpenDetails = { openValeDetails(vale) },
+                            onPrint = { reprintVale(vale) },
+                            onEdit = {
+                                when (vale.tipo) {
+                                    "DESPACHO" -> onEditDespacho(vale.id)
+                                    "ENTRADA" -> onEditEntrada(vale.id)
+                                    "ACCESORIOS" -> onEditAccesorios(vale.id)
+                                    "DEV. ACCESORIOS" -> onEditDevolucionAccesorios(vale.id)
+                                    "DEVOLUCION" -> onEditDevolucion(vale.id)
+                                }
+                            },
+                            onShare = { shareVale(vale) },
+                            onDelete = { promptDelete(listOf(vale)) }
                         )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        selectedIds.add(vale.tipo to vale.id)
-                                    } else {
-                                        selectedIds.remove(vale.tipo to vale.id)
-                                    }
-                                },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = MineSafetyYellow,
-                                    uncheckedColor = MineTextMuted,
-                                    checkmarkColor = MineDarkBackground
-                                )
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    val (badgeColor, textColor) = when (vale.tipo) {
-                                        "DESPACHO" -> MineHighExplosiveOrange to MineDarkBackground
-                                        "ENTRADA" -> MineSuccessGreen to MineDarkBackground
-                                        "ACCESORIOS" -> MineAccessoryPurple to MineTextPrimary
-                                        "DEV. ACCESORIOS" -> MineAgentCyan to MineDarkBackground
-                                        "DEVOLUCION" -> MineSafetyYellow to MineDarkBackground
-                                        else -> MineTextMuted to MineDarkBackground
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(badgeColor)
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            text = vale.tipo,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = textColor
-                                        )
-                                    }
-
-                                    AutoShrinkText(
-                                        text = vale.folio,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = MineTextPrimary,
-                                        initialTextSize = 16.sp,
-                                        minTextSize = 12.sp,
-                                        maxLines = 1
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                AutoShrinkText(
-                                    text = vale.descripcion,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MineTextSecondary,
-                                    initialTextSize = 13.sp,
-                                    minTextSize = 11.sp,
-                                    maxLines = 2
-                                )
-
-                                Spacer(modifier = Modifier.height(2.dp))
-
-                                AutoShrinkText(
-                                    text = "Fecha: ${vale.fecha} • Cantidad: ${vale.totalItems} ítems",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MineTextMuted,
-                                    initialTextSize = 12.sp,
-                                    minTextSize = 10.sp,
-                                    maxLines = 1
-                                )
-                            }
-
-                            Row {
-                                IconButton(
-                                    onClick = {
-                                        when (vale.tipo) {
-                                            "DESPACHO" -> onEditDespacho(vale.id)
-                                            "ENTRADA" -> onEditEntrada(vale.id)
-                                            "ACCESORIOS" -> onEditAccesorios(vale.id)
-                                            "DEV. ACCESORIOS" -> onEditDevolucionAccesorios(vale.id)
-                                            "DEVOLUCION" -> onEditDevolucion(vale.id)
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = "Editar Vale",
-                                        tint = MineSafetyYellow
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = { shareVale(vale) }
-                                ) {
-                                    Icon(
-                                        Icons.Default.Share,
-                                        contentDescription = "Compartir",
-                                        tint = MineTextSecondary
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = { promptDelete(listOf(vale)) }
-                                ) {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = "Eliminar",
-                                        tint = MineErrorRed
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -630,7 +967,13 @@ fun ValesHistoryScreen(
                     )
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .imePadding(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text(
                             text = if (valesToDelete.size == 1) {
                                 "¿Está seguro de eliminar el vale ${valesToDelete.first().folio} (${valesToDelete.first().tipo}, ${valesToDelete.first().totalItems} ítems)?"
@@ -725,6 +1068,17 @@ fun ValesHistoryScreen(
                         Text("Cancelar", color = MineTextSecondary)
                     }
                 }
+            )
+        }
+        if (showPrinterSelector) {
+            QuickPrinterSelectorDialog(
+                onSelectProfile = { selected ->
+                    refreshPrinters()
+                    activeProfile = selected
+                    showPrinterSelector = false
+                    Toast.makeText(context, "Impresora activa: ${selected.displayTitle()}", Toast.LENGTH_SHORT).show()
+                },
+                onDismiss = { showPrinterSelector = false }
             )
         }
     }

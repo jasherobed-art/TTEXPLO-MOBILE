@@ -4,7 +4,26 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.4.1] — Build 19 (Actual)
+## [v2.5.0] — Build 20 (Actual)
+### Mejorado (Optimización en campo para Munbyn AceScan AS01)
+- **Teclado Gboard sin bloqueo de campos (`imePadding` + `navigationBarsPadding`):**
+  - Todos los formularios de encabezados (**Despacho**, **Entradas**, **Accesorios**), pantallas de escaneo (**Devoluciones** incluida), **Configuración**, **Licencia** y diálogos de captura ahora desplazan su contenido libremente arriba del teclado Gboard sin ocultar campos ni botones de guardado.
+- **UI de Escaneo Compacta para Pantallas Handheld (`CompactScanMetricsRibbon` + `HorizontalProductFilterRow`):**
+  - Encabezado colapsable en **Despacho**, **Entradas**, **Accesorios** y **Devoluciones** con franja ultra-compacta de 1 línea (`TOT | C | S | U` + botón de ingreso manual `[⌨]` + botón `[▾ Panel]`).
+  - Filtros rápidos por producto en una sola fila horizontal deslizable (`LazyRow`), liberando más del **65%–70%** del alto útil para ver el listado de códigos capturados en vivo.
+- **Reimpresión Inmediata al Guardar y desde Historial (`SavedValeReprintDialog` + `ValePrintHelper`):**
+  - Al guardar cualquier vale (**Despacho**, **Entradas**, **Accesorios**, **Devolución de Accesorios** y **Devoluciones**), aparece un diálogo de confirmación que permite imprimir 1 o múltiples copias consecutivas y cambiar de impresora en el momento.
+  - Botón directo de impresión (`Print`) en cada tarjeta del **Historial de Vales** con selector rápido de impresora térmica para los 5 tipos de vale.
+- **Bloque "TOTAL DE MATERIALES" en Fondo Negro con Letras Blancas (ESC/POS y CPCL):**
+  - Aplicado en **ESC/POS** mediante comandos nativos `GS B 1` / `GS B 0` con relleno exacto al ancho del papel (`32`, `42` o `56` columnas) y en **CPCL** mediante `INVERSE-LINE` cubriendo el bloque total y desglose de bultos.
+  - Nuevos generadores térmicos completos para vales de **Entrada** y **Devolución** en ESC/POS, CPCL y texto plano.
+- **Gestión de Múltiples Impresoras Bluetooth en Configuración (`PrinterProfile` + `PrinterProfilesSettingsCard`):**
+  - Permite agregar, editar, activar como principal, probar y eliminar múltiples impresoras Bluetooth (guardando alias, MAC, protocolo `CPCL` / `ESC/POS` / `RAW` y ancho `58mm` / `80mm` / `104mm` de forma independiente), con migración automática de la impresora previa y selector rápido al imprimir.
+- Nueva suite de pruebas unitarias/Robolectric `PrinterProfilesAndTicketInverseTest` validando modo inverso ESC/POS y CPCL en 58/80/104mm y CRUD/migración multi-impresora.
+
+---
+
+## [v2.4.1] — Build 19
 ### Mejorado
 - **QR de Alta Capacidad + Protocolo Ultra-Compacto V3 (`SyncTabularV3Codec` + `Base45Codec`):**
   - Multiplica entre **3× y 5×** la capacidad por código QR para que un turno operativo completo (30 a 80+ movimientos y series SEDENA) quepa en **1 solo código QR** con un único disparo del lector Zebra 2D.

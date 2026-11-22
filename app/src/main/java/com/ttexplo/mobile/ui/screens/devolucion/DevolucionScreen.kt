@@ -1,12 +1,27 @@
 package com.ttexplo.mobile.ui.screens.devolucion
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -21,11 +37,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -35,22 +56,37 @@ import com.ttexplo.mobile.data.local.entity.DevolucionEntity
 import com.ttexplo.mobile.data.local.entity.DevolucionItemEntity
 import com.ttexplo.mobile.data.local.entity.ProductoEntity
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
-import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.data.repository.SettingsRepository
+import com.ttexplo.mobile.domain.model.DevolucionRecord
+import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.domain.scanner.ScanResult
 import com.ttexplo.mobile.domain.scanner.ScanValidator
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
+import com.ttexplo.mobile.printer.BluetoothPrinterManager
+import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
+import com.ttexplo.mobile.ui.common.ActivePrinterMiniBar
+import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
+import com.ttexplo.mobile.ui.common.CompactScanMetricsRibbon
+import com.ttexplo.mobile.ui.common.DuplicateBadgeChip
+import com.ttexplo.mobile.ui.common.DuplicateCodeAlert
 import com.ttexplo.mobile.ui.common.DummyExplosivesScannerBar
 import com.ttexplo.mobile.ui.common.ExitScanConfirmDialog
+import com.ttexplo.mobile.ui.common.HorizontalProductFilterRow
 import com.ttexplo.mobile.ui.common.ProductEditDialog
+import com.ttexplo.mobile.ui.common.QuickPrinterSelectorDialog
+import com.ttexplo.mobile.ui.common.SavedValeReprintDialog
 import com.ttexplo.mobile.ui.common.ScanFeedbackType
+import com.ttexplo.mobile.ui.common.ScanFilterKeys
 import com.ttexplo.mobile.ui.common.ScanFlashEvent
 import com.ttexplo.mobile.ui.common.ScanFlashOverlay
 import com.ttexplo.mobile.ui.common.SoundFeedbackManager
 import com.ttexplo.mobile.ui.common.TwoStepDeleteDialog
+import com.ttexplo.mobile.ui.common.buildExplosiveFilterChips
 import com.ttexplo.mobile.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,6 +100,8 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
     private val db = app.database
     private val inventoryRepository = app.inventoryRepository
     private val catalog = CatalogRepositoryImpl(db.productoDao())
+    val settingsRepository = SettingsRepository(application)
+    val printerManager = BluetoothPrinterManager(application)
     private val validator = ScanValidator(catalog)
     private val sound = SoundFeedbackManager(application)
     private val scanMutex = Mutex()
@@ -71,11 +109,23 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
     private val _items = MutableStateFlow<List<BarcodeItem>>(emptyList())
     val items: StateFlow<List<BarcodeItem>> = _items.asStateFlow()
 
+    private val _duplicateAttemptCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val duplicateAttemptCounts: StateFlow<Map<String, Int>> = _duplicateAttemptCounts.asStateFlow()
+
+    private val _lastDuplicateAlert = MutableStateFlow<DuplicateCodeAlert?>(null)
+    val lastDuplicateAlert: StateFlow<DuplicateCodeAlert?> = _lastDuplicateAlert.asStateFlow()
+
     private val _latestScanResult = MutableStateFlow<ScanResult?>(null)
     val latestScanResult: StateFlow<ScanResult?> = _latestScanResult.asStateFlow()
 
     private val _latestFlashEvent = MutableStateFlow<ScanFlashEvent?>(null)
     val latestFlashEvent: StateFlow<ScanFlashEvent?> = _latestFlashEvent.asStateFlow()
+
+    private val _isPrinting = MutableStateFlow(false)
+    val isPrinting: StateFlow<Boolean> = _isPrinting.asStateFlow()
+
+    private val _printStatusMessage = MutableStateFlow<String?>(null)
+    val printStatusMessage: StateFlow<String?> = _printStatusMessage.asStateFlow()
 
     fun isVisualFlashEnabled(): Boolean = sound.isVisualFlashEnabled()
 
@@ -131,7 +181,14 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
                     _latestFlashEvent.value = ScanFlashEvent(type = ScanFeedbackType.ERROR)
                 } else if (res.isDuplicate) {
                     sound.playWarning()
-                    _latestFlashEvent.value = ScanFlashEvent(type = ScanFeedbackType.WARNING)
+                    val currentCounts = _duplicateAttemptCounts.value
+                    val nextAttempt = (currentCounts[res.rawBarcode] ?: 0) + 1
+                    _duplicateAttemptCounts.value = currentCounts + (res.rawBarcode to nextAttempt)
+                    _lastDuplicateAlert.value = DuplicateCodeAlert(
+                        code = res.rawBarcode,
+                        attemptCount = nextAttempt
+                    )
+                    _latestFlashEvent.value = ScanFlashEvent(type = ScanFeedbackType.ERROR)
                 } else {
                     sound.playSuccess()
                     _latestFlashEvent.value = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
@@ -143,6 +200,10 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun deleteItem(item: BarcodeItem) {
         _items.value = _items.value.filterNot { it.code == item.code && it.timestamp == item.timestamp }
+        _duplicateAttemptCounts.value = _duplicateAttemptCounts.value - item.code
+        if (_lastDuplicateAlert.value?.code == item.code) {
+            _lastDuplicateAlert.value = null
+        }
     }
 
     fun save(entrega: String, recibe: String, onComplete: () -> Unit) {
@@ -191,6 +252,34 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun printTicket(
+        entrega: String,
+        recibe: String,
+        profile: PrinterProfile? = null,
+        onComplete: (Boolean, String) -> Unit
+    ) {
+        val record = DevolucionRecord(
+            empleadoEntrega = entrega.ifBlank { "SIN ESPECIFICAR" },
+            empleadoRecibe = recibe.ifBlank { "POLVORIN" },
+            items = _items.value.map {
+                ScannedCodeRecord(
+                    code = it.code,
+                    timestamp = it.timestamp,
+                    productName = it.productInfo.name,
+                    presentation = it.productInfo.presentation
+                )
+            }
+        )
+        viewModelScope.launch {
+            _isPrinting.value = true
+            _printStatusMessage.value = null
+            val outcome = ValePrintHelper.printDevolucion(app, record, profile)
+            _isPrinting.value = false
+            _printStatusMessage.value = outcome.message
+            onComplete(outcome.success, outcome.message)
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         sound.release()
@@ -205,20 +294,80 @@ fun DevolucionScreen(
     viewModel: DevolucionViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val items by viewModel.items.collectAsStateWithLifecycle()
+    val duplicateAttemptCounts by viewModel.duplicateAttemptCounts.collectAsStateWithLifecycle()
+    val lastDuplicateAlert by viewModel.lastDuplicateAlert.collectAsStateWithLifecycle()
     val latestScanResult by viewModel.latestScanResult.collectAsStateWithLifecycle()
     val latestFlashEvent by viewModel.latestFlashEvent.collectAsStateWithLifecycle()
+    val isPrinting by viewModel.isPrinting.collectAsStateWithLifecycle()
+    val printStatusMessage by viewModel.printStatusMessage.collectAsStateWithLifecycle()
 
     var empleadoEntrega by remember { mutableStateOf("") }
     var empleadoRecibe by remember { mutableStateOf("") }
     var manualInput by remember { mutableStateOf("") }
+    var isHeaderExpanded by remember { mutableStateOf(true) }
+    var lastObservedCount by remember { mutableStateOf(0) }
+    val barcodeFocusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
+    var selectedFilterKey by remember { mutableStateOf<String?>(null) }
+    var lastHandledDuplicateEventId by remember { mutableStateOf<Long?>(null) }
+
+    var savedProfiles by remember { mutableStateOf(viewModel.settingsRepository.getPrinterProfiles()) }
+    var activeProfile by remember { mutableStateOf(viewModel.settingsRepository.getActivePrinterProfile()) }
+    var showPrinterPickerDialog by remember { mutableStateOf(false) }
+    var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    var showSavedReprintDialog by remember { mutableStateOf(false) }
+    var copiesPrinted by remember { mutableStateOf(0) }
+
     var showCatalogDialog by remember { mutableStateOf(false) }
     var catalogAddInitialId by remember { mutableStateOf<String?>(null) }
     var itemToDelete by remember { mutableStateOf<BarcodeItem?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = items.isNotEmpty()) {
+    val anyDialogOpen = showSavedReprintDialog || showPrinterPickerDialog || showCatalogDialog || itemToDelete != null || showExitConfirm
+
+    fun refreshPrinters() {
+        savedProfiles = viewModel.settingsRepository.getPrinterProfiles()
+        activeProfile = viewModel.settingsRepository.getActivePrinterProfile()
+    }
+
+    BackHandler(enabled = items.isNotEmpty() && !showSavedReprintDialog) {
         showExitConfirm = true
+    }
+
+    LaunchedEffect(Unit) {
+        refreshPrinters()
+        if (devolucionId > 0L) {
+            runCatching { barcodeFocusRequester.requestFocus() }
+        }
+    }
+
+    LaunchedEffect(anyDialogOpen) {
+        if (!anyDialogOpen && !isHeaderExpanded) {
+            runCatching { barcodeFocusRequester.requestFocus() }
+        }
+    }
+
+    LaunchedEffect(items.size) {
+        val currentSize = items.size
+        if (currentSize > 0 && currentSize != lastObservedCount) {
+            isHeaderExpanded = false
+            if (currentSize > lastObservedCount) {
+                runCatching { listState.animateScrollToItem(0) }
+            }
+            if (!anyDialogOpen) {
+                runCatching { barcodeFocusRequester.requestFocus() }
+            }
+        }
+        lastObservedCount = currentSize
+    }
+
+    LaunchedEffect(listState.isScrollInProgress, listState.firstVisibleItemIndex) {
+        if ((listState.isScrollInProgress || listState.firstVisibleItemIndex > 0) && isHeaderExpanded) {
+            isHeaderExpanded = false
+        }
     }
 
     LaunchedEffect(devolucionId) {
@@ -226,13 +375,67 @@ fun DevolucionScreen(
             viewModel.loadExistingDevolucion(devolucionId) { ent, rec ->
                 empleadoEntrega = ent
                 empleadoRecibe = rec
+                if (ent.isNotBlank() && rec.isNotBlank()) {
+                    isHeaderExpanded = false
+                }
             }
         }
     }
 
-    // Register Zebra Scanner Receiver
+    val btPrintLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            permissions[Manifest.permission.BLUETOOTH_CONNECT] == true
+        } else true
+        if (granted) {
+            pendingBtAction?.invoke()
+            pendingBtAction = null
+        } else {
+            pendingBtAction = null
+            Toast.makeText(context, "Se requiere permiso de Bluetooth para imprimir", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun withBluetoothPermission(action: () -> Unit) {
+        val hasPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else true
+
+        if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            pendingBtAction = action
+            btPrintLauncher.launch(
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN
+                )
+            )
+        } else {
+            action()
+        }
+    }
+
+    fun executePrint(profileOverride: PrinterProfile? = null, trackCopy: Boolean = false) {
+        withBluetoothPermission {
+            val target = profileOverride ?: activeProfile
+            if (target == null && viewModel.printerManager.getPairedPrinters().size > 1) {
+                showPrinterPickerDialog = true
+                return@withBluetoothPermission
+            }
+            viewModel.printTicket(
+                entrega = empleadoEntrega.trim(),
+                recibe = empleadoRecibe.trim(),
+                profile = target
+            ) { ok, msg ->
+                if (ok && trackCopy) copiesPrinted += 1
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     DisposableEffect(context) {
         val receiver = ZebraScannerReceiver { scannedCode ->
+            isHeaderExpanded = false
             viewModel.onScanned(scannedCode)
         }
         ZebraScannerReceiver.register(context, receiver)
@@ -241,477 +444,506 @@ fun DevolucionScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Devoluciones a Polvorín", color = MineTextPrimary, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (items.isNotEmpty()) {
-                            showExitConfirm = true
-                        } else {
-                            onNavigateBack()
-                        }
-                    }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MineTextPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkBackground)
-            )
-        },
-        containerColor = MineDarkBackground
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Header Inputs (en fila para ahorrar espacio vertical)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = empleadoEntrega,
-                    onValueChange = { empleadoEntrega = it },
-                    label = { Text("Entrega material") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MineAgentBlue,
-                        unfocusedBorderColor = MineBorderGray,
-                        focusedTextColor = MineTextPrimary,
-                        unfocusedTextColor = MineTextPrimary
-                    )
-                )
+    val totalCajas = items.count { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }
+    val totalSacos = items.count { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }
+    val totalCartuchos = items.count { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }
 
-                OutlinedTextField(
-                    value = empleadoRecibe,
-                    onValueChange = { empleadoRecibe = it },
-                    label = { Text("Recibe en polvorín") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MineAgentBlue,
-                        unfocusedBorderColor = MineBorderGray,
-                        focusedTextColor = MineTextPrimary,
-                        unfocusedTextColor = MineTextPrimary
-                    )
-                )
+    val filterChips = remember(items) {
+        buildExplosiveFilterChips(
+            items = items,
+            includeAccessoriesType = true,
+            useIdKey = false
+        )
+    }
+
+    val filteredItems = remember(items, selectedFilterKey) {
+        items.filter { item ->
+            ScanFilterKeys.matchesBarcodeItem(item, selectedFilterKey, useIdKey = false)
+        }
+    }
+
+    val codeFrequencies = remember(items) {
+        items.groupingBy { it.code }.eachCount()
+    }
+
+    // Al detectar un código duplicado, garantiza visibilidad en LazyColumn y desplaza hasta él
+    LaunchedEffect(lastDuplicateAlert?.eventId, filteredItems) {
+        val alert = lastDuplicateAlert ?: return@LaunchedEffect
+        if (lastHandledDuplicateEventId == alert.eventId) return@LaunchedEffect
+
+        isHeaderExpanded = false
+        val indexInFiltered = filteredItems.indexOfFirst { it.code == alert.code }
+        if (indexInFiltered >= 0) {
+            lastHandledDuplicateEventId = alert.eventId
+            runCatching { listState.animateScrollToItem(indexInFiltered) }
+            if (!anyDialogOpen) {
+                runCatching { barcodeFocusRequester.requestFocus() }
             }
+        } else if (selectedFilterKey != null && items.any { it.code == alert.code }) {
+            selectedFilterKey = null
+        }
+    }
 
-            // CONTADOR COMPACTO OPTIMIZADO (TOTAL, CAJAS, SACOS, CARTUCHOS)
-            val totalCajas = items.count { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }
-            val totalSacos = items.count { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }
-            val totalCartuchos = items.count { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MineBorderGray),
-                shape = RoundedCornerShape(8.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            AutoShrinkText(
+                                text = "Devoluciones a Polvorín",
+                                color = MineTextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                targetTextSize = 16.sp,
+                                minTextSize = 13.sp
+                            )
+                            if (empleadoEntrega.isNotBlank() || empleadoRecibe.isNotBlank()) {
+                                AutoShrinkText(
+                                    text = "${empleadoEntrega.ifBlank { "Entrega" }} → ${empleadoRecibe.ifBlank { "Recibe" }}",
+                                    color = MineAgentCyan,
+                                    targetTextSize = 11.sp,
+                                    minTextSize = 9.sp
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (items.isNotEmpty()) showExitConfirm = true else onNavigateBack()
+                        }) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = MineTextPrimary)
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { executePrint() },
+                            enabled = !isPrinting && items.isNotEmpty(),
+                            modifier = Modifier.testTag("devolucion_topbar_print_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Print,
+                                contentDescription = "Imprimir Ticket",
+                                tint = if (items.isNotEmpty()) MineSafetyYellow else MineTextMuted
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkBackground)
+                )
+            },
+            containerColor = MineDarkBackground
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .imePadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                // 1. CINTA COMPACTA SUPERIOR
+                CompactScanMetricsRibbon(
+                    totalCount = items.size,
+                    cajasCount = totalCajas,
+                    sacosCount = totalSacos,
+                    cartuchosCount = totalCartuchos,
+                    accentColor = MineAgentCyan,
+                    isPanelExpanded = isHeaderExpanded,
+                    onTogglePanel = { isHeaderExpanded = !isHeaderExpanded }
+                )
+
+                // 2. ENCABEZADO COLAPSABLE AUTOMÁTICAMENTE AL DETECTAR ACTIVIDAD
+                AnimatedVisibility(
+                    visible = isHeaderExpanded,
+                    enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                    exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(160))
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AutoShrinkText(
-                            text = "DEVOLUCIÓN DE MATERIALES",
-                            modifier = Modifier.weight(1f).padding(end = 4.dp),
-                            color = MineTextSecondary,
-                            targetTextSize = 12.sp,
-                            minTextSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = if (items.isEmpty()) "Listo para pistolear" else "${items.size} devueltos",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (items.isEmpty()) MineSuccessGreenLight else MineSafetyYellow,
-                            fontWeight = FontWeight.Medium
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = empleadoEntrega,
+                                onValueChange = { empleadoEntrega = it },
+                                label = { Text("Entrega material") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Right) }),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MineAgentBlue,
+                                    unfocusedBorderColor = MineBorderGray,
+                                    focusedTextColor = MineTextPrimary,
+                                    unfocusedTextColor = MineTextPrimary
+                                )
+                            )
+
+                            OutlinedTextField(
+                                value = empleadoRecibe,
+                                onValueChange = { empleadoRecibe = it },
+                                label = { Text("Recibe en polvorín") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        if (empleadoEntrega.isNotBlank() && empleadoRecibe.isNotBlank()) {
+                                            isHeaderExpanded = false
+                                        }
+                                        runCatching { barcodeFocusRequester.requestFocus() }
+                                    }
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MineAgentBlue,
+                                    unfocusedBorderColor = MineBorderGray,
+                                    focusedTextColor = MineTextPrimary,
+                                    unfocusedTextColor = MineTextPrimary
+                                )
+                            )
+                        }
+
+                        DummyExplosivesScannerBar(
+                            onSimulateScan = { code ->
+                                isHeaderExpanded = false
+                                viewModel.onScanned(code)
+                            },
+                            lastValidCode = items.firstOrNull()?.code,
+                            allowAccessories = true
                         )
                     }
+                }
 
-                    // 4 Contadores en 1 sola fila compacta con colores normalizados
+                // 3. CASILLA DE CAPTURA DE CÓDIGOS DE BARRAS (SIEMPRE VISIBLE Y ACTIVA)
+                AlwaysActiveBarcodeField(
+                    value = manualInput,
+                    onValueChange = { manualInput = it },
+                    onSubmitBarcode = { code -> viewModel.onScanned(code) },
+                    accentColor = MineAgentCyan,
+                    placeholderText = "Escanear o escribir devolución + ENTER...",
+                    focusRequester = barcodeFocusRequester,
+                    testTagName = "devolucion_manual_barcode_input",
+                    onActivityDetected = {
+                        if (isHeaderExpanded) isHeaderExpanded = false
+                    }
+                )
+
+                // Banner compacto de resultado
+                latestScanResult?.let { result ->
+                    val isError = !result.isValid
+                    val isDup = result.isDuplicate
+                    val bannerBg = when {
+                        isError || isDup -> MineErrorRed.copy(alpha = 0.24f)
+                        else -> MineSuccessGreen.copy(alpha = 0.2f)
+                    }
+                    val bannerBorder = when {
+                        isError || isDup -> MineErrorRed
+                        else -> MineSuccessGreen
+                    }
+                    val bannerTint = when {
+                        isError || isDup -> MineErrorRedLight
+                        else -> MineSuccessGreenLight
+                    }
+
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(bannerBg)
+                            .border(1.dp, bannerBorder, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        CompactMetric(
-                            modifier = Modifier.weight(1f),
-                            label = "TOTAL",
-                            count = items.size,
-                            borderColor = MineBorderGray,
-                            countColor = EmpaqueTotalColor
+                        Icon(
+                            imageVector = if (isError || isDup) Icons.Default.Warning else Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = bannerTint,
+                            modifier = Modifier.size(15.dp)
                         )
-                        CompactMetric(
-                            modifier = Modifier.weight(1f),
-                            label = "CAJAS",
-                            count = totalCajas,
-                            borderColor = EmpaqueCajaColor,
-                            countColor = EmpaqueCajaColor
+                        Text(
+                            text = result.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MineTextPrimary,
+                            fontSize = 11.sp,
+                            maxLines = 2,
+                            modifier = Modifier.weight(1f)
                         )
-                        CompactMetric(
-                            modifier = Modifier.weight(1f),
-                            label = "SACOS",
-                            count = totalSacos,
-                            borderColor = EmpaqueSacoColor,
-                            countColor = EmpaqueSacoColor
-                        )
-                        CompactMetric(
-                            modifier = Modifier.weight(1f),
-                            label = "CARTUCHOS",
-                            count = totalCartuchos,
-                            borderColor = EmpaqueCartuchoColor,
-                            countColor = EmpaqueCartuchoColor
-                        )
-                    }
-                }
-            }
-
-            // CASILLA DE ESCANEO ACTIVO (Inmediatamente debajo del contador principal)
-            OutlinedTextField(
-                value = manualInput,
-                onValueChange = { manualInput = it },
-                label = { Text("Escaneo activo (o teclee código + ENTER)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(
-                    onSend = {
-                        if (manualInput.isNotBlank()) {
-                            viewModel.onScanned(manualInput.trim())
-                            manualInput = ""
+                        if (result.unknownId != null) {
+                            Button(
+                                onClick = {
+                                    catalogAddInitialId = result.unknownId
+                                    showCatalogDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MineSafetyYellow, contentColor = MineDarkBackground),
+                                shape = RoundedCornerShape(4.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Text("+ ID", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            }
                         }
                     }
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MineAgentBlue,
-                    unfocusedBorderColor = MineBorderGray,
-                    focusedTextColor = MineTextPrimary,
-                    unfocusedTextColor = MineTextPrimary,
-                    focusedLabelColor = MineAgentBlue
+                }
+
+                // 2. FILTROS HORIZONTALES POR PRODUCTO (1 sola línea visible)
+                HorizontalProductFilterRow(
+                    totalCount = items.size,
+                    chips = filterChips,
+                    selectedKey = selectedFilterKey,
+                    accentColor = MineAgentCyan,
+                    onSelectKey = { selectedFilterKey = it }
                 )
-            )
 
-            // Simulador de escaneo (MODO PRUEBA plegable)
-            DummyExplosivesScannerBar(
-                onSimulateScan = { code -> viewModel.onScanned(code) },
-                lastValidCode = items.firstOrNull()?.code,
-                allowAccessories = true
-            )
-
-            // Banner compacto de resultado
-            latestScanResult?.let { result ->
-                val isError = !result.isValid
-                val isDup = result.isDuplicate
-                val bannerBg = when {
-                    isError -> MineErrorRed.copy(alpha = 0.2f)
-                    isDup -> MineWarningAmber.copy(alpha = 0.2f)
-                    else -> MineSuccessGreen.copy(alpha = 0.2f)
-                }
-                val bannerBorder = when {
-                    isError -> MineErrorRed
-                    isDup -> MineWarningAmber
-                    else -> MineSuccessGreen
-                }
-                val bannerTint = when {
-                    isError -> MineErrorRed
-                    isDup -> MineWarningAmber
-                    else -> MineSuccessGreenLight
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(bannerBg)
-                        .border(1.dp, bannerBorder, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isError || isDup) Icons.Default.Warning else Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = bannerTint,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = result.message,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MineTextPrimary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (result.unknownId != null) {
-                        Button(
-                            onClick = {
-                                catalogAddInitialId = result.unknownId
-                                showCatalogDialog = true
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MineSafetyYellow, contentColor = MineDarkBackground),
-                            shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
-                        ) {
-                            Text("+ Agregar ID", fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                        }
-                    }
-                }
-            }
-
-            // Desglose individual de productos devueltos
-            val devSummaries = remember(items) {
-                items.groupBy { Triple(it.productInfo.name, it.productInfo.presentation, it.empaque) }
-                    .map { (key, group) ->
-                        DevolucionMarker(
-                            productName = key.first,
-                            presentation = key.second,
-                            empaque = key.third,
-                            count = group.size
-                        )
-                    }
-                    .sortedWith(compareBy<DevolucionMarker> { it.empaque.ordinal }.thenByDescending { it.count })
-            }
-
-            if (devSummaries.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "DESGLOSE POR PRODUCTO Y MEDIDA:",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MineTextMuted,
+                        text = if (selectedFilterKey != null) {
+                            "FILTRADOS: ${filteredItems.size} DE ${items.size}"
+                        } else {
+                            "MATERIALES DEVUELTOS (${items.size}):"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (selectedFilterKey != null) MineAgentCyan else MineTextMuted,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "${devSummaries.size} producto(s)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MineAgentBlue,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (selectedFilterKey != null) {
+                        Text(
+                            text = "Ver todos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MineSafetyYellow,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { selectedFilterKey = null }
+                        )
+                    }
                 }
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                // 5. LISTADO DE CÓDIGOS DEVUELTOS
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("devolucion_codes_lazy_column"),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    val pairs = devSummaries.chunked(2)
-                    pairs.forEach { rowPairs ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            rowPairs.forEach { itemSummary ->
-                                val empaqueColor = when (itemSummary.empaque) {
-                                    TipoEmpaque.CAJA -> EmpaqueCajaColor
-                                    TipoEmpaque.SACO -> EmpaqueSacoColor
-                                    TipoEmpaque.PIEZA -> EmpaqueCartuchoColor
-                                    TipoEmpaque.ACCESORIO -> EmpaqueAccesorioColor
-                                    else -> MineBorderGray
-                                }
-                                val empaqueLabel = when (itemSummary.empaque) {
-                                    TipoEmpaque.SACO -> "Sacos"
-                                    TipoEmpaque.PIEZA -> "Cartuchos"
-                                    TipoEmpaque.ACCESORIO -> "Acces."
-                                    else -> "Cajas"
-                                }
+                    if (filteredItems.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 20.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (selectedFilterKey != null) {
+                                        "Sin códigos para este filtro de tipo/producto"
+                                    } else {
+                                        "Casilla activa: dispare el lector o escriba devoluciones"
+                                    },
+                                    color = MineTextMuted,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    } else {
+                        items(filteredItems, key = { it.code + it.timestamp }) { item ->
+                            val empaqueColor = when (item.empaque) {
+                                TipoEmpaque.CAJA -> EmpaqueCajaColor
+                                TipoEmpaque.SACO -> EmpaqueSacoColor
+                                TipoEmpaque.PIEZA -> EmpaqueCartuchoColor
+                                TipoEmpaque.ACCESORIO -> EmpaqueAccesorioColor
+                                else -> MineBorderGray
+                            }
+                            val dupAttempts = duplicateAttemptCounts[item.code] ?: 0
+                            val isDuplicateHighlighted = dupAttempts > 0 || (codeFrequencies[item.code] ?: 0) > 1
+                            val cardBg = if (isDuplicateHighlighted) MineErrorRedBackground else MineDarkSurface
+                            val cardBorderColor = if (isDuplicateHighlighted) MineErrorRed else empaqueColor.copy(alpha = 0.6f)
+                            val cardBorderWidth = if (isDuplicateHighlighted) 2.dp else 1.dp
 
-                                Box(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(MineDarkSurface)
-                                            .border(1.dp, empaqueColor.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
-                                            AutoShrinkText(
-                                                text = itemSummary.productName,
-                                                initialTextSize = 13.sp,
-                                                minTextSize = 9.sp,
-                                                color = MineTextPrimary,
-                                                fontWeight = FontWeight.Bold,
-                                                maxLines = 1
-                                            )
-                                            AutoShrinkText(
-                                                text = if (itemSummary.presentation.isNotBlank()) "Medida: ${itemSummary.presentation}" else "Devolución",
-                                                initialTextSize = 11.sp,
-                                                minTextSize = 8.sp,
-                                                color = MineTextSecondary,
-                                                fontWeight = FontWeight.Normal,
-                                                maxLines = 1
-                                            )
-                                        }
-
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
-                                                .background(empaqueColor)
-                                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                                            contentAlignment = Alignment.Center
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag(if (isDuplicateHighlighted) "duplicate_highlighted_item_${item.code}" else "scanned_item_${item.code}"),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = cardBg),
+                                border = BorderStroke(cardBorderWidth, cardBorderColor)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(3.dp))
+                                                    .background(empaqueColor.copy(alpha = 0.2f))
+                                                    .border(0.5.dp, empaqueColor, RoundedCornerShape(3.dp))
+                                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                                            ) {
                                                 Text(
-                                                    text = "${itemSummary.count}",
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    color = MineDarkBackground,
-                                                    fontSize = 15.sp
-                                                )
-                                                Text(
-                                                    text = empaqueLabel,
+                                                    text = item.empaque.label,
                                                     style = MaterialTheme.typography.labelSmall,
+                                                    color = empaqueColor,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = MineDarkBackground,
-                                                    fontSize = 9.sp
+                                                    fontSize = 10.sp,
+                                                    maxLines = 1,
+                                                    softWrap = false
                                                 )
                                             }
+                                            if (isDuplicateHighlighted) {
+                                                DuplicateBadgeChip(attemptCount = dupAttempts.coerceAtLeast(1))
+                                            }
+                                            AutoShrinkText(
+                                                text = item.productInfo.name,
+                                                initialTextSize = 13.sp,
+                                                minTextSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MineTextPrimary,
+                                                maxLines = 1
+                                            )
                                         }
-                                    }
-                                }
-                            }
-                            if (rowPairs.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Scanned Items List
-            Text(
-                text = "MATERIALES DEVUELTOS (${items.size}):",
-                style = MaterialTheme.typography.labelSmall,
-                color = MineTextMuted,
-                fontWeight = FontWeight.Bold
-            )
-
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(items, key = { it.code + it.timestamp }) { item ->
-                    val empaqueColor = when (item.empaque) {
-                        TipoEmpaque.CAJA -> EmpaqueCajaColor
-                        TipoEmpaque.SACO -> EmpaqueSacoColor
-                        TipoEmpaque.PIEZA -> EmpaqueCartuchoColor
-                        TipoEmpaque.ACCESORIO -> EmpaqueAccesorioColor
-                        else -> MineBorderGray
-                    }
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, empaqueColor.copy(alpha = 0.6f))
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(empaqueColor.copy(alpha = 0.2f))
-                                            .border(0.5.dp, empaqueColor, RoundedCornerShape(3.dp))
-                                            .padding(horizontal = 4.dp, vertical = 1.dp)
-                                    ) {
-                                        Text(
-                                            text = item.empaque.label,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = empaqueColor,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 10.sp,
-                                            maxLines = 1,
-                                            softWrap = false
+                                        AutoShrinkText(
+                                            text = "Medida: ${item.productInfo.presentation} • ${item.productInfo.type.label}",
+                                            initialTextSize = 11.sp,
+                                            minTextSize = 8.sp,
+                                            color = if (isDuplicateHighlighted) MineErrorRedLight else MineTextSecondary,
+                                            maxLines = 1
+                                        )
+                                        AutoShrinkText(
+                                            text = if (isDuplicateHighlighted) "Cód: ${item.code} (YA ESCANEADO)" else "Cód: ${item.code}",
+                                            initialTextSize = 11.sp,
+                                            minTextSize = 8.sp,
+                                            color = if (isDuplicateHighlighted) MineErrorRedLight else MineTextSecondary,
+                                            fontWeight = if (isDuplicateHighlighted) FontWeight.Bold else FontWeight.Normal,
+                                            maxLines = 1
                                         )
                                     }
-                                    AutoShrinkText(
-                                        text = item.productInfo.name,
-                                        initialTextSize = 13.sp,
-                                        minTextSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MineTextPrimary,
-                                        maxLines = 1
-                                    )
+                                    IconButton(onClick = { itemToDelete = item }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MineErrorRed)
+                                    }
                                 }
-                                AutoShrinkText(
-                                    text = "Medida: ${item.productInfo.presentation} • ${item.productInfo.type.label}",
-                                    initialTextSize = 11.sp,
-                                    minTextSize = 8.sp,
-                                    color = MineTextSecondary,
-                                    fontWeight = FontWeight.Normal,
-                                    maxLines = 1
-                                )
-                                AutoShrinkText(
-                                    text = "Cód: ${item.code}",
-                                    initialTextSize = 11.sp,
-                                    minTextSize = 8.sp,
-                                    color = MineTextSecondary,
-                                    fontWeight = FontWeight.Normal,
-                                    maxLines = 1
-                                )
-                            }
-                            IconButton(onClick = { itemToDelete = item }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MineErrorRed)
                             }
                         }
                     }
                 }
-            }
 
-            // Save button
-            Button(
-                onClick = {
-                    viewModel.save(empleadoEntrega.trim(), empleadoRecibe.trim(), onNavigateBack)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(10.dp),
-                enabled = items.isNotEmpty() && empleadoEntrega.isNotBlank() && empleadoRecibe.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = MineSuccessGreen)
-            ) {
-                Icon(imageVector = Icons.Default.Save, contentDescription = null, tint = MineTextPrimary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "GUARDAR DEVOLUCIÓN (${items.size} PIEZAS)",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MineTextPrimary,
-                    fontSize = 14.sp
+                ActivePrinterMiniBar(
+                    activeProfile = activeProfile,
+                    totalProfiles = savedProfiles.size,
+                    onChangePrinterClick = {
+                        withBluetoothPermission { showPrinterPickerDialog = true }
+                    }
                 )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { executePrint() },
+                        enabled = !isPrinting && items.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("devolucion_print_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, MineSafetyYellow),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MineSafetyYellow)
+                    ) {
+                        Icon(imageVector = Icons.Default.Print, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        AutoShrinkText(
+                            text = if (isPrinting) "Imprimiendo..." else "Imprimir",
+                            fontWeight = FontWeight.Bold,
+                            targetTextSize = 12.sp,
+                            minTextSize = 9.sp,
+                            color = MineSafetyYellow
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            if (empleadoEntrega.isBlank() || empleadoRecibe.isBlank()) {
+                                isHeaderExpanded = true
+                                Toast.makeText(context, "Capture quién entrega y quién recibe", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            viewModel.save(empleadoEntrega.trim(), empleadoRecibe.trim()) {
+                                refreshPrinters()
+                                copiesPrinted = 0
+                                showSavedReprintDialog = true
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1.4f)
+                            .height(48.dp)
+                            .testTag("devolucion_save_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = items.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MineSuccessGreen)
+                    ) {
+                        Icon(imageVector = Icons.Default.Save, contentDescription = null, tint = MineTextPrimary, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        AutoShrinkText(
+                            text = "Guardar Dev. (${items.size})",
+                            fontWeight = FontWeight.Bold,
+                            color = MineTextPrimary,
+                            targetTextSize = 13.sp,
+                            minTextSize = 10.sp
+                        )
+                    }
+                }
             }
         }
+        ScanFlashOverlay(
+            event = latestFlashEvent,
+            enabled = viewModel.isVisualFlashEnabled()
+        )
     }
-    ScanFlashOverlay(
-        event = latestFlashEvent,
-        enabled = viewModel.isVisualFlashEnabled()
-    )
+
+    if (showSavedReprintDialog) {
+        val folio = if (empleadoEntrega.startsWith("DEV", ignoreCase = true)) empleadoEntrega else "DEV$empleadoEntrega"
+        SavedValeReprintDialog(
+            valeTypeTitle = "Vale de Devolución",
+            folio = folio,
+            itemCountSummary = "${items.size} piezas",
+            activeProfile = activeProfile,
+            totalProfiles = savedProfiles.size,
+            copiesPrinted = copiesPrinted,
+            isPrinting = isPrinting,
+            printStatusMessage = printStatusMessage,
+            accentColor = MineAgentCyan,
+            onPrintClick = { executePrint(trackCopy = true) },
+            onChangePrinterClick = {
+                withBluetoothPermission { showPrinterPickerDialog = true }
+            },
+            onFinishClick = {
+                showSavedReprintDialog = false
+                onNavigateBack()
+            }
+        )
+    }
+
+    if (showPrinterPickerDialog) {
+        QuickPrinterSelectorDialog(
+            onSelectProfile = { selected ->
+                refreshPrinters()
+                activeProfile = selected
+                showPrinterPickerDialog = false
+                Toast.makeText(context, "Impresora activa: ${selected.displayTitle()}", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { showPrinterPickerDialog = false }
+        )
     }
 
     if (showCatalogDialog) {
@@ -747,44 +979,6 @@ fun DevolucionScreen(
                 onNavigateBack()
             },
             onDismiss = { showExitConfirm = false }
-        )
-    }
-}
-
-data class DevolucionMarker(
-    val productName: String,
-    val presentation: String,
-    val empaque: TipoEmpaque,
-    val count: Int
-)
-
-@Composable
-private fun CompactMetric(
-    modifier: Modifier = Modifier,
-    label: String,
-    count: Int,
-    borderColor: androidx.compose.ui.graphics.Color,
-    countColor: androidx.compose.ui.graphics.Color
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(MineDarkBackground)
-            .border(1.dp, borderColor, RoundedCornerShape(6.dp))
-            .padding(vertical = 4.dp, horizontal = 2.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "$count",
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-            color = countColor,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            color = MineTextMuted,
-            fontWeight = FontWeight.Bold
         )
     }
 }

@@ -8,13 +8,20 @@ import com.ttexplo.mobile.data.local.entity.EntradaEntity
 import com.ttexplo.mobile.data.local.entity.EntradaItemEntity
 import com.ttexplo.mobile.data.local.entity.ProductoEntity
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
+import com.ttexplo.mobile.data.repository.SettingsRepository
+import com.ttexplo.mobile.domain.model.EntradaRecord
 import com.ttexplo.mobile.domain.model.ProductInfo
 import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.domain.scanner.ScanResult
 import com.ttexplo.mobile.domain.scanner.ScanValidator
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
+import com.ttexplo.mobile.printer.BluetoothPrinterManager
+import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
+import com.ttexplo.mobile.ui.common.DuplicateCodeAlert
 import com.ttexplo.mobile.ui.common.ScanFeedbackType
 import com.ttexplo.mobile.ui.common.ScanFlashEvent
 import com.ttexplo.mobile.ui.common.SoundFeedbackManager
@@ -43,10 +50,14 @@ data class EntradasUiState(
     val polvorin: String = "",
     val factura: String = "",
     val scannedItems: List<BarcodeItem> = emptyList(),
+    val duplicateAttemptCounts: Map<String, Int> = emptyMap(),
+    val lastDuplicateAlert: DuplicateCodeAlert? = null,
     val latestScanResult: ScanResult? = null,
     val latestFlashEvent: ScanFlashEvent? = null,
     val wasRestoredFromDraft: Boolean = false,
-    val isFinished: Boolean = false
+    val isFinished: Boolean = false,
+    val isPrinting: Boolean = false,
+    val printStatusMessage: String? = null
 )
 
 class EntradasViewModel(application: Application) : AndroidViewModel(application) {
@@ -55,6 +66,8 @@ class EntradasViewModel(application: Application) : AndroidViewModel(application
     private val db = app.database
     private val inventoryRepository = app.inventoryRepository
     private val catalogRepository = CatalogRepositoryImpl(db.productoDao())
+    val settingsRepository = SettingsRepository(application)
+    val printerManager = BluetoothPrinterManager(application)
     private val scanValidator = ScanValidator(catalogRepository)
     private val soundFeedback = SoundFeedbackManager(application)
     private val scanMutex = Mutex()
@@ -210,9 +223,17 @@ class EntradasViewModel(application: Application) : AndroidViewModel(application
 
                 if (result.isDuplicate) {
                     soundFeedback.playWarning()
+                    val currentCounts = _uiState.value.duplicateAttemptCounts
+                    val nextAttempt = (currentCounts[result.rawBarcode] ?: 0) + 1
+                    val updatedCounts = currentCounts + (result.rawBarcode to nextAttempt)
                     _uiState.value = _uiState.value.copy(
+                        duplicateAttemptCounts = updatedCounts,
+                        lastDuplicateAlert = DuplicateCodeAlert(
+                            code = result.rawBarcode,
+                            attemptCount = nextAttempt
+                        ),
                         latestScanResult = result,
-                        latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.WARNING)
+                        latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.ERROR)
                     )
                 } else {
                     soundFeedback.playSuccess()
@@ -256,8 +277,12 @@ class EntradasViewModel(application: Application) : AndroidViewModel(application
                     db.entradaDao().deleteItem(draftId, item.code)
                 }
                 val updated = _uiState.value.scannedItems.filterNot { it.code == item.code }
+                val updatedDuplicates = _uiState.value.duplicateAttemptCounts - item.code
+                val updatedAlert = _uiState.value.lastDuplicateAlert?.takeUnless { it.code == item.code }
                 _uiState.value = _uiState.value.copy(
                     scannedItems = updated,
+                    duplicateAttemptCounts = updatedDuplicates,
+                    lastDuplicateAlert = updatedAlert,
                     latestScanResult = ScanResult(
                         rawBarcode = item.code,
                         timestamp = DateTimeUtils.currentTimestamp(),
@@ -319,6 +344,35 @@ class EntradasViewModel(application: Application) : AndroidViewModel(application
                 _uiState.value = _uiState.value.copy(isFinished = true, draftId = null)
             }
             onSuccess()
+        }
+    }
+
+    fun printTicket(
+        profile: PrinterProfile? = null,
+        onComplete: (Boolean, String) -> Unit
+    ) {
+        val state = _uiState.value
+        val record = EntradaRecord(
+            proveedor = state.proveedor,
+            polvorin = state.polvorin,
+            factura = state.factura,
+            items = state.scannedItems.map {
+                ScannedCodeRecord(
+                    code = it.code,
+                    timestamp = it.timestamp,
+                    productName = it.productInfo.name,
+                    presentation = it.productInfo.presentation
+                )
+            }
+        )
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isPrinting = true, printStatusMessage = null)
+            val outcome = ValePrintHelper.printEntrada(app, record, profile)
+            _uiState.value = _uiState.value.copy(
+                isPrinting = false,
+                printStatusMessage = outcome.message
+            )
+            onComplete(outcome.success, outcome.message)
         }
     }
 

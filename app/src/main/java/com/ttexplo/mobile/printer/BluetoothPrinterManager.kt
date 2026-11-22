@@ -57,7 +57,9 @@ class BluetoothPrinterManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun findPreferredPrinter(): BluetoothDevice? {
-        val preferredMac = SettingsRepository(context).getPreferredPrinterMac()
+        val settingsRepo = SettingsRepository(context)
+        val preferredMac = settingsRepo.getActivePrinterProfile()?.macAddress?.ifBlank { null }
+            ?: settingsRepo.getPreferredPrinterMac()
         val adapter = bluetoothAdapter ?: return null
         if (!adapter.isEnabled || !hasBluetoothPermission()) return null
 
@@ -68,11 +70,25 @@ class BluetoothPrinterManager(private val context: Context) {
             try {
                 val direct = adapter.getRemoteDevice(preferredMac)
                 if (direct != null) return direct
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Fallback
             }
         }
         return paired.firstOrNull()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun resolveTargetPrinter(profile: PrinterProfile? = null): Pair<String, String>? {
+        if (profile != null && profile.macAddress.isNotBlank()) {
+            return profile.macAddress to profile.displayTitle()
+        }
+        val active = SettingsRepository(context).getActivePrinterProfile()
+        if (active != null && active.macAddress.isNotBlank()) {
+            return active.macAddress to active.displayTitle()
+        }
+        val device = findPreferredPrinter() ?: return null
+        val name = try { device.name ?: device.address } catch (_: Exception) { device.address }
+        return device.address to name
     }
 
     suspend fun printRawBytes(device: BluetoothDevice, data: ByteArray): Boolean {

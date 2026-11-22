@@ -2,18 +2,14 @@ package com.ttexplo.mobile.ui.screens.settings
 
 import android.Manifest
 import android.app.Application
-import android.bluetooth.BluetoothDevice
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,8 +40,6 @@ import com.ttexplo.mobile.domain.export.FlatFileFormatter
 import com.ttexplo.mobile.domain.model.*
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.printer.BluetoothPrinterManager
-import com.ttexplo.mobile.printer.PaperWidth
-import com.ttexplo.mobile.printer.TicketGenerator
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.ScanFlashEvent
 import com.ttexplo.mobile.ui.common.ScanFlashOverlay
@@ -156,41 +150,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
-
-    fun sendTestPrint(format: String = "ESCPOS", onResult: (String) -> Unit) {
-        val paired = printerManager.getPairedPrinters()
-        if (paired.isEmpty()) {
-            onResult("No hay dispositivos Bluetooth vinculados en Android.")
-            return
-        }
-        val target = printerManager.findPreferredPrinter() ?: paired.first()
-        val targetName = try { target.name ?: target.address } catch (_: Exception) { target.address }
-
-        viewModelScope.launch {
-            val bytes = when (format) {
-                "CPCL" -> TicketGenerator.generateCpclTestTicket(
-                    paperWidth = settingsRepo.getPaperWidth(),
-                    mineName = settingsRepo.getMineName()
-                )
-                "PLAIN" -> TicketGenerator.generatePlainTestTicket(
-                    paperWidth = settingsRepo.getPaperWidth(),
-                    mineName = settingsRepo.getMineName()
-                )
-                else -> TicketGenerator.generateTestTicket(
-                    paperWidth = settingsRepo.getPaperWidth(),
-                    mineName = settingsRepo.getMineName(),
-                    permitNumber = settingsRepo.getPermitNumber()
-                )
-            }
-            val result = printerManager.printBytes(target.address, bytes)
-            if (result.isSuccess) {
-                onResult("¡Ticket de prueba [$format] enviado exitosamente a $targetName!")
-            } else {
-                val err = result.exceptionOrNull()?.localizedMessage ?: "Error de comunicación"
-                onResult("Error al imprimir en $targetName: $err")
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -226,17 +185,8 @@ fun SettingsScreen(
     var mineName by remember { mutableStateOf(viewModel.settingsRepo.getMineName()) }
     var permitNumber by remember { mutableStateOf(viewModel.settingsRepo.getPermitNumber()) }
     var ticketHeader by remember { mutableStateOf(viewModel.settingsRepo.getTicketHeader()) }
-    var paperWidth by remember { mutableStateOf(viewModel.settingsRepo.getPaperWidth()) }
 
-    var preferredMac by remember { mutableStateOf(viewModel.settingsRepo.getPreferredPrinterMac()) }
-    var preferredName by remember { mutableStateOf(viewModel.settingsRepo.getPreferredPrinterName()) }
-    var printerProtocol by remember { mutableStateOf(viewModel.settingsRepo.getPrinterProtocol()) }
-    var printSignatures by remember { mutableStateOf(viewModel.settingsRepo.getPrintSignatures()) }
-    var printBreakdown by remember { mutableStateOf(viewModel.settingsRepo.getPrintBreakdown()) }
-    var printCodeDetails by remember { mutableStateOf(viewModel.settingsRepo.getPrintCodeDetails()) }
-
-    var showPrinterDialog by remember { mutableStateOf(false) }
-    var isTestingPrint by remember { mutableStateOf(false) }
+    var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
     var previewFlashEvent by remember { mutableStateOf<ScanFlashEvent?>(null) }
 
@@ -274,9 +224,11 @@ fun SettingsScreen(
             permissions[Manifest.permission.BLUETOOTH_CONNECT] == true
         } else true
         if (granted) {
-            showPrinterDialog = true
+            pendingBtAction?.invoke()
+            pendingBtAction = null
         } else {
-            Toast.makeText(context, "Se requiere permiso de Bluetooth para listar impresoras", Toast.LENGTH_LONG).show()
+            pendingBtAction = null
+            Toast.makeText(context, "Se requiere permiso de Bluetooth para gestionar impresoras", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -333,8 +285,10 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .verticalScroll(rememberScrollState()),
+                .imePadding()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             statusMsg?.let { msg ->
@@ -364,281 +318,26 @@ fun SettingsScreen(
             )
 
             // ==========================================
-            // SECCIÓN 1: IMPRESORA TÉRMICA & FORMATO
+            // SECCIÓN 1: MÚLTIPLES IMPRESORAS TÉRMICAS & FORMATO
             // ==========================================
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MineBorderGray),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(Icons.Default.Print, contentDescription = null, tint = MineSafetyYellow)
-                        Text(
-                            text = "IMPRESORA TÉRMICA Y FORMATO",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MineSafetyYellow,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Impresora vinculada
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MineDarkBackground),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MineBorderGray),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                AutoShrinkText(
-                                    text = if (preferredName.isNotBlank()) preferredName else "Sin impresora predeterminada",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MineTextPrimary,
-                                    targetTextSize = 13.sp,
-                                    minTextSize = 10.sp
-                                )
-                                AutoShrinkText(
-                                    text = if (preferredMac.isNotBlank()) preferredMac else "Se usará la primera impresora Bluetooth vinculada",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MineTextSecondary,
-                                    targetTextSize = 11.sp,
-                                    minTextSize = 8.sp
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    val hasPerm = viewModel.printerManager.hasBluetoothPermission()
-                                    if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        btPermissionLauncher.launch(
-                                            arrayOf(
-                                                Manifest.permission.BLUETOOTH_CONNECT,
-                                                Manifest.permission.BLUETOOTH_SCAN
-                                            )
-                                        )
-                                    } else {
-                                        showPrinterDialog = true
-                                    }
-                                },
-                                modifier = Modifier.testTag("settings_pair_printer_button"),
-                                shape = RoundedCornerShape(6.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MineSafetyYellow, contentColor = MineDarkBackground)
-                            ) {
-                                AutoShrinkText("Vincular", fontWeight = FontWeight.Bold, targetTextSize = 11.sp, minTextSize = 8.sp)
-                            }
-                        }
-                    }
-
-                    // Ancho de papel
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Ancho de papel:", color = MineTextSecondary, fontSize = 12.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = paperWidth == PaperWidth.WIDTH_3_INCH,
-                                onClick = {
-                                    paperWidth = PaperWidth.WIDTH_3_INCH
-                                    viewModel.settingsRepo.setPaperWidth(PaperWidth.WIDTH_3_INCH)
-                                },
-                                label = { AutoShrinkText("3 Pulgadas (80mm)", targetTextSize = 11.sp, minTextSize = 8.sp) }
-                            )
-                            FilterChip(
-                                selected = paperWidth == PaperWidth.WIDTH_4_INCH,
-                                onClick = {
-                                    paperWidth = PaperWidth.WIDTH_4_INCH
-                                    viewModel.settingsRepo.setPaperWidth(PaperWidth.WIDTH_4_INCH)
-                                },
-                                label = { AutoShrinkText("4 Pulgadas (104mm)", targetTextSize = 11.sp, minTextSize = 8.sp) }
-                            )
-                        }
-                    }
-
-                    // Protocolo de impresión
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Formato / Protocolo del ticket:", color = MineTextSecondary, fontSize = 12.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FilterChip(
-                                selected = printerProtocol == "CPCL",
-                                onClick = {
-                                    printerProtocol = "CPCL"
-                                    viewModel.settingsRepo.setPrinterProtocol("CPCL")
-                                },
-                                label = { AutoShrinkText("Zebra CPCL", targetTextSize = 11.sp, minTextSize = 8.sp) }
-                            )
-                            FilterChip(
-                                selected = printerProtocol == "ESCPOS",
-                                onClick = {
-                                    printerProtocol = "ESCPOS"
-                                    viewModel.settingsRepo.setPrinterProtocol("ESCPOS")
-                                },
-                                label = { AutoShrinkText("Térmica ESC/POS", targetTextSize = 11.sp, minTextSize = 8.sp) }
-                            )
-                            FilterChip(
-                                selected = printerProtocol == "PLAIN",
-                                onClick = {
-                                    printerProtocol = "PLAIN"
-                                    viewModel.settingsRepo.setPrinterProtocol("PLAIN")
-                                },
-                                label = { AutoShrinkText("Texto RAW", targetTextSize = 11.sp, minTextSize = 8.sp) }
-                            )
-                        }
-                    }
-
-                    // Switches de opciones
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AutoShrinkText("Incluir líneas de firmas:", modifier = Modifier.weight(1f), color = MineTextPrimary, targetTextSize = 13.sp, minTextSize = 9.sp)
-                        Switch(
-                            checked = printSignatures,
-                            onCheckedChange = {
-                                printSignatures = it
-                                viewModel.settingsRepo.setPrintSignatures(it)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MineSafetyYellow,
-                                checkedTrackColor = MineSafetyYellow.copy(alpha = 0.5f)
+            PrinterProfilesSettingsCard(
+                settingsRepo = viewModel.settingsRepo,
+                printerManager = viewModel.printerManager,
+                onRequestBluetoothPermission = { onGranted ->
+                    val hasPerm = viewModel.printerManager.hasBluetoothPermission()
+                    if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        pendingBtAction = onGranted
+                        btPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.BLUETOOTH_CONNECT,
+                                Manifest.permission.BLUETOOTH_SCAN
                             )
                         )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AutoShrinkText("Desglose Cajas / Sacos / Cartuchos:", modifier = Modifier.weight(1f), color = MineTextPrimary, targetTextSize = 13.sp, minTextSize = 8.sp)
-                        Switch(
-                            checked = printBreakdown,
-                            onCheckedChange = {
-                                printBreakdown = it
-                                viewModel.settingsRepo.setPrintBreakdown(it)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MineSafetyYellow,
-                                checkedTrackColor = MineSafetyYellow.copy(alpha = 0.5f)
-                            )
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AutoShrinkText("Listado de códigos con fecha/hora:", modifier = Modifier.weight(1f), color = MineTextPrimary, targetTextSize = 13.sp, minTextSize = 8.sp)
-                        Switch(
-                            checked = printCodeDetails,
-                            onCheckedChange = {
-                                printCodeDetails = it
-                                viewModel.settingsRepo.setPrintCodeDetails(it)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MineSafetyYellow,
-                                checkedTrackColor = MineSafetyYellow.copy(alpha = 0.5f)
-                            )
-                        )
-                    }
-
-                    // Panel de pruebas directas
-                    Text(
-                        text = "Pruebas directas de impresión:",
-                        color = MineTextSecondary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Si la impresora recibe el dato pero no avanza papel, pruebe con 'Texto Plano' o 'ESC/POS' para verificar la respuesta del cabezal.",
-                        color = MineTextMuted,
-                        fontSize = 11.sp
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                val hasPerm = viewModel.printerManager.hasBluetoothPermission()
-                                if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    btPermissionLauncher.launch(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN))
-                                } else {
-                                    isTestingPrint = true
-                                    viewModel.sendTestPrint("ESCPOS") { msg ->
-                                        isTestingPrint = false
-                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            enabled = !isTestingPrint,
-                            modifier = Modifier.weight(1f).height(42.dp).testTag("settings_test_escpos_button"),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MineSafetyYellow),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MineSafetyYellow)
-                        ) {
-                            AutoShrinkText("Prueba ESC/POS", fontWeight = FontWeight.Bold, targetTextSize = 11.sp, minTextSize = 8.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val hasPerm = viewModel.printerManager.hasBluetoothPermission()
-                                if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    btPermissionLauncher.launch(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN))
-                                } else {
-                                    isTestingPrint = true
-                                    viewModel.sendTestPrint("PLAIN") { msg ->
-                                        isTestingPrint = false
-                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            enabled = !isTestingPrint,
-                            modifier = Modifier.weight(1f).height(42.dp).testTag("settings_test_plain_button"),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MineAgentCyan),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MineAgentCyan)
-                        ) {
-                            AutoShrinkText("Prueba Texto", fontWeight = FontWeight.Bold, targetTextSize = 11.sp, minTextSize = 8.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val hasPerm = viewModel.printerManager.hasBluetoothPermission()
-                                if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    btPermissionLauncher.launch(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN))
-                                } else {
-                                    isTestingPrint = true
-                                    viewModel.sendTestPrint("CPCL") { msg ->
-                                        isTestingPrint = false
-                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            enabled = !isTestingPrint,
-                            modifier = Modifier.weight(1f).height(42.dp).testTag("settings_test_cpcl_button"),
-                            shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MineTextSecondary),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MineTextPrimary)
-                        ) {
-                            AutoShrinkText("Prueba CPCL", fontWeight = FontWeight.Bold, targetTextSize = 11.sp, minTextSize = 8.sp)
-                        }
+                    } else {
+                        onGranted()
                     }
                 }
-            }
+            )
 
             // ==========================================
             // SECCIÓN 2: DATOS DE MINA Y ENCABEZADOS
@@ -1075,7 +774,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AutoShrinkText("Salida térmica:", modifier = Modifier.weight(0.4f), color = MineTextSecondary, targetTextSize = 12.sp, minTextSize = 8.sp)
-                        AutoShrinkText("Zebra CPCL • 4\" y 3\" • POS RAW", modifier = Modifier.weight(0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.End, color = MineTextPrimary, fontWeight = FontWeight.Bold, targetTextSize = 12.sp, minTextSize = 8.sp)
+                        AutoShrinkText("CPCL • ESC/POS • 58/80/104mm", modifier = Modifier.weight(0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.End, color = MineTextPrimary, fontWeight = FontWeight.Bold, targetTextSize = 12.sp, minTextSize = 8.sp)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1101,156 +800,5 @@ fun SettingsScreen(
         event = previewFlashEvent,
         enabled = true
     )
-    }
-
-    if (showPrinterDialog) {
-        var pairedList by remember { mutableStateOf<List<BluetoothDevice>>(emptyList()) }
-
-        fun refreshDevices() {
-            pairedList = viewModel.printerManager.getPairedPrinters()
-        }
-
-        LaunchedEffect(Unit) {
-            refreshDevices()
-        }
-
-        AlertDialog(
-            onDismissRequest = { showPrinterDialog = false },
-            title = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Impresoras Bluetooth", color = MineTextPrimary, fontWeight = FontWeight.Bold)
-                    IconButton(onClick = { refreshDevices() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = MineSafetyYellow)
-                    }
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (!viewModel.printerManager.isBluetoothEnabled()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MineErrorRed.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                                .border(1.dp, MineErrorRed, RoundedCornerShape(8.dp))
-                                .padding(10.dp)
-                        ) {
-                            Text(
-                                "El Bluetooth del teléfono está apagado. Por favor actívelo para detectar su impresora.",
-                                color = MineErrorRed,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    } else if (!viewModel.printerManager.hasBluetoothPermission()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MineWarningAmber.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                                .border(1.dp, MineWarningAmber, RoundedCornerShape(8.dp))
-                                .padding(10.dp)
-                        ) {
-                            Text(
-                                "Permiso de Bluetooth no concedido en el teléfono.",
-                                color = MineWarningAmber,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    if (pairedList.isEmpty()) {
-                        Text(
-                            "No se detectaron dispositivos vinculados en Android. Asegúrese de haber emparejado la impresora en la configuración de Bluetooth de su teléfono/escáner primero.",
-                            color = MineTextMuted,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Button(
-                            onClick = {
-                                try {
-                                    context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Abra Ajustes > Bluetooth en su teléfono", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MineSafetyYellow, contentColor = MineDarkBackground),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.Bluetooth, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Abrir Ajustes de Bluetooth", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-                    } else {
-                        Text(
-                            "Dispositivos vinculados encontrados (${pairedList.size}):",
-                            color = MineTextSecondary,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Column(
-                            modifier = Modifier
-                                .heightIn(max = 280.dp)
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            pairedList.forEach { dev ->
-                                val isSelected = dev.address.equals(preferredMac, ignoreCase = true)
-                                val devName = try { dev.name ?: "Dispositivo sin nombre" } catch (e: SecurityException) { "Dispositivo Bluetooth" }
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            preferredMac = dev.address
-                                            preferredName = devName
-                                            viewModel.settingsRepo.setPreferredPrinterMac(dev.address)
-                                            viewModel.settingsRepo.setPreferredPrinterName(preferredName)
-                                            showPrinterDialog = false
-                                            Toast.makeText(context, "Impresora seleccionada: $preferredName", Toast.LENGTH_SHORT).show()
-                                        },
-                                    colors = CardDefaults.cardColors(containerColor = if (isSelected) MineDarkBackground else MineDarkSurface),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) MineSafetyYellow else MineBorderGray)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(Icons.Default.Print, contentDescription = null, tint = if (isSelected) MineSafetyYellow else MineTextMuted)
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            AutoShrinkText(devName, color = MineTextPrimary, fontWeight = FontWeight.Bold, targetTextSize = 13.sp, minTextSize = 9.sp)
-                                            AutoShrinkText(dev.address, color = MineTextSecondary, targetTextSize = 11.sp, minTextSize = 8.sp)
-                                        }
-                                        if (isSelected) {
-                                            Text("Activa", color = MineSafetyYellow, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                if (preferredMac.isNotBlank()) {
-                    TextButton(onClick = {
-                        preferredMac = ""
-                        preferredName = ""
-                        viewModel.settingsRepo.setPreferredPrinterMac("")
-                        viewModel.settingsRepo.setPreferredPrinterName("")
-                        showPrinterDialog = false
-                    }) {
-                        Text("Desvincular", color = MineErrorRed)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPrinterDialog = false }) {
-                    Text("Cerrar", color = MineTextMuted)
-                }
-            },
-            containerColor = MineDarkSurface
-        )
     }
 }

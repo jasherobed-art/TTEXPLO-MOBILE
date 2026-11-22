@@ -134,7 +134,7 @@ class EndToEndFlowTest {
         assertThat(ticketText).contains("REF7712")
         assertThat(ticketText).contains("AUSTINITE 15 CA-1 (SACO)")
         assertThat(ticketText).contains("EMULEX C (1\" X 39.3\")")
-        assertThat(ticketText).contains("TOTAL DE PIEZAS / BULTOS: 2")
+        assertThat(ticketText).contains("TOTAL DE MATERIALES: 2 PZAS")
         assertThat(ticketText).contains("ENTREGO:")
         assertThat(ticketText).contains("RECIBIO:")
     }

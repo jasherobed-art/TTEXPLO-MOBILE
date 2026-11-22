@@ -11,8 +11,8 @@ import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.printer.BluetoothPrinterManager
-import com.ttexplo.mobile.printer.PaperWidth
-import com.ttexplo.mobile.printer.TicketGenerator
+import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.ui.common.ScanFeedbackType
 import com.ttexplo.mobile.ui.common.ScanFlashEvent
 import com.ttexplo.mobile.ui.common.SoundFeedbackManager
@@ -45,6 +45,7 @@ data class AccesoriosUiState(
     val totalPieces: Int = 0,
     val wasRestoredFromDraft: Boolean = false,
     val isPrinting: Boolean = false,
+    val printStatusMessage: String? = null,
     val lastScanMessage: String? = null,
     val latestFlashEvent: ScanFlashEvent? = null
 )
@@ -316,90 +317,31 @@ class AccesoriosViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun printTicket(onComplete: (String) -> Unit) {
+    fun printTicket(
+        profile: PrinterProfile? = null,
+        onComplete: (Boolean, String) -> Unit
+    ) {
         val state = _uiState.value
-        val pairedPrinters = printerManager.getPairedPrinters()
-        if (pairedPrinters.isEmpty()) {
-            onComplete("No hay dispositivos Bluetooth vinculados en Android.")
-            return
-        }
-
-        val targetDevice = printerManager.findPreferredPrinter() ?: pairedPrinters.first()
-        val targetName = try { targetDevice.name ?: targetDevice.address } catch (_: Exception) { targetDevice.address }
+        val record = AccesoriosRecord(
+            vale = state.vale,
+            empresa = state.empresa,
+            lugar = state.lugar,
+            transportista = state.transportista,
+            turno = state.turno,
+            recibio = state.recibio,
+            entrego = state.entrego,
+            voladura = state.voladura,
+            items = state.items
+        )
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isPrinting = true)
-
-            val record = AccesoriosRecord(
-                vale = state.vale,
-                empresa = state.empresa,
-                lugar = state.lugar,
-                transportista = state.transportista,
-                turno = state.turno,
-                recibio = state.recibio,
-                entrego = state.entrego,
-                voladura = state.voladura,
-                items = state.items
+            _uiState.value = _uiState.value.copy(isPrinting = true, printStatusMessage = null)
+            val outcome = ValePrintHelper.printAccesorios(app, record, profile)
+            _uiState.value = _uiState.value.copy(
+                isPrinting = false,
+                printStatusMessage = outcome.message
             )
-
-            val mineName = settingsRepository.getMineName()
-            val permitNumber = settingsRepository.getPermitNumber()
-            val paperWidth = settingsRepository.getPaperWidth()
-            val protocol = settingsRepository.getPrinterProtocol()
-
-            // Check if target is Zebra (CPCL)
-            val isZebra = protocol == "CPCL" || (protocol == "AUTO" && targetName.lowercase().let {
-                it.contains("zebra") || it.contains("zq") || it.contains("rw") || it.contains("qln") || it.contains("zd") || it.contains("imz")
-            })
-
-            val bytes = when (protocol) {
-                "CPCL" -> TicketGenerator.generateAccesoriosCpcl(
-                    accesorios = record,
-                    paperWidth = paperWidth,
-                    mineName = mineName,
-                    permitNumber = permitNumber,
-                    includeSignatures = settingsRepository.getPrintSignatures(),
-                    includeCodeDetails = settingsRepository.getPrintCodeDetails()
-                )
-                "PLAIN" -> TicketGenerator.generateAccesoriosPlain(
-                    record = record,
-                    paperWidth = paperWidth,
-                    mineName = mineName,
-                    permitNumber = permitNumber,
-                    includeSignatures = settingsRepository.getPrintSignatures()
-                )
-                else -> {
-                    if (isZebra && protocol != "ESCPOS") {
-                        TicketGenerator.generateAccesoriosCpcl(
-                            accesorios = record,
-                            paperWidth = paperWidth,
-                            mineName = mineName,
-                            permitNumber = permitNumber,
-                            includeSignatures = settingsRepository.getPrintSignatures(),
-                            includeCodeDetails = settingsRepository.getPrintCodeDetails()
-                        )
-                    } else {
-                        TicketGenerator.generateAccesoriosEscPos(
-                            record = record,
-                            paperWidth = paperWidth,
-                            mineName = mineName,
-                            permitNumber = permitNumber,
-                            includeSignatures = settingsRepository.getPrintSignatures()
-                        )
-                    }
-                }
-            }
-
-            val result = printerManager.printBytes(targetDevice.address, bytes)
-
-            _uiState.value = _uiState.value.copy(isPrinting = false)
-
-            if (result.isSuccess) {
-                onComplete("Impresión exitosa en $targetName")
-            } else {
-                val err = result.exceptionOrNull()?.localizedMessage ?: "Fallo al conectar"
-                onComplete("Error en $targetName: $err")
-            }
+            onComplete(outcome.success, outcome.message)
         }
     }
 

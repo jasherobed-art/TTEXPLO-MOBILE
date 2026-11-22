@@ -7,18 +7,26 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Save
@@ -27,21 +35,35 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
+import com.ttexplo.mobile.domain.model.InventoryCategory
+import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
+import com.ttexplo.mobile.ui.common.ActivePrinterMiniBar
+import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.DummyAccesoriosScannerBar
 import com.ttexplo.mobile.ui.common.ExitScanConfirmDialog
+import com.ttexplo.mobile.ui.common.HorizontalProductFilterRow
+import com.ttexplo.mobile.ui.common.ProductFilterChipData
+import com.ttexplo.mobile.ui.common.QuickPrinterSelectorDialog
+import com.ttexplo.mobile.ui.common.SavedValeReprintDialog
+import com.ttexplo.mobile.ui.common.ScanFilterKeys
 import com.ttexplo.mobile.ui.common.ScanFlashOverlay
 import com.ttexplo.mobile.ui.common.TwoStepDeleteDialog
 import com.ttexplo.mobile.ui.theme.*
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,11 +90,63 @@ fun AccesoriosScanScreen(
 
     var cantidadText by remember { mutableStateOf("1") }
     var codeInput by remember { mutableStateOf("") }
+    var isHeaderExpanded by remember { mutableStateOf(true) }
+    var lastObservedCount by remember { mutableStateOf(0) }
+    val barcodeFocusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
+    var selectedCodeFilter by remember { mutableStateOf<String?>(null) }
+
+    var savedProfiles by remember { mutableStateOf(viewModel.settingsRepository.getPrinterProfiles()) }
+    var activeProfile by remember { mutableStateOf(viewModel.settingsRepository.getActivePrinterProfile()) }
+    var showPrinterPickerDialog by remember { mutableStateOf(false) }
+    var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    var showSavedReprintDialog by remember { mutableStateOf(false) }
+    var copiesPrinted by remember { mutableStateOf(0) }
+
     var itemToDelete by remember { mutableStateOf<AccessoryItemRecord?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = uiState.items.isNotEmpty()) {
+    val anyDialogOpen = showSavedReprintDialog || showPrinterPickerDialog || itemToDelete != null || showExitConfirm
+
+    fun refreshPrinters() {
+        savedProfiles = viewModel.settingsRepository.getPrinterProfiles()
+        activeProfile = viewModel.settingsRepository.getActivePrinterProfile()
+    }
+
+    BackHandler(enabled = uiState.items.isNotEmpty() && !showSavedReprintDialog) {
         showExitConfirm = true
+    }
+
+    LaunchedEffect(Unit) {
+        refreshPrinters()
+        runCatching { barcodeFocusRequester.requestFocus() }
+    }
+
+    LaunchedEffect(anyDialogOpen) {
+        if (!anyDialogOpen) {
+            runCatching { barcodeFocusRequester.requestFocus() }
+        }
+    }
+
+    LaunchedEffect(uiState.items.size) {
+        val currentSize = uiState.items.size
+        if (currentSize > 0 && currentSize != lastObservedCount) {
+            isHeaderExpanded = false
+            if (currentSize > lastObservedCount) {
+                runCatching { listState.animateScrollToItem(0) }
+            }
+        }
+        lastObservedCount = currentSize
+        if (!anyDialogOpen) {
+            runCatching { barcodeFocusRequester.requestFocus() }
+        }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress, listState.firstVisibleItemIndex) {
+        if ((listState.isScrollInProgress || listState.firstVisibleItemIndex > 0) && isHeaderExpanded) {
+            isHeaderExpanded = false
+        }
     }
 
     val btPrintLauncher = rememberLauncherForActivityResult(
@@ -82,18 +156,21 @@ fun AccesoriosScanScreen(
             permissions[Manifest.permission.BLUETOOTH_CONNECT] == true
         } else true
         if (granted) {
-            viewModel.printTicket { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() }
+            pendingBtAction?.invoke()
+            pendingBtAction = null
         } else {
+            pendingBtAction = null
             Toast.makeText(context, "Se requiere permiso de Bluetooth para imprimir", Toast.LENGTH_LONG).show()
         }
     }
 
-    fun requestPrint() {
+    fun withBluetoothPermission(action: () -> Unit) {
         val hasPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
         } else true
 
         if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            pendingBtAction = action
             btPrintLauncher.launch(
                 arrayOf(
                     Manifest.permission.BLUETOOTH_CONNECT,
@@ -101,7 +178,19 @@ fun AccesoriosScanScreen(
                 )
             )
         } else {
-            viewModel.printTicket { msg ->
+            action()
+        }
+    }
+
+    fun executePrint(profileOverride: PrinterProfile? = null, trackCopy: Boolean = false) {
+        withBluetoothPermission {
+            val target = profileOverride ?: activeProfile
+            if (target == null && viewModel.printerManager.getPairedPrinters().size > 1) {
+                showPrinterPickerDialog = true
+                return@withBluetoothPermission
+            }
+            viewModel.printTicket(profile = target) { ok, msg ->
+                if (ok && trackCopy) copiesPrinted += 1
                 Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
             }
         }
@@ -123,9 +212,9 @@ fun AccesoriosScanScreen(
         }
     }
 
-    // Hardware Zebra SE4710 listener
     DisposableEffect(context) {
         val receiver = ZebraScannerReceiver { scannedCode ->
+            isHeaderExpanded = false
             val qty = cantidadText.toIntOrNull() ?: 1
             viewModel.onAccessoryScanned(scannedCode, qty)
             codeInput = ""
@@ -136,327 +225,500 @@ fun AccesoriosScanScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = if (isDevolucion) "Devolución: ${if (vale.startsWith("ACC")) vale else "ACC$vale"}" else "Accesorios: ${if (vale.startsWith("ACC")) vale else "ACC$vale"}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MineTextPrimary
-                        )
-                        Text(
-                            text = "$empresa • $lugar",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = accentColor
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { requestPrint() },
-                        enabled = !uiState.isPrinting && uiState.items.isNotEmpty()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Print,
-                            contentDescription = "Imprimir Ticket",
-                            tint = if (uiState.items.isNotEmpty()) MineSafetyYellow else MineTextMuted
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkBackground)
-            )
-        },
-        containerColor = MineDarkBackground
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Draft Restored Banner (Crash / Power-off recovery)
-            if (uiState.wasRestoredFromDraft) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(accentColor.copy(alpha = 0.15f))
-                        .border(1.dp, accentColor, RoundedCornerShape(8.dp))
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = accentColor)
-                    Text(
-                        text = if (isDevolucion) "Devolución en progreso recuperada (${kotlin.math.abs(uiState.totalPieces)} pzas)" else "Vale en progreso recuperado (${uiState.totalPieces} pzas)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = accentLightColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+    val effVale = uiState.vale.ifEmpty { vale }
+    val effEmpresa = uiState.empresa.ifEmpty { empresa }
+    val effLugar = uiState.lugar.ifEmpty { lugar }
+    val folioDisplay = if (effVale.startsWith("ACC", ignoreCase = true)) effVale else "ACC$effVale"
+    val displayTotal = if (isDevolucion) abs(uiState.totalPieces) else uiState.totalPieces
+
+    val filterChips = remember(uiState.items, uiState.summaries, accentColor) {
+        val list = mutableListOf<ProductFilterChipData>()
+        InventoryCategory.accessoryCategories.forEach { cat ->
+            val catQty = uiState.items
+                .filter { InventoryCategory.inferCategory(ProductType.ACCESORIO, it.code) == cat }
+                .sumOf { abs(it.quantity) }
+            val catColor = when (cat) {
+                InventoryCategory.CORDON_DETONANTE -> MineAgentCyan
+                InventoryCategory.CANUELAS -> MineSafetyYellow
+                else -> EmpaqueAccesorioColor
             }
-
-            // Big total counter
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MineDarkSurface)
-                    .border(2.dp, accentColor, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = if (isDevolucion) "TOTAL DEVUELTO" else "TOTAL ARTIFICIOS",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MineTextMuted,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${if (isDevolucion) kotlin.math.abs(uiState.totalPieces) else uiState.totalPieces}",
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 50.sp),
-                        color = accentColor,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Recibió: $recibio",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MineTextSecondary
-                    )
-                    Text(
-                        text = "Entregó: $entrego",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MineTextSecondary
-                    )
-                }
-            }
-
-            // Input Row: Cantidad + Código de Barras (Manual / Keystroke)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = cantidadText,
-                    onValueChange = { cantidadText = it.filter { c -> c.isDigit() } },
-                    label = { Text(if (isDevolucion) "1. Cant. Devolución" else "1. Cantidad") },
-                    modifier = Modifier.width(if (isDevolucion) 140.dp else 110.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MineBorderGray,
-                        focusedTextColor = MineTextPrimary,
-                        unfocusedTextColor = MineTextPrimary,
-                        focusedLabelColor = accentColor
-                    )
+            list.add(
+                ProductFilterChipData(
+                    key = ScanFilterKeys.forCategory(cat),
+                    title = cat.shortLabel,
+                    empaqueShort = "",
+                    count = catQty,
+                    accentColor = catColor,
+                    isTypeFilter = true
                 )
+            )
+        }
+        uiState.summaries.forEach { s ->
+            list.add(
+                ProductFilterChipData(
+                    key = ScanFilterKeys.forProduct(s.code),
+                    title = s.code,
+                    empaqueShort = "Pzas",
+                    count = abs(s.totalQuantity),
+                    accentColor = accentColor,
+                    isTypeFilter = false
+                )
+            )
+        }
+        list
+    }
 
-                OutlinedTextField(
-                    value = codeInput,
-                    onValueChange = { codeInput = it },
-                    label = { Text(if (isDevolucion) "2. Código + ENTER" else "2. Código (X...) + ENTER") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(
-                        onSend = {
-                            if (codeInput.isNotBlank()) {
-                                val qty = cantidadText.toIntOrNull() ?: 1
-                                viewModel.onAccessoryScanned(codeInput.trim(), qty)
-                                codeInput = ""
+    val filteredItems = remember(uiState.items, selectedCodeFilter) {
+        when {
+            selectedCodeFilter == null -> uiState.items
+            selectedCodeFilter!!.startsWith(ScanFilterKeys.TYPE_PREFIX) -> {
+                val catName = selectedCodeFilter!!.removePrefix(ScanFilterKeys.TYPE_PREFIX)
+                uiState.items.filter {
+                    InventoryCategory.inferCategory(ProductType.ACCESORIO, it.code).name == catName
+                }
+            }
+            selectedCodeFilter!!.startsWith(ScanFilterKeys.PROD_PREFIX) -> {
+                val code = selectedCodeFilter!!.removePrefix(ScanFilterKeys.PROD_PREFIX)
+                uiState.items.filter { it.code == code }
+            }
+            else -> uiState.items
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            AutoShrinkText(
+                                text = if (isDevolucion) "Dev. Acc: $folioDisplay" else "Accesorios: $folioDisplay",
+                                fontWeight = FontWeight.Bold,
+                                color = MineTextPrimary,
+                                targetTextSize = 15.sp,
+                                minTextSize = 12.sp
+                            )
+                            AutoShrinkText(
+                                text = "$effEmpresa • $effLugar",
+                                color = accentColor,
+                                targetTextSize = 12.sp,
+                                minTextSize = 9.sp
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { executePrint() },
+                            enabled = !uiState.isPrinting && uiState.items.isNotEmpty(),
+                            modifier = Modifier.testTag("accesorios_topbar_print_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Print,
+                                contentDescription = "Imprimir Ticket",
+                                tint = if (uiState.items.isNotEmpty()) MineSafetyYellow else MineTextMuted
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkBackground)
+                )
+            },
+            containerColor = MineDarkBackground
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .imePadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (uiState.wasRestoredFromDraft) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(accentColor.copy(alpha = 0.15f))
+                            .border(1.dp, accentColor, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
+                        Text(
+                            text = if (isDevolucion) "Devolución recuperada ($displayTotal pzas)" else "Vale recuperado ($displayTotal pzas)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = accentLightColor,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                // 1. CINTA COMPACTA SUPERIOR DE TOTAL Y CANTIDAD
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MineDarkSurface,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.55f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { isHeaderExpanded = !isHeaderExpanded },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(accentColor.copy(alpha = 0.2f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "TOT: $displayTotal pzas",
+                                    color = accentColor,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 13.sp
+                                )
+                            }
+                            Text(
+                                text = "Cant: x${cantidadText.ifEmpty { "1" }}",
+                                color = MineTextSecondary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { isHeaderExpanded = !isHeaderExpanded }
+                                .testTag("toggle_scan_panel_button"),
+                            color = if (isHeaderExpanded) accentColor.copy(alpha = 0.2f) else MineDarkBackground,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (isHeaderExpanded) accentColor else MineBorderGray)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = if (isHeaderExpanded) "Ocultar" else "Info",
+                                    color = if (isHeaderExpanded) accentColor else MineTextPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Icon(
+                                    imageVector = if (isHeaderExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (isHeaderExpanded) "Colapsar encabezado" else "Expandir encabezado",
+                                    tint = if (isHeaderExpanded) accentColor else MineTextSecondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
                         }
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MineBorderGray,
-                        focusedTextColor = MineTextPrimary,
-                        unfocusedTextColor = MineTextPrimary,
-                        focusedLabelColor = accentColor
-                    )
-                )
-            }
+                    }
+                }
 
-            // Quick quantity buttons for convenience
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                listOf("1", "2", "4", "5", "10", "20").forEach { q ->
-                    FilterChip(
-                        selected = cantidadText == q,
-                        onClick = { cantidadText = q },
-                        label = { Text(q, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = accentColor,
-                            selectedLabelColor = if (isDevolucion) MineDarkBackground else MineTextPrimary
+                // 2. ENCABEZADO COLAPSABLE AUTOMÁTICAMENTE AL DETECTAR ACTIVIDAD
+                AnimatedVisibility(
+                    visible = isHeaderExpanded,
+                    enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                    exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(160))
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("1", "2", "4", "5", "10", "20").forEach { q ->
+                                FilterChip(
+                                    selected = cantidadText == q,
+                                    onClick = { cantidadText = q },
+                                    label = { Text(q, fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = accentColor,
+                                        selectedLabelColor = if (isDevolucion) MineDarkBackground else MineTextPrimary
+                                    )
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MineDarkSurface)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Entregó: ${uiState.entrego.ifEmpty { entrego }}", color = MineTextSecondary, fontSize = 11.sp)
+                            Text("Recibió: ${uiState.recibio.ifEmpty { recibio }}", color = MineTextSecondary, fontSize = 11.sp)
+                        }
+
+                        DummyAccesoriosScannerBar(
+                            onSimulateAccessory = { code ->
+                                isHeaderExpanded = false
+                                val qty = cantidadText.toIntOrNull() ?: 1
+                                viewModel.onAccessoryScanned(code, qty)
+                            },
+                            accentColor = accentColor
+                        )
+                    }
+                }
+
+                // 3. CASILLA DE CANTIDAD + CÓDIGO DE BARRAS (SIEMPRE VISIBLE Y ACTIVA)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = cantidadText,
+                        onValueChange = { cantidadText = it.filter { c -> c.isDigit() } },
+                        label = { Text("Cant.", fontSize = 11.sp) },
+                        modifier = Modifier.width(74.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MineDarkSurface,
+                            unfocusedContainerColor = MineDarkSurface,
+                            focusedBorderColor = accentColor,
+                            unfocusedBorderColor = MineBorderGray,
+                            focusedTextColor = MineTextPrimary,
+                            unfocusedTextColor = MineTextPrimary,
+                            focusedLabelColor = accentColor
                         )
                     )
+
+                    AlwaysActiveBarcodeField(
+                        value = codeInput,
+                        onValueChange = { codeInput = it },
+                        onSubmitBarcode = { scanned ->
+                            val qty = cantidadText.toIntOrNull() ?: 1
+                            viewModel.onAccessoryScanned(scanned, qty)
+                        },
+                        accentColor = accentColor,
+                        placeholderText = "Código (X...) + ENTER...",
+                        focusRequester = barcodeFocusRequester,
+                        testTagName = "accesorios_manual_barcode_input",
+                        onActivityDetected = {
+                            if (isHeaderExpanded) isHeaderExpanded = false
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-            }
 
-            // Simulador de escaneo (MODO PRUEBA plegable)
-            DummyAccesoriosScannerBar(
-                onSimulateAccessory = { code ->
-                    val qty = cantidadText.toIntOrNull() ?: 1
-                    viewModel.onAccessoryScanned(code, qty)
-                },
-                accentColor = accentColor
-            )
+                uiState.lastScanMessage?.let { msg ->
+                    val isError = msg.startsWith("Error", ignoreCase = true)
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isError) MineErrorRedLight else MineSuccessGreenLight
+                    )
+                }
 
-            // Last scan feedback
-            uiState.lastScanMessage?.let { msg ->
-                val isError = msg.startsWith("Error", ignoreCase = true)
-                Text(
-                    text = msg,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isError) MineErrorRedLight else MineSuccessGreenLight
+                // 2. FILTROS HORIZONTALES POR CÓDIGO DE ACCESORIO
+                HorizontalProductFilterRow(
+                    totalCount = displayTotal,
+                    chips = filterChips,
+                    selectedKey = selectedCodeFilter,
+                    accentColor = accentColor,
+                    onSelectKey = { selectedCodeFilter = it }
                 )
-            }
 
-            // Desglose individual de accesorios (auto-ajustable)
-            if (uiState.summaries.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val selectedFilterLabel = remember(selectedCodeFilter, filterChips) {
+                        filterChips.firstOrNull { it.key == selectedCodeFilter }?.title
+                            ?: selectedCodeFilter?.removePrefix(ScanFilterKeys.PROD_PREFIX)?.removePrefix(ScanFilterKeys.TYPE_PREFIX)
+                    }
                     Text(
-                        text = if (isDevolucion) "DESGLOSE DE ACCESORIOS DEVUELTOS:" else "DESGLOSE POR TIPO DE ARTIFICIO:",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MineTextMuted,
+                        text = if (selectedCodeFilter != null) {
+                            "FILTRADO: $selectedFilterLabel (${filteredItems.size} reg.)"
+                        } else {
+                            if (isDevolucion) "ACCESORIOS DEVUELTOS (${uiState.items.size}):" else "ACCESORIOS CAPTURADOS (${uiState.items.size}):"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (selectedCodeFilter != null) accentColor else MineTextMuted,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "${uiState.summaries.size} tipo(s)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = accentLightColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    if (selectedCodeFilter != null) {
+                        Text(
+                            text = "Ver todos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MineAgentCyan,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { selectedCodeFilter = null }
+                        )
+                    }
                 }
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                // 5. LISTADO DE ACCESORIOS
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .testTag("accesorios_codes_lazy_column"),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    val pairs = uiState.summaries.chunked(2)
-                    pairs.forEach { rowSummaries ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            rowSummaries.forEach { summary ->
-                                Box(modifier = Modifier.weight(1f)) {
-                                    AccessorySummaryCard(summary = summary, accentColor = accentColor)
-                                }
+                    if (filteredItems.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 20.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (selectedCodeFilter != null) {
+                                        "Sin accesorios para este filtro"
+                                    } else {
+                                        "Casilla activa: capture cantidad y escanee código (X...)"
+                                    },
+                                    color = MineTextMuted,
+                                    fontSize = 12.sp
+                                )
                             }
-                            if (rowSummaries.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+                        }
+                    } else {
+                        items(filteredItems, key = { it.code + it.timestamp }) { item ->
+                            AccessoryRowCard(
+                                item = item,
+                                accentColor = accentColor,
+                                onDelete = { itemToDelete = item }
+                            )
                         }
                     }
                 }
-            }
 
-            // Items List
-            Text(
-                text = if (isDevolucion) "ACCESORIOS DEVUELTOS EN ESTE VALE:" else "ACCESORIOS EN ESTE VALE:",
-                style = MaterialTheme.typography.labelLarge,
-                color = MineTextMuted,
-                fontWeight = FontWeight.Bold
-            )
+                ActivePrinterMiniBar(
+                    activeProfile = activeProfile,
+                    totalProfiles = savedProfiles.size,
+                    onChangePrinterClick = {
+                        withBluetoothPermission { showPrinterPickerDialog = true }
+                    }
+                )
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(uiState.items, key = { it.code + it.timestamp }) { item ->
-                    AccessoryRowCard(
-                        item = item,
-                        accentColor = accentColor,
-                        onDelete = { itemToDelete = item }
-                    )
-                }
-            }
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { requestPrint() },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    enabled = !uiState.isPrinting && uiState.items.isNotEmpty(),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Print, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    AutoShrinkText(
-                        text = if (uiState.isPrinting) "Imprimiendo..." else "Imprimir Ticket",
-                        initialTextSize = 12.sp,
-                        minTextSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = accentColor,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
+                    OutlinedButton(
+                        onClick = { executePrint() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("accesorios_print_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !uiState.isPrinting && uiState.items.isNotEmpty(),
+                        border = BorderStroke(1.dp, accentColor),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = accentColor)
+                    ) {
+                        Icon(imageVector = Icons.Default.Print, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        AutoShrinkText(
+                            text = if (uiState.isPrinting) "Imprimiendo..." else "Imprimir",
+                            initialTextSize = 12.sp,
+                            minTextSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
 
-                Button(
-                    onClick = {
-                        viewModel.finishAndSave(onFinished)
-                    },
-                    modifier = Modifier
-                        .weight(1.3f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDevolucion) MineAgentCyan else MineSuccessGreen
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = null,
-                        tint = if (isDevolucion) MineDarkBackground else MineTextPrimary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    AutoShrinkText(
-                        text = if (isDevolucion) "Guardar Devolución (${kotlin.math.abs(uiState.totalPieces)})" else "Guardar Vale (${uiState.totalPieces})",
-                        initialTextSize = 13.sp,
-                        minTextSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isDevolucion) MineDarkBackground else MineTextPrimary,
-                        maxLines = 1,
-                        softWrap = false
-                    )
+                    Button(
+                        onClick = {
+                            viewModel.finishAndSave {
+                                refreshPrinters()
+                                copiesPrinted = 0
+                                showSavedReprintDialog = true
+                            }
+                        },
+                        enabled = uiState.items.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(48.dp)
+                            .testTag("accesorios_save_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isDevolucion) MineAgentCyan else MineSuccessGreen
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = null,
+                            tint = if (isDevolucion) MineDarkBackground else MineTextPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        AutoShrinkText(
+                            text = if (isDevolucion) "Guardar ($displayTotal)" else "Guardar Vale ($displayTotal)",
+                            initialTextSize = 13.sp,
+                            minTextSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDevolucion) MineDarkBackground else MineTextPrimary,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
         }
+        ScanFlashOverlay(
+            event = uiState.latestFlashEvent,
+            enabled = viewModel.isVisualFlashEnabled()
+        )
     }
-    ScanFlashOverlay(
-        event = uiState.latestFlashEvent,
-        enabled = viewModel.isVisualFlashEnabled()
-    )
+
+    if (showSavedReprintDialog) {
+        SavedValeReprintDialog(
+            valeTypeTitle = if (isDevolucion) "Devolución de Accesorios" else "Vale de Accesorios",
+            folio = folioDisplay,
+            itemCountSummary = "$displayTotal piezas",
+            activeProfile = activeProfile,
+            totalProfiles = savedProfiles.size,
+            copiesPrinted = copiesPrinted,
+            isPrinting = uiState.isPrinting,
+            printStatusMessage = uiState.printStatusMessage,
+            accentColor = accentColor,
+            onPrintClick = { executePrint(trackCopy = true) },
+            onChangePrinterClick = {
+                withBluetoothPermission { showPrinterPickerDialog = true }
+            },
+            onFinishClick = {
+                showSavedReprintDialog = false
+                onFinished()
+            }
+        )
+    }
+
+    if (showPrinterPickerDialog) {
+        QuickPrinterSelectorDialog(
+            onSelectProfile = { selected ->
+                refreshPrinters()
+                activeProfile = selected
+                showPrinterPickerDialog = false
+                Toast.makeText(context, "Impresora activa: ${selected.displayTitle()}", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { showPrinterPickerDialog = false }
+        )
     }
 
     itemToDelete?.let { target ->
@@ -485,69 +747,6 @@ fun AccesoriosScanScreen(
 }
 
 @Composable
-fun AccessorySummaryCard(
-    summary: AccessorySummary,
-    accentColor: androidx.compose.ui.graphics.Color = MineAccessoryPurple
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MineDarkSurface)
-            .border(1.dp, accentColor.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
-            AutoShrinkText(
-                text = summary.code,
-                initialTextSize = 13.sp,
-                minTextSize = 9.sp,
-                color = MineTextPrimary,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                softWrap = true
-            )
-            AutoShrinkText(
-                text = "${summary.countEntries} registro(s)",
-                initialTextSize = 11.sp,
-                minTextSize = 8.sp,
-                color = MineTextSecondary,
-                fontWeight = FontWeight.Normal,
-                maxLines = 1,
-                softWrap = true
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .background(accentColor)
-                .padding(horizontal = 8.dp, vertical = 3.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "${summary.totalQuantity}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = if (accentColor == MineAgentCyan) MineDarkBackground else MineTextPrimary,
-                    fontSize = 15.sp
-                )
-                Text(
-                    text = "Pzas",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (accentColor == MineAgentCyan) MineDarkBackground else MineTextPrimary,
-                    fontSize = 9.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun AccessoryRowCard(
     item: AccessoryItemRecord,
     accentColor: androidx.compose.ui.graphics.Color = MineAccessoryPurple,
@@ -559,7 +758,7 @@ fun AccessoryRowCard(
             .clip(RoundedCornerShape(8.dp))
             .background(MineDarkSurface)
             .border(1.dp, MineBorderGray, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

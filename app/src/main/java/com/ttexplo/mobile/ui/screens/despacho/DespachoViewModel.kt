@@ -19,7 +19,9 @@ import com.ttexplo.mobile.domain.scanner.ScanResult
 import com.ttexplo.mobile.domain.scanner.ScanValidator
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.printer.BluetoothPrinterManager
-import com.ttexplo.mobile.printer.TicketGenerator
+import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
+import com.ttexplo.mobile.ui.common.DuplicateCodeAlert
 import com.ttexplo.mobile.ui.common.ScanFeedbackType
 import com.ttexplo.mobile.ui.common.ScanFlashEvent
 import com.ttexplo.mobile.ui.common.SoundFeedbackManager
@@ -47,6 +49,8 @@ data class DespachoUiState(
     val turno: String = "",
     val voladura: String = "",
     val scannedItems: List<BarcodeItem> = emptyList(),
+    val duplicateAttemptCounts: Map<String, Int> = emptyMap(),
+    val lastDuplicateAlert: DuplicateCodeAlert? = null,
     val latestScanResult: ScanResult? = null,
     val latestFlashEvent: ScanFlashEvent? = null,
     val markers: List<ProductMarker> = emptyList(),
@@ -219,9 +223,17 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
 
                 if (result.isDuplicate) {
                     soundFeedback.playWarning()
+                    val currentCounts = _uiState.value.duplicateAttemptCounts
+                    val nextAttempt = (currentCounts[result.rawBarcode] ?: 0) + 1
+                    val updatedCounts = currentCounts + (result.rawBarcode to nextAttempt)
                     _uiState.value = _uiState.value.copy(
+                        duplicateAttemptCounts = updatedCounts,
+                        lastDuplicateAlert = DuplicateCodeAlert(
+                            code = result.rawBarcode,
+                            attemptCount = nextAttempt
+                        ),
                         latestScanResult = result,
-                        latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.WARNING)
+                        latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.ERROR)
                     )
                 } else {
                     soundFeedback.playSuccess()
@@ -269,8 +281,12 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
                 }
                 val updated = _uiState.value.scannedItems.filterNot { it.code == item.code }
                 val markers = calculateMarkers(updated)
+                val updatedDuplicates = _uiState.value.duplicateAttemptCounts - item.code
+                val updatedAlert = _uiState.value.lastDuplicateAlert?.takeUnless { it.code == item.code }
                 _uiState.value = _uiState.value.copy(
                     scannedItems = updated,
+                    duplicateAttemptCounts = updatedDuplicates,
+                    lastDuplicateAlert = updatedAlert,
                     markers = markers,
                     latestScanResult = ScanResult(
                         rawBarcode = item.code,
@@ -354,109 +370,36 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun printTicket(onComplete: (String) -> Unit) {
+    fun printTicket(
+        profile: PrinterProfile? = null,
+        onComplete: (Boolean, String) -> Unit
+    ) {
         val state = _uiState.value
-        val pairedPrinters = printerManager.getPairedPrinters()
-        if (pairedPrinters.isEmpty()) {
-            onComplete("No hay dispositivos Bluetooth vinculados en Android.")
-            return
-        }
-
-        val targetDevice = printerManager.findPreferredPrinter() ?: pairedPrinters.first()
-        val targetName = try { targetDevice.name ?: targetDevice.address } catch (_: Exception) { targetDevice.address }
+        val record = DespachoRecord(
+            vale = state.vale,
+            empresa = state.empresa,
+            lugar = state.lugar,
+            transportista = state.transportista,
+            turno = state.turno,
+            voladura = state.voladura,
+            items = state.scannedItems.map {
+                ScannedCodeRecord(
+                    code = it.code,
+                    timestamp = it.timestamp,
+                    productName = it.productInfo.name,
+                    presentation = it.productInfo.presentation
+                )
+            }
+        )
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isPrinting = true)
-
-            val record = DespachoRecord(
-                vale = state.vale,
-                empresa = state.empresa,
-                lugar = state.lugar,
-                transportista = state.transportista,
-                turno = state.turno,
-                voladura = state.voladura,
-                items = state.scannedItems.map {
-                    ScannedCodeRecord(
-                        code = it.code,
-                        timestamp = it.timestamp,
-                        productName = it.productInfo.name,
-                        presentation = it.productInfo.presentation
-                    )
-                }
-            )
-
-            val mineName = settingsRepository.getMineName()
-            val permitNumber = settingsRepository.getPermitNumber()
-            val ticketHeader = settingsRepository.getTicketHeader()
-            val paperWidth = settingsRepository.getPaperWidth()
-            val protocol = settingsRepository.getPrinterProtocol()
-
-            // Check if target is Zebra (CPCL)
-            val isZebra = protocol == "CPCL" || (protocol == "AUTO" && targetName.lowercase().let {
-                it.contains("zebra") || it.contains("zq") || it.contains("rw") || it.contains("qln") || it.contains("zd") || it.contains("imz")
-            })
-
-            val bytes = when (protocol) {
-                "CPCL" -> TicketGenerator.generateDespachoCpcl(
-                    despacho = record,
-                    paperWidth = paperWidth,
-                    mineName = mineName,
-                    permitNumber = permitNumber,
-                    headerNote = ticketHeader,
-                    includeSignatures = settingsRepository.getPrintSignatures(),
-                    includeBreakdown = settingsRepository.getPrintBreakdown(),
-                    includeCodeDetails = settingsRepository.getPrintCodeDetails()
-                )
-                "PLAIN" -> TicketGenerator.generateDespachoPlain(
-                    record = record,
-                    paperWidth = paperWidth,
-                    mineName = mineName,
-                    permitNumber = permitNumber,
-                    headerNote = ticketHeader,
-                    includeSignatures = settingsRepository.getPrintSignatures(),
-                    includeBreakdown = settingsRepository.getPrintBreakdown(),
-                    includeCodeDetails = settingsRepository.getPrintCodeDetails()
-                )
-                else -> {
-                    if (isZebra && protocol != "ESCPOS") {
-                        TicketGenerator.generateDespachoCpcl(
-                            despacho = record,
-                            paperWidth = paperWidth,
-                            mineName = mineName,
-                            permitNumber = permitNumber,
-                            headerNote = ticketHeader,
-                            includeSignatures = settingsRepository.getPrintSignatures(),
-                            includeBreakdown = settingsRepository.getPrintBreakdown(),
-                            includeCodeDetails = settingsRepository.getPrintCodeDetails()
-                        )
-                    } else {
-                        TicketGenerator.generateDespachoEscPos(
-                            record = record,
-                            paperWidth = paperWidth,
-                            mineName = mineName,
-                            permitNumber = permitNumber,
-                            headerNote = ticketHeader,
-                            includeSignatures = settingsRepository.getPrintSignatures(),
-                            includeBreakdown = settingsRepository.getPrintBreakdown(),
-                            includeCodeDetails = settingsRepository.getPrintCodeDetails()
-                        )
-                    }
-                }
-            }
-
-            val result = printerManager.printBytes(targetDevice.address, bytes)
-
+            _uiState.value = _uiState.value.copy(isPrinting = true, printStatusMessage = null)
+            val outcome = ValePrintHelper.printDespacho(app, record, profile)
             _uiState.value = _uiState.value.copy(
                 isPrinting = false,
-                printStatusMessage = if (result.isSuccess) "Ticket impreso en $targetName" else "Error en $targetName: ${result.exceptionOrNull()?.localizedMessage}"
+                printStatusMessage = outcome.message
             )
-
-            if (result.isSuccess) {
-                onComplete("Impresión exitosa en $targetName")
-            } else {
-                val err = result.exceptionOrNull()?.localizedMessage ?: "Fallo al conectar"
-                onComplete("Error en $targetName: $err")
-            }
+            onComplete(outcome.success, outcome.message)
         }
     }
 

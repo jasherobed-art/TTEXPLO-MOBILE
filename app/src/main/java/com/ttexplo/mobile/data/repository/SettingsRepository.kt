@@ -3,10 +3,15 @@ package com.ttexplo.mobile.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import com.ttexplo.mobile.printer.PaperWidth
+import com.ttexplo.mobile.printer.PrinterProfile
 
-class SettingsRepository(context: Context) {
+class SettingsRepository internal constructor(
+    private val prefs: SharedPreferences
+) {
 
-    private val prefs: SharedPreferences = context.getSharedPreferences("ttexplo_prefs", Context.MODE_PRIVATE)
+    constructor(context: Context) : this(
+        context.getSharedPreferences("ttexplo_prefs", Context.MODE_PRIVATE)
+    )
 
     fun getMineName(): String = prefs.getString("mine_name", "MINERA T&T S.A. DE C.V.") ?: "MINERA T&T S.A. DE C.V."
     fun setMineName(name: String) = prefs.edit().putString("mine_name", name.trim()).apply()
@@ -24,13 +29,149 @@ class SettingsRepository(context: Context) {
     fun setPreferredPrinterName(name: String) = prefs.edit().putString("preferred_printer_name", name).apply()
 
     fun getPaperWidth(): PaperWidth {
-        val widthStr = prefs.getString("paper_width", "WIDTH_4_INCH") ?: "WIDTH_4_INCH"
-        return if (widthStr == "WIDTH_3_INCH") PaperWidth.WIDTH_3_INCH else PaperWidth.WIDTH_4_INCH
+        val widthStr = prefs.getString("paper_width", PaperWidth.WIDTH_4_INCH.name)
+        return PaperWidth.fromNameOrDefault(widthStr)
     }
-    fun setPaperWidth(width: PaperWidth) = prefs.edit().putString("paper_width", width.name).apply()
+    fun setPaperWidth(width: PaperWidth) {
+        prefs.edit().putString("paper_width", width.name).apply()
+        syncActiveProfileSettings(paperWidth = width)
+    }
 
     fun getPrinterProtocol(): String = prefs.getString("printer_protocol", "CPCL") ?: "CPCL"
-    fun setPrinterProtocol(protocol: String) = prefs.edit().putString("printer_protocol", protocol.trim()).apply()
+    fun setPrinterProtocol(protocol: String) {
+        val normalized = protocol.trim().uppercase()
+        prefs.edit().putString("printer_protocol", normalized).apply()
+        syncActiveProfileSettings(protocol = normalized)
+    }
+
+    // =========================================================================
+    // GESTIÓN DE MÚLTIPLES IMPRESORAS BLUETOOTH (v2.5.0)
+    // =========================================================================
+
+    fun getPrinterProfiles(): List<PrinterProfile> {
+        val raw = prefs.getString(KEY_PRINTER_PROFILES, null)
+        val parsed = PrinterProfile.listFromJsonString(raw)
+        if (parsed.isNotEmpty()) {
+            val activeId = prefs.getString(KEY_ACTIVE_PRINTER_ID, null)
+            return if (activeId != null && parsed.any { it.id == activeId }) {
+                parsed.map { it.copy(isDefault = it.id == activeId) }
+            } else {
+                val firstDefault = parsed.firstOrNull { it.isDefault } ?: parsed.first()
+                parsed.map { it.copy(isDefault = it.id == firstDefault.id) }
+            }
+        }
+
+        // Migración automática transparente desde v2.4.1 (impresora única legada)
+        val legacyMac = getPreferredPrinterMac().trim()
+        if (legacyMac.isNotBlank()) {
+            val legacyName = getPreferredPrinterName().trim().ifBlank { legacyMac }
+            val migrated = PrinterProfile(
+                alias = legacyName,
+                macAddress = legacyMac,
+                deviceName = legacyName,
+                protocol = getPrinterProtocol(),
+                paperWidth = getPaperWidth(),
+                isDefault = true
+            )
+            savePrinterProfiles(listOf(migrated))
+            return listOf(migrated)
+        }
+
+        return emptyList()
+    }
+
+    fun savePrinterProfiles(profiles: List<PrinterProfile>) {
+        val normalized = if (profiles.isEmpty()) {
+            emptyList()
+        } else {
+            val defaultProfile = profiles.firstOrNull { it.isDefault } ?: profiles.first()
+            profiles.map { it.copy(isDefault = it.id == defaultProfile.id) }
+        }
+
+        val active = normalized.firstOrNull { it.isDefault }
+        val editor = prefs.edit()
+            .putString(KEY_PRINTER_PROFILES, PrinterProfile.listToJsonString(normalized))
+            .putString(KEY_ACTIVE_PRINTER_ID, active?.id ?: "")
+
+        // Mantener sincronizadas las claves legadas para compatibilidad 100%
+        if (active != null) {
+            editor
+                .putString("preferred_printer_mac", active.macAddress)
+                .putString("preferred_printer_name", active.displayTitle())
+                .putString("printer_protocol", active.protocol)
+                .putString("paper_width", active.paperWidth.name)
+        } else {
+            editor
+                .putString("preferred_printer_mac", "")
+                .putString("preferred_printer_name", "")
+        }
+        editor.apply()
+    }
+
+    fun getActivePrinterProfile(): PrinterProfile? {
+        val profiles = getPrinterProfiles()
+        return profiles.firstOrNull { it.isDefault } ?: profiles.firstOrNull()
+    }
+
+    fun upsertPrinterProfile(profile: PrinterProfile, setAsActive: Boolean = false): List<PrinterProfile> {
+        val current = getPrinterProfiles().toMutableList()
+        val existingIdx = current.indexOfFirst {
+            it.id == profile.id || it.macAddress.equals(profile.macAddress, ignoreCase = true)
+        }
+        val makeActive = setAsActive || profile.isDefault || current.isEmpty()
+        val updatedProfile = profile.copy(isDefault = makeActive)
+
+        if (existingIdx >= 0) {
+            val keepId = current[existingIdx].id
+            current[existingIdx] = updatedProfile.copy(id = keepId)
+        } else {
+            current.add(updatedProfile)
+        }
+
+        val finalList = if (makeActive) {
+            val targetId = if (existingIdx >= 0) current[existingIdx].id else updatedProfile.id
+            current.map { it.copy(isDefault = it.id == targetId) }
+        } else {
+            current
+        }
+        savePrinterProfiles(finalList)
+        return getPrinterProfiles()
+    }
+
+    fun setActivePrinterProfile(profileId: String): List<PrinterProfile> {
+        val current = getPrinterProfiles()
+        if (current.none { it.id == profileId }) return current
+        val updated = current.map { it.copy(isDefault = it.id == profileId) }
+        savePrinterProfiles(updated)
+        return getPrinterProfiles()
+    }
+
+    fun deletePrinterProfile(profileId: String): List<PrinterProfile> {
+        val remaining = getPrinterProfiles().filterNot { it.id == profileId }
+        savePrinterProfiles(remaining)
+        return getPrinterProfiles()
+    }
+
+    private fun syncActiveProfileSettings(protocol: String? = null, paperWidth: PaperWidth? = null) {
+        val raw = prefs.getString(KEY_PRINTER_PROFILES, null) ?: return
+        val profiles = PrinterProfile.listFromJsonString(raw)
+        if (profiles.isEmpty()) return
+        val activeId = prefs.getString(KEY_ACTIVE_PRINTER_ID, null)
+        val updated = profiles.map { p ->
+            val isTarget = if (!activeId.isNullOrBlank()) p.id == activeId else p.isDefault
+            if (isTarget) {
+                p.copy(
+                    protocol = protocol ?: p.protocol,
+                    paperWidth = paperWidth ?: p.paperWidth
+                )
+            } else {
+                p
+            }
+        }
+        prefs.edit().putString(KEY_PRINTER_PROFILES, PrinterProfile.listToJsonString(updated)).apply()
+    }
+
+    // =========================================================================
 
     fun getPrintSignatures(): Boolean = prefs.getBoolean("print_signatures", true)
     fun setPrintSignatures(enabled: Boolean) = prefs.edit().putBoolean("print_signatures", enabled).apply()
@@ -67,5 +208,7 @@ class SettingsRepository(context: Context) {
     companion object {
         const val AUDIO_STREAM_MEDIA = "MEDIA"
         const val AUDIO_STREAM_ALARM = "ALARM"
+        private const val KEY_PRINTER_PROFILES = "printer_profiles_json"
+        private const val KEY_ACTIVE_PRINTER_ID = "active_printer_profile_id"
     }
 }
