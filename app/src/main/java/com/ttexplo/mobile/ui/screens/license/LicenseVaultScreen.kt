@@ -122,20 +122,20 @@ fun LicenseVaultScreen(onNavigateBack: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = { showAdd = true },
-                    modifier = Modifier.weight(1f).testTag("vault_add_license_button")
+                    modifier = Modifier.weight(1.2f).height(48.dp).testTag("vault_add_license_button")
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
-                    Text("Agregar licencia")
+                    Text("Agregar", maxLines = 1, fontSize = 12.sp)
                 }
                 OutlinedButton(
                     onClick = { exportLauncher.launch("ttexplo-licencias.json") },
-                    modifier = Modifier.weight(1f)
-                ) { Text("Exportar") }
+                    modifier = Modifier.weight(1f).height(48.dp)
+                ) { Text("Exportar", maxLines = 1, fontSize = 12.sp) }
                 OutlinedButton(
                     onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                    modifier = Modifier.weight(1f)
-                ) { Text("Importar") }
+                    modifier = Modifier.weight(1f).height(48.dp)
+                ) { Text("Importar", maxLines = 1, fontSize = 12.sp) }
             }
 
             message?.let {
