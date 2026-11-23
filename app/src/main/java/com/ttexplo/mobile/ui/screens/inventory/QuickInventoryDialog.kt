@@ -377,6 +377,7 @@ fun QuickInventoryDialog(
                             }
                         }
 
+                        if (com.ttexplo.mobile.license.LicenseManager.isDemoModeAllowed(androidx.compose.ui.platform.LocalContext.current)) {
                         OutlinedButton(
                             onClick = { showTestSamples = !showTestSamples },
                             modifier = Modifier.height(44.dp),
@@ -446,6 +447,7 @@ fun QuickInventoryDialog(
                                     label = { Text("Detonador (PZA)", fontSize = 11.sp, color = EmpaqueAccesorioColor) }
                                 )
                             }
+                        }
                         }
                     }
 

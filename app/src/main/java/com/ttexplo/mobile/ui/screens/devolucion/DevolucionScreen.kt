@@ -602,14 +602,16 @@ fun DevolucionScreen(
                             )
                         }
 
-                        DummyExplosivesScannerBar(
-                            onSimulateScan = { code ->
-                                isHeaderExpanded = false
-                                viewModel.onScanned(code)
-                            },
-                            lastValidCode = items.firstOrNull()?.code,
-                            allowAccessories = true
-                        )
+                        if (com.ttexplo.mobile.license.LicenseManager.isDemoModeAllowed(androidx.compose.ui.platform.LocalContext.current)) {
+                            DummyExplosivesScannerBar(
+                                onSimulateScan = { code ->
+                                    isHeaderExpanded = false
+                                    viewModel.onScanned(code)
+                                },
+                                lastValidCode = items.firstOrNull()?.code,
+                                allowAccessories = true
+                            )
+                        }
                     }
                 }
 

@@ -267,6 +267,7 @@ internal fun ReceiveSyncTab(
             }
         }
 
+        if (com.ttexplo.mobile.license.LicenseManager.isDemoModeAllowed(androidx.compose.ui.platform.LocalContext.current)) {
         // Panel plegable MODO PRUEBA (simulador de segunda terminal ZBR-POLV-02)
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -353,6 +354,7 @@ internal fun ReceiveSyncTab(
                     }
                 }
             }
+        }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

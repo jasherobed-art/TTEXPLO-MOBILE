@@ -3,6 +3,7 @@ package com.ttexplo.mobile.license
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Before
@@ -75,6 +76,24 @@ class LicenseVaultTest {
         val result = LicenseManager.saveLicense(context, validToken())
         assertThat(result.isSuccess).isTrue()
         assertThat(LicenseManager.isDemoModeAllowed(context)).isFalse()
+    }
+
+    @Test
+    fun demoPanelsUseLicenseFlag() {
+        val files = listOf(
+            "app/src/main/java/com/ttexplo/mobile/ui/screens/entradas/EntradasScanScreen.kt",
+            "app/src/main/java/com/ttexplo/mobile/ui/screens/despacho/DespachoScanScreen.kt",
+            "app/src/main/java/com/ttexplo/mobile/ui/screens/devolucion/DevolucionScreen.kt",
+            "app/src/main/java/com/ttexplo/mobile/ui/screens/accesorios/AccesoriosScanScreen.kt",
+            "app/src/main/java/com/ttexplo/mobile/ui/screens/inventory/InventorySyncReceiveAndConflictsTabs.kt",
+            "app/src/main/java/com/ttexplo/mobile/ui/screens/inventory/QuickInventoryDialog.kt"
+        )
+        val root = generateSequence(java.io.File(System.getProperty("user.dir"))) { it.parentFile }
+            .first { java.io.File(it, "app/src/main/java").exists() }
+        files.forEach { rel ->
+            val content = java.io.File(root, rel).readText()
+            assertWithMessage(rel).that(content).contains("isDemoModeAllowed")
+        }
     }
 
     @Test

@@ -466,14 +466,16 @@ fun AccesoriosScanScreen(
                             Text("Recibió: ${uiState.recibio.ifEmpty { recibio }}", color = MineTextSecondary, fontSize = 11.sp)
                         }
 
-                        DummyAccesoriosScannerBar(
-                            onSimulateAccessory = { code ->
-                                isHeaderExpanded = false
-                                val qty = cantidadText.toIntOrNull() ?: 1
-                                viewModel.onAccessoryScanned(code, qty)
-                            },
-                            accentColor = accentColor
-                        )
+                        if (com.ttexplo.mobile.license.LicenseManager.isDemoModeAllowed(androidx.compose.ui.platform.LocalContext.current)) {
+                            DummyAccesoriosScannerBar(
+                                onSimulateAccessory = { code ->
+                                    isHeaderExpanded = false
+                                    val qty = cantidadText.toIntOrNull() ?: 1
+                                    viewModel.onAccessoryScanned(code, qty)
+                                },
+                                accentColor = accentColor
+                            )
+                        }
                     }
                 }
 

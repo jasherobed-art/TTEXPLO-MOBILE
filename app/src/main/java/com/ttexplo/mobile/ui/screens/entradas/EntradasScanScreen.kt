@@ -388,14 +388,16 @@ fun EntradasScanScreen(
                             }
                         }
 
-                        DummyExplosivesScannerBar(
-                            onSimulateScan = { code ->
-                                isHeaderExpanded = false
-                                viewModel.onBarcodeScanned(code)
-                            },
-                            lastValidCode = uiState.scannedItems.firstOrNull()?.code,
-                            allowAccessories = false
-                        )
+                        if (com.ttexplo.mobile.license.LicenseManager.isDemoModeAllowed(androidx.compose.ui.platform.LocalContext.current)) {
+                            DummyExplosivesScannerBar(
+                                onSimulateScan = { code ->
+                                    isHeaderExpanded = false
+                                    viewModel.onBarcodeScanned(code)
+                                },
+                                lastValidCode = uiState.scannedItems.firstOrNull()?.code,
+                                allowAccessories = false
+                            )
+                        }
                     }
                 }
 
