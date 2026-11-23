@@ -18,6 +18,7 @@ object LicenseManager {
     private const val PREFS_NAME = "ttexplo_license_prefs"
     private const val KEY_TOKEN = "active_license_token"
     private const val KEY_TEMP_1DAY_PROVISIONED = "temp_1day_trial_provisioned"
+    private const val KEY_REAL_LICENSE_INSTALLED = "real_license_installed"
 
     private val SHORT_KEY_REGEX = Regex(
         "^TTEX-(PERP|[DAT]\\d{6})-([A-Z0-9]{3,4})-([0-9A-F]{8})$"
@@ -493,7 +494,10 @@ object LicenseManager {
         if (verification.isSuccess) {
             val cleanNormalizedToken = verification.getOrThrow().rawToken
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putString(KEY_TOKEN, cleanNormalizedToken).apply()
+            prefs.edit()
+                .putString(KEY_TOKEN, cleanNormalizedToken)
+                .putBoolean(KEY_REAL_LICENSE_INSTALLED, true)
+                .apply()
         }
         return verification
     }
@@ -504,6 +508,15 @@ object LicenseManager {
     fun clearLicense(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().remove(KEY_TOKEN).apply()
+    }
+
+    /**
+     * Los paneles de simulación solo se muestran mientras no se haya instalado una licencia real.
+     * La licencia temporal de fábrica no desactiva los modos de prueba.
+     */
+    fun isDemoModeAllowed(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return !prefs.getBoolean(KEY_REAL_LICENSE_INSTALLED, false)
     }
 
     /**
