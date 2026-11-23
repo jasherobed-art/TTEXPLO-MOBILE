@@ -19,6 +19,14 @@ android {
     versionCode = 20
     versionName = "2.5.0"
 
+    // El plugin `secrets` inyecta SYNC_HMAC_KEY desde .env/.env.example como BuildConfig.SYNC_HMAC_KEY.
+    // Declararlo aquí lo hace explícito; el plugin sobrescribe el valor con el de .env en tiempo de build.
+    buildConfigField(
+        "String",
+        "SYNC_HMAC_KEY",
+        "\"${providers.gradleProperty("SYNC_HMAC_KEY").orNull ?: "dev-sync-hmac-key-2026-11-22"}\""
+    )
+
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 

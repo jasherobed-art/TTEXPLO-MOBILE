@@ -1,5 +1,6 @@
 package com.ttexplo.mobile.domain.inventory
 
+import com.example.BuildConfig
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
@@ -11,6 +12,8 @@ import com.ttexplo.mobile.domain.model.ProductType
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
+import java.time.Instant
 import java.util.Base64
 import java.util.Locale
 import java.util.UUID
@@ -18,6 +21,8 @@ import java.util.zip.CRC32
 import java.util.zip.Deflater
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 enum class SyncExportScope(val label: String, val subtitle: String) {
     PENDING_ONLY("Pendientes nuevos", "Solo eventos locales aún no compartidos"),
@@ -104,6 +109,8 @@ object QrSyncCodec {
     const val PROTOCOL_VERSION = "V2"
     const val PROTOCOL_V3_PREFIX = "TTEX3"
     const val PROTOCOL_V3_VERSION = "V3"
+    const val PROTOCOL_V4_PREFIX = "TTEX4"
+    const val PROTOCOL_V4_VERSION = "V4"
     const val DEFAULT_MAX_CHUNK_CHARS = 450
     const val DEFAULT_V3_MAX_CHUNK_CHARS = 1400
 
@@ -186,6 +193,54 @@ object QrSyncCodec {
     }
 
     /**
+     * Codificador V4 autenticado: igual que V3 pero la firma HMAC-SHA256 sustituye al CRC32.
+     * Formato: `TTEX4:<SID>:<i/N>:<HMAC_HEX64>:<BASE45>`.
+     */
+    fun encodeV4(
+        binaryPayload: ByteArray,
+        rawJsonBytes: Int = binaryPayload.size,
+        eventCount: Int = 0,
+        codeEventCount: Int = 0,
+        maxChunkChars: Int = DEFAULT_V3_MAX_CHUNK_CHARS,
+        useLowErrorCorrection: Boolean = true,
+        sessionIdOverride: String? = null
+    ): QrSyncPackage {
+        val base45Payload = Base45Codec.encode(binaryPayload)
+        val hmacHex = computeHmacSha256Hex(base45Payload)
+        val sessionId = (sessionIdOverride?.trim()?.uppercase(Locale.US)?.take(6)?.ifBlank { null })
+            ?: UUID.randomUUID().toString().replace("-", "").take(6).uppercase(Locale.US)
+
+        val safeChunkSize = maxChunkChars.coerceAtLeast(120)
+        val rawChunks = if (base45Payload.isEmpty()) listOf("") else base45Payload.chunked(safeChunkSize)
+        val totalParts = rawChunks.size
+        val chunks = rawChunks.mapIndexed { idx, chunkPayload ->
+            val partNumber = idx + 1
+            val rawText = "$PROTOCOL_V4_PREFIX:$sessionId:$partNumber/$totalParts:$hmacHex:$chunkPayload"
+            QrSyncChunk(
+                sessionId = sessionId,
+                partIndex = partNumber,
+                totalParts = totalParts,
+                // Campo legacy reutilizado: en V4 contiene la firma HMAC, no un CRC32.
+                expectedCrc32Hex = hmacHex,
+                payloadChunk = chunkPayload,
+                rawText = rawText,
+                protocolVersion = PROTOCOL_V4_VERSION
+            )
+        }
+        return QrSyncPackage(
+            sessionId = sessionId,
+            crc32Hex = hmacHex,
+            chunks = chunks,
+            rawJsonBytes = rawJsonBytes,
+            compressedEncodedChars = base45Payload.length,
+            eventCount = eventCount,
+            codeEventCount = codeEventCount,
+            protocolVersion = PROTOCOL_V4_VERSION,
+            useLowErrorCorrection = useLowErrorCorrection
+        )
+    }
+
+    /**
      * Codificador V2 retrocompatible (`TTEXSYNC|V2|...` con GZIP + Base64URL).
      */
     fun encode(
@@ -239,16 +294,51 @@ object QrSyncCodec {
 
     fun isSyncQrPayload(rawScan: String): Boolean {
         val clean = rawScan.trim()
-        return clean.startsWith("$PROTOCOL_V3_PREFIX:") || clean.startsWith("$PROTOCOL_PREFIX|$PROTOCOL_VERSION|")
+        return clean.startsWith("$PROTOCOL_V4_PREFIX:") ||
+            clean.startsWith("$PROTOCOL_V3_PREFIX:") ||
+            clean.startsWith("$PROTOCOL_PREFIX|$PROTOCOL_VERSION|")
     }
 
     fun parseChunk(rawScan: String): Result<QrSyncChunk> {
         val clean = rawScan.trim()
         return when {
+            clean.startsWith("$PROTOCOL_V4_PREFIX:") -> parseV4Chunk(clean)
             clean.startsWith("$PROTOCOL_V3_PREFIX:") -> parseV3Chunk(clean)
             clean.startsWith("$PROTOCOL_PREFIX|") -> parseV2Chunk(clean)
             else -> Result.failure(IllegalArgumentException("El código escaneado no es un QR de sincronización TTExplo."))
         }
+    }
+
+    private fun parseV4Chunk(clean: String): Result<QrSyncChunk> {
+        val parts = clean.split(":", limit = 5)
+        if (parts.size != 5) {
+            return Result.failure(IllegalArgumentException("Estructura de paquete QR V4 incompleta (${parts.size}/5 campos)."))
+        }
+        val sessionId = parts[1].trim().uppercase(Locale.US)
+        if (sessionId.isEmpty()) {
+            return Result.failure(IllegalArgumentException("ID de sesión QR V4 vacío."))
+        }
+        val (partIndex, totalParts) = parsePartPair(parts[2])
+            ?: return Result.failure(IllegalArgumentException("Rango de parte QR V4 inválido: ${parts[2]}"))
+        val hmacHex = parts[3].trim().uppercase(Locale.US)
+        if (hmacHex.length != 64 || !hmacHex.all { it in '0'..'9' || it in 'A'..'F' }) {
+            return Result.failure(IllegalArgumentException("Firma HMAC-SHA256 inválida: $hmacHex"))
+        }
+        val payload = parts[4]
+        if (payload.isEmpty()) {
+            return Result.failure(IllegalArgumentException("Carga útil de bloque QR V4 vacía."))
+        }
+        return Result.success(
+            QrSyncChunk(
+                sessionId = sessionId,
+                partIndex = partIndex,
+                totalParts = totalParts,
+                expectedCrc32Hex = hmacHex,
+                payloadChunk = payload,
+                rawText = clean,
+                protocolVersion = PROTOCOL_V4_VERSION
+            )
+        )
     }
 
     private fun parseV3Chunk(clean: String): Result<QrSyncChunk> {
@@ -339,6 +429,40 @@ object QrSyncCodec {
         return String.format(Locale.US, "%08X", crc.value)
     }
 
+    /** Firma HMAC-SHA256 sobre el payload canónico (la misma carga codificada que protegía el CRC32). */
+    fun computeHmacSha256Hex(payload: String): String {
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(BuildConfig.SYNC_HMAC_KEY.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        return mac.doFinal(payload.toByteArray(Charsets.UTF_8))
+            .joinToString("") { String.format(Locale.US, "%02X", it.toInt() and 0xFF) }
+    }
+
+    /** Comparación en tiempo constante para no filtrar la firma esperada. */
+    fun verifyHmacSha256(payload: String, expectedHex: String): Boolean {
+        val actual = computeHmacSha256Hex(payload)
+        return MessageDigest.isEqual(
+            actual.toByteArray(Charsets.US_ASCII),
+            expectedHex.toByteArray(Charsets.US_ASCII)
+        )
+    }
+
+    /**
+     * Verifica un paquete QR firmado `TTEX4:<SID>:<i/N>:<HMAC_HEX64>:<BASE45>`.
+     * Los QR legacy V2/V3 no tienen firma: se decodifican por separado durante el despliegue mixto.
+     */
+    fun verifyQrPacket(raw: String): Boolean {
+        val clean = raw.trim()
+        if (!clean.startsWith("$PROTOCOL_V4_PREFIX:")) return false
+        val parts = clean.split(":", limit = 5)
+        if (parts.size != 5) return false
+        val hmacHex = parts[3].trim().uppercase(Locale.US)
+        val payload = parts[4]
+        if (payload.isEmpty() || hmacHex.length != 64 ||
+            !hmacHex.all { it in '0'..'9' || it in 'A'..'F' }
+        ) return false
+        return verifyHmacSha256(payload, hmacHex)
+    }
+
     fun gzipCompress(data: ByteArray, bestCompression: Boolean = true): ByteArray {
         val bos = ByteArrayOutputStream()
         val gzip = if (bestCompression) {
@@ -427,28 +551,38 @@ class QrSyncReassembler {
             )
         }
 
-        // Todos los bloques recibidos -> reensamblar en orden 1..N y validar CRC32
+        // Todos los bloques recibidos -> reensamblar en orden 1..N y validar integridad
         val combinedPayload = buildString {
             for (i in 1..totalParts) {
                 append(chunksByIndex[i].orEmpty())
             }
         }
 
-        val actualCrc = QrSyncCodec.computeCrc32Hex(combinedPayload.toByteArray(Charsets.UTF_8))
-        if (actualCrc != expectedCrc32Hex) {
-            return QrChunkIngestResult.Error(
-                reason = "Error de integridad CRC32 (esperado $expectedCrc32Hex, recibido $actualCrc). Reintente escanear el lote QR."
-            )
+        val version = activeProtocolVersion ?: QrSyncCodec.PROTOCOL_V3_VERSION
+        if (version == QrSyncCodec.PROTOCOL_V4_VERSION) {
+            if (!QrSyncCodec.verifyHmacSha256(combinedPayload, expectedCrc32Hex.orEmpty())) {
+                return QrChunkIngestResult.Error(
+                    reason = "Firma HMAC-SHA256 inválida. Reintente escanear el lote QR."
+                )
+            }
+        } else {
+            val actualCrc = QrSyncCodec.computeCrc32Hex(combinedPayload.toByteArray(Charsets.UTF_8))
+            if (actualCrc != expectedCrc32Hex) {
+                return QrChunkIngestResult.Error(
+                    reason = "Error de integridad CRC32 (esperado $expectedCrc32Hex, recibido $actualCrc). Reintente escanear el lote QR."
+                )
+            }
         }
 
-        val version = activeProtocolVersion ?: QrSyncCodec.PROTOCOL_V3_VERSION
         return try {
-            val decodedBytes = if (version == QrSyncCodec.PROTOCOL_V3_VERSION) {
+            val isBase45 = version == QrSyncCodec.PROTOCOL_V3_VERSION ||
+                version == QrSyncCodec.PROTOCOL_V4_VERSION
+            val decodedBytes = if (isBase45) {
                 Base45Codec.decode(combinedPayload)
             } else {
                 Base64.getUrlDecoder().decode(combinedPayload)
             }
-            val json = if (version == QrSyncCodec.PROTOCOL_V3_VERSION && SyncTabularV3Codec.isBinaryEnvelope(decodedBytes)) {
+            val json = if (isBase45 && SyncTabularV3Codec.isBinaryEnvelope(decodedBytes)) {
                 SyncTabularV3Codec.decodeBinaryToTabularJson(decodedBytes)
             } else {
                 String(QrSyncCodec.gzipDecompress(decodedBytes), Charsets.UTF_8)
@@ -504,6 +638,21 @@ object QrMatrixGenerator {
  */
 object InventorySyncJsonParser {
 
+    /**
+     * Época determinista: se usa el campo expuesto por el paquete; si no está, se deriva del ISO-8601
+     * con `Instant.parse` (siempre UTC, independiente de la zona horaria del dispositivo).
+     * Sin ninguna de las dos, se lanza y `parse` devuelve failure (fail-closed): nunca se usa el reloj local.
+     */
+    private fun resolveEpochMs(obj: JSONObject, timestampIso: String): Long {
+        if (obj.has("timestamp_epoch_ms") && !obj.isNull("timestamp_epoch_ms")) {
+            return obj.getLong("timestamp_epoch_ms")
+        }
+        if (timestampIso.isNotBlank()) {
+            return Instant.parse(timestampIso).toEpochMilli()
+        }
+        throw IllegalArgumentException("Paquete rechazado: falta timestamp_epoch_ms y timestamp_iso no es ISO-8601 válido.")
+    }
+
     fun parse(jsonText: String): Result<ParsedSyncBundle> {
         val clean = jsonText.trim()
         if (clean.isEmpty()) {
@@ -554,6 +703,7 @@ object InventorySyncJsonParser {
                             unit = unit
                         )
                     val finalUnit = unit.ifBlank { category.defaultUnit }
+                    val timestampIso = obj.optString("timestamp_iso", "")
 
                     events.add(
                         InventoryEventEntity(
@@ -577,8 +727,8 @@ object InventorySyncJsonParser {
                             referenceId = obj.optLong("reference_id", 0L),
                             referenceFolio = obj.optString("reference_folio", ""),
                             notes = obj.optString("notes", ""),
-                            timestampIso = obj.optString("timestamp_iso", ""),
-                            timestampEpochMs = obj.optLong("timestamp_epoch_ms", System.currentTimeMillis()),
+                            timestampIso = timestampIso,
+                            timestampEpochMs = resolveEpochMs(obj, timestampIso),
                             syncStatus = InventorySyncStatus.SYNCED,
                             isVoided = false
                         )
@@ -599,6 +749,7 @@ object InventorySyncJsonParser {
                     val productName = obj.optString("product_name", productId).ifBlank { productId }
                     val category = InventoryCategory.fromStringOrNull(obj.optString("inventory_category", ""))
                         ?: if (barcode.length == 18) InventoryCategory.AGENTE_EXPLOSIVO else InventoryCategory.ALTO_EXPLOSIVO
+                    val timestampIso = obj.optString("timestamp_iso", "")
 
                     codeEvents.add(
                         InventoryCodeEventEntity(
@@ -618,8 +769,8 @@ object InventorySyncJsonParser {
                             referenceType = obj.optString("reference_type", InventoryReferenceType.ENTRADA),
                             referenceId = obj.optLong("reference_id", 0L),
                             referenceFolio = obj.optString("reference_folio", ""),
-                            timestampIso = obj.optString("timestamp_iso", ""),
-                            timestampEpochMs = obj.optLong("timestamp_epoch_ms", System.currentTimeMillis()),
+                            timestampIso = timestampIso,
+                            timestampEpochMs = resolveEpochMs(obj, timestampIso),
                             syncStatus = InventorySyncStatus.SYNCED,
                             isVoided = false
                         )

@@ -9,8 +9,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 import java.util.zip.Deflater
@@ -133,10 +134,11 @@ object SyncTabularV3Codec {
     private const val BINARY_MAGIC_0: Byte = 0x54 // 'T'
     private const val BINARY_MAGIC_1: Byte = 0x03 // V3 Binary Envelope
 
-    private fun formatEpochIso(epochMs: Long): String {
-        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-        return fmt.format(Date(epochMs))
-    }
+    /** ISO UTC determinista: el reloj/zona del dispositivo nunca afecta al resultado. */
+    private fun formatEpochIso(epochMs: Long): String =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US)
+            .withZone(ZoneOffset.UTC)
+            .format(Instant.ofEpochMilli(epochMs))
 
     private fun parseCanonicalUuidOrNull(raw: String): UUID? {
         if (raw.length != 36) return null
@@ -687,7 +689,14 @@ object SyncTabularV3Codec {
                     val cat = decodeCategory(row.optInt(3, 0))
                     val unit = decodeUnit(row.optString(4, ""), cat.defaultUnit)
                     val rawTs = row.optLong(15, 0L)
-                    val tsEpoch = if (hasBaseEpoch) baseEpoch + rawTs else if (rawTs > 0L) rawTs else System.currentTimeMillis()
+                    // Fail-closed: sin epoch base ni delta se exige un ISO-8601 parseable (UTC).
+                    val tsEpoch = if (hasBaseEpoch) {
+                        baseEpoch + rawTs
+                    } else if (rawTs > 0L) {
+                        rawTs
+                    } else {
+                        Instant.parse(row.optString(18, "")).toEpochMilli()
+                    }
                     val dev = row.optString(16, "").ifBlank { remoteDeviceId }
                     val polv = row.optString(17, "").ifBlank { polvorin }
                     val tsIso = row.optString(18, "").ifBlank { formatEpochIso(tsEpoch) }
@@ -737,7 +746,14 @@ object SyncTabularV3Codec {
 
                     val cat = decodeCategory(row.optInt(6, 0))
                     val rawTs = row.optLong(12, 0L)
-                    val tsEpoch = if (hasBaseEpoch) baseEpoch + rawTs else if (rawTs > 0L) rawTs else System.currentTimeMillis()
+                    // Fail-closed: sin epoch base ni delta se exige un ISO-8601 parseable (UTC).
+                    val tsEpoch = if (hasBaseEpoch) {
+                        baseEpoch + rawTs
+                    } else if (rawTs > 0L) {
+                        rawTs
+                    } else {
+                        Instant.parse(row.optString(15, "")).toEpochMilli()
+                    }
                     val dev = row.optString(13, "").ifBlank { remoteDeviceId }
                     val polv = row.optString(14, "").ifBlank { polvorin }
                     val tsIso = row.optString(15, "").ifBlank { formatEpochIso(tsEpoch) }
