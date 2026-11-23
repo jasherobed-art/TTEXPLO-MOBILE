@@ -16,6 +16,7 @@ import com.ttexplo.mobile.domain.inventory.QrSyncPackage
 import com.ttexplo.mobile.domain.inventory.InventorySyncStatus
 import com.ttexplo.mobile.domain.inventory.SyncExportPackage
 import com.ttexplo.mobile.domain.inventory.SyncExportScope
+import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import org.junit.After
@@ -154,6 +155,39 @@ class HardeningDataTest {
                 "REVERSAL:${InventoryReferenceType.DESPACHO}:88:$reason:$codeSeed".toByteArray()
             ).toString()
         )
+    }
+
+    @Test
+    fun successiveEditsWithSameReasonKeepDistinctReversals() = runBlocking {
+        val code = "XCOR-PENT-5G"
+        // UUID lexicográficamente mínimo y estable: garantiza que el seed histórico NO cambie
+        // entre ediciones, que es justo el escenario que colisionaba.
+        db.inventoryEventDao().insertEvent(
+            qtyEvent("00000000-0000-0000-0000-000000000001").copy(
+                referenceType = InventoryReferenceType.ACCESORIO_VALE,
+                referenceId = 77L,
+                productId = code,
+                deltaQuantity = 25.0
+            )
+        )
+        suspend fun record(qty: Int) {
+            repo.recordAccesoriosVale(
+                valeId = 77L,
+                vale = "ACC9001",
+                empresa = "MPRG",
+                lugar = "NIVEL 500",
+                isDevolucion = false,
+                items = listOf(AccessoryItemRecord(code, qty, "2026-11-22 10:00:00"))
+            )
+        }
+
+        assertThat(repo.getCurrentStockForProduct(code)).isWithin(1e-4).of(25.0)
+
+        record(-30)
+        assertThat(repo.getCurrentStockForProduct(code)).isWithin(1e-4).of(30.0)
+
+        record(-40)
+        assertThat(repo.getCurrentStockForProduct(code)).isWithin(1e-4).of(40.0)
     }
 
     @Test

@@ -75,6 +75,7 @@ interface ValeDeletionDao {
                 deleteDevolucionItems(referenceId)
                 deleteDevolucion(referenceId)
             }
+            else -> throw IllegalArgumentException("Tipo de vale desconocido: $referenceType")
         }
     }
 }

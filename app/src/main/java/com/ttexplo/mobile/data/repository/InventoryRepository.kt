@@ -1264,7 +1264,10 @@ class InventoryRepository(
             return // Sin cambios respecto a lo ya contabilizado
         }
 
-        val reversals = buildReversalEvents(existing, editReason)
+        // La semilla de generación viene de los eventos NUEVOS: el mínimo del histórico se
+        // mantiene igual entre ediciones y haría colisionar reversos sucesivos (INSERT IGNORE).
+        val generationSeed = newEvents.map { it.eventUuid }.minOrNull()
+        val reversals = buildReversalEvents(existing, editReason, generationSeed)
         val baseTime = System.currentTimeMillis()
         val orderedReversals = reversals.mapIndexed { idx, ev ->
             ev.copy(timestampEpochMs = baseTime + idx)
@@ -1316,7 +1319,8 @@ class InventoryRepository(
 
     private fun buildReversalEvents(
         existing: List<InventoryEventEntity>,
-        reason: String
+        reason: String,
+        generationSeed: String? = null
     ): List<InventoryEventEntity> {
         val nowMs = System.currentTimeMillis()
         val nowIso = DateTimeUtils.currentTimestamp()
@@ -1333,9 +1337,9 @@ class InventoryRepository(
                     return@mapNotNull null
                 }
                 val last = list.last()
-                // UUID determinista: la misma referencia+razón+eventos origina el mismo reverso
-                // (idempotente ante doble llamada); el UUID semilla distingue cada generación de edición.
-                val seed = list.minBy { it.eventUuid }.eventUuid
+                // UUID determinista por generación: en ediciones la semilla son los eventos nuevos;
+                // en borrado/duplicado se usa el mínimo histórico (el neto ya evita duplicar).
+                val seed = generationSeed ?: list.minBy { it.eventUuid }.eventUuid
                 InventoryEventEntity(
                     eventUuid = UUID.nameUUIDFromBytes(
                         "REVERSAL:${last.referenceType}:${last.referenceId}:$reason:$seed".toByteArray()
