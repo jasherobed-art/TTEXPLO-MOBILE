@@ -51,6 +51,7 @@ class InventoryAndUnitWeightTest {
             eventDao = db.inventoryEventDao(),
             codeEventDao = db.inventoryCodeEventDao(),
             productoDao = db.productoDao(),
+            valeDeletionDao = db.valeDeletionDao(),
             deviceIdProvider = { "F020-F600-E29C-76D6" },
             polvorinProvider = { "POLVORÍN PRINCIPAL" }
         )

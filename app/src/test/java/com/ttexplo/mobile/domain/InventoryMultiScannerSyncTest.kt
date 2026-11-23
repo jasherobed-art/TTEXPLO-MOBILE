@@ -84,6 +84,7 @@ class InventoryMultiScannerSyncTest {
             eventDao = dbA.inventoryEventDao(),
             codeEventDao = dbA.inventoryCodeEventDao(),
             productoDao = dbA.productoDao(),
+            valeDeletionDao = dbA.valeDeletionDao(),
             deviceIdProvider = { "ZBR-POLV-01" },
             polvorinProvider = { "POLVORÍN NORTE" },
             syncSessionDao = dbA.syncSessionDao()
@@ -92,6 +93,7 @@ class InventoryMultiScannerSyncTest {
             eventDao = dbB.inventoryEventDao(),
             codeEventDao = dbB.inventoryCodeEventDao(),
             productoDao = dbB.productoDao(),
+            valeDeletionDao = dbB.valeDeletionDao(),
             deviceIdProvider = { "ZBR-POLV-02" },
             polvorinProvider = { "POLVORÍN NORTE" },
             syncSessionDao = dbB.syncSessionDao()

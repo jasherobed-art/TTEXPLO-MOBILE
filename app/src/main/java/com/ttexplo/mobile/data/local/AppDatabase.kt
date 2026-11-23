@@ -25,7 +25,7 @@ import com.ttexplo.mobile.data.local.entity.*
         SyncSessionEntity::class
     ],
     version = 5,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -37,6 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inventoryEventDao(): InventoryEventDao
     abstract fun inventoryCodeEventDao(): InventoryCodeEventDao
     abstract fun syncSessionDao(): SyncSessionDao
+    abstract fun valeDeletionDao(): ValeDeletionDao
 
     companion object {
         @Volatile
@@ -187,7 +188,6 @@ abstract class AppDatabase : RoomDatabase() {
                     "ttexplo_database.db"
                 )
                     .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance

@@ -4,6 +4,7 @@ import com.ttexplo.mobile.data.local.dao.InventoryCodeEventDao
 import com.ttexplo.mobile.data.local.dao.InventoryEventDao
 import com.ttexplo.mobile.data.local.dao.ProductoDao
 import com.ttexplo.mobile.data.local.dao.SyncSessionDao
+import com.ttexplo.mobile.data.local.dao.ValeDeletionDao
 import com.ttexplo.mobile.data.local.entity.InventoryCodeEventEntity
 import com.ttexplo.mobile.data.local.entity.InventoryEventEntity
 import com.ttexplo.mobile.data.local.entity.ProductoEntity
@@ -60,6 +61,7 @@ class InventoryRepository(
     private val productoDao: ProductoDao,
     private val deviceIdProvider: () -> String,
     private val polvorinProvider: () -> String,
+    private val valeDeletionDao: ValeDeletionDao,
     private val syncSessionDao: SyncSessionDao? = null
 ) {
 
@@ -314,16 +316,18 @@ class InventoryRepository(
             referenceFolio = folio,
             polvorinOverride = polvorin
         )
+        val editReason = "Edición de Entrada $folio"
         reconcileReferenceEvents(
             referenceType = InventoryReferenceType.ENTRADA,
             referenceId = entradaId,
             newEvents = plannedQtyEvents,
-            editReason = "Edición de Entrada $folio"
+            editReason = editReason
         )
         reconcileReferenceCodeEvents(
             referenceType = InventoryReferenceType.ENTRADA,
             referenceId = entradaId,
-            newCodeEvents = plannedCodeEvents
+            newCodeEvents = plannedCodeEvents,
+            editReason = editReason
         )
     }
 
@@ -350,16 +354,18 @@ class InventoryRepository(
             referenceFolio = folio,
             extraNote = contextNote
         )
+        val editReason = "Edición de Despacho $folio"
         reconcileReferenceEvents(
             referenceType = InventoryReferenceType.DESPACHO,
             referenceId = despachoId,
             newEvents = plannedQtyEvents,
-            editReason = "Edición de Despacho $folio"
+            editReason = editReason
         )
         reconcileReferenceCodeEvents(
             referenceType = InventoryReferenceType.DESPACHO,
             referenceId = despachoId,
-            newCodeEvents = plannedCodeEvents
+            newCodeEvents = plannedCodeEvents,
+            editReason = editReason
         )
     }
 
@@ -385,16 +391,18 @@ class InventoryRepository(
             referenceFolio = folio,
             extraNote = note
         )
+        val editReason = "Edición de Devolución $folio"
         reconcileReferenceEvents(
             referenceType = InventoryReferenceType.DEVOLUCION,
             referenceId = devolucionId,
             newEvents = plannedQtyEvents,
-            editReason = "Edición de Devolución $folio"
+            editReason = editReason
         )
         reconcileReferenceCodeEvents(
             referenceType = InventoryReferenceType.DEVOLUCION,
             referenceId = devolucionId,
-            newCodeEvents = plannedCodeEvents
+            newCodeEvents = plannedCodeEvents,
+            editReason = editReason
         )
     }
 
@@ -495,21 +503,37 @@ class InventoryRepository(
     ) {
         if (referenceId <= 0L) return
 
-        val existingQty = eventDao.getEventsByReference(referenceType, referenceId)
-        if (existingQty.isNotEmpty()) {
-            val reversals = buildReversalEvents(existingQty, reason)
-            if (reversals.isNotEmpty()) {
-                eventDao.insertEvents(reversals)
-            }
-        }
+        val (reversals, codeReversals) = buildReversalsForReference(referenceType, referenceId, reason)
+        if (reversals.isNotEmpty()) eventDao.insertEvents(reversals)
+        if (codeReversals.isNotEmpty()) codeEventDao.insertEvents(codeReversals)
+    }
 
-        val existingCodes = codeEventDao.getCodeEventsByReference(referenceType, referenceId)
-        if (existingCodes.isNotEmpty()) {
-            val codeReversals = buildCodeReversalEvents(existingCodes)
-            if (codeReversals.isNotEmpty()) {
-                codeEventDao.insertEvents(codeReversals)
-            }
-        }
+    /**
+     * Única entrada atómica para borrar un vale: construye los reversos y los escribe junto con
+     * el borrado de cabecera+hijos en una sola transacción de Room. Si falla cualquier borrado,
+     * ningún evento compensatorio queda insertado y el vale conserva sus hijos.
+     */
+    suspend fun deleteValeAndReverse(
+        referenceType: String,
+        referenceId: Long,
+        reason: String
+    ) {
+        if (referenceId <= 0L) return
+        val (reversals, codeReversals) = buildReversalsForReference(referenceType, referenceId, reason)
+        valeDeletionDao.deleteValeAndReverse(referenceType, referenceId, reversals, codeReversals)
+    }
+
+    private suspend fun buildReversalsForReference(
+        referenceType: String,
+        referenceId: Long,
+        reason: String
+    ): Pair<List<InventoryEventEntity>, List<InventoryCodeEventEntity>> {
+        val reversals = buildReversalEvents(eventDao.getEventsByReference(referenceType, referenceId), reason)
+        val codeReversals = buildCodeReversalEvents(
+            codeEventDao.getCodeEventsByReference(referenceType, referenceId),
+            reason
+        )
+        return reversals to codeReversals
     }
 
     /**
@@ -624,23 +648,18 @@ class InventoryRepository(
     }
 
     /**
-     * Registra en bitácora que un paquete fue compartido (QR o JSON) y, si el operador lo confirma,
-     * marca los UUIDs compartidos como `SYNCED` para acelerar futuros envíos incrementales.
+     * Registra en bitácora que un paquete fue compartido (QR o JSON).
+     *
+     * `markPendingAsSynced` se conserva por compatibilidad de firma pero NO cambia el estado:
+     * `SyncMergeReport` sólo trae contadores, no UUIDs, así que una confirmación del operador
+     * no es un ACK real. Los eventos siguen `PENDING` y se reexportan; la dedupe por UUID en el
+     * receptor hace idempotente el reenvío y evita pérdida silenciosa del libro mayor.
      */
     suspend fun markExportSessionCompleted(
         pkg: SyncExportPackage,
         direction: String,
-        markPendingAsSynced: Boolean
+        @Suppress("UNUSED_PARAMETER") markPendingAsSynced: Boolean
     ) {
-        if (markPendingAsSynced) {
-            pkg.eventUuids.chunked(500).forEach { batch ->
-                if (batch.isNotEmpty()) eventDao.markEventsAsSynced(batch)
-            }
-            pkg.codeEventUuids.chunked(500).forEach { batch ->
-                if (batch.isNotEmpty()) codeEventDao.markCodeEventsAsSynced(batch)
-            }
-        }
-
         val nowMs = System.currentTimeMillis()
         syncSessionDao?.insertSession(
             SyncSessionEntity(
@@ -1260,7 +1279,8 @@ class InventoryRepository(
     private suspend fun reconcileReferenceCodeEvents(
         referenceType: String,
         referenceId: Long,
-        newCodeEvents: List<InventoryCodeEventEntity>
+        newCodeEvents: List<InventoryCodeEventEntity>,
+        editReason: String
     ) {
         val existing = if (referenceId > 0L) {
             codeEventDao.getCodeEventsByReference(referenceType, referenceId)
@@ -1283,7 +1303,7 @@ class InventoryRepository(
             return // Idempotente: mismos códigos SEDENA ya trazados para este vale
         }
 
-        val reversals = buildCodeReversalEvents(existing)
+        val reversals = buildCodeReversalEvents(existing, editReason)
         val baseTime = System.currentTimeMillis()
         val orderedReversals = reversals.mapIndexed { idx, ev ->
             ev.copy(timestampEpochMs = baseTime + idx)
@@ -1313,8 +1333,13 @@ class InventoryRepository(
                     return@mapNotNull null
                 }
                 val last = list.last()
+                // UUID determinista: la misma referencia+razón+eventos origina el mismo reverso
+                // (idempotente ante doble llamada); el UUID semilla distingue cada generación de edición.
+                val seed = list.minBy { it.eventUuid }.eventUuid
                 InventoryEventEntity(
-                    eventUuid = UUID.randomUUID().toString(),
+                    eventUuid = UUID.nameUUIDFromBytes(
+                        "REVERSAL:${last.referenceType}:${last.referenceId}:$reason:$seed".toByteArray()
+                    ).toString(),
                     deviceId = deviceId,
                     polvorin = last.polvorin,
                     eventType = InventoryEventType.REVERSAL.name,
@@ -1342,7 +1367,8 @@ class InventoryRepository(
     }
 
     private fun buildCodeReversalEvents(
-        existing: List<InventoryCodeEventEntity>
+        existing: List<InventoryCodeEventEntity>,
+        reason: String
     ): List<InventoryCodeEventEntity> {
         val activeUnreversed = filterUnreversedCodeEvents(existing)
         if (activeUnreversed.isEmpty()) return emptyList()
@@ -1353,7 +1379,9 @@ class InventoryRepository(
 
         return activeUnreversed.mapIndexed { idx, original ->
             InventoryCodeEventEntity(
-                eventUuid = UUID.randomUUID().toString(),
+                eventUuid = UUID.nameUUIDFromBytes(
+                    "REVERSAL:${original.referenceType}:${original.referenceId}:$reason:${original.eventUuid}".toByteArray()
+                ).toString(),
                 reversesEventUuid = original.eventUuid,
                 deviceId = deviceId,
                 polvorin = original.polvorin,

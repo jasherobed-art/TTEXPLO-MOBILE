@@ -596,43 +596,19 @@ fun ValesHistoryScreen(
     fun executeDelete() {
         scope.launch {
             for (vale in valesToDelete) {
-                when (vale.tipo) {
-                    "DESPACHO" -> {
-                        db.despachoDao().deleteItemsForDespacho(vale.id)
-                        db.despachoDao().deleteDespacho(vale.id)
-                        inventoryRepo.reverseReferenceEvents(
-                            InventoryReferenceType.DESPACHO,
-                            vale.id,
-                            "Anulación por eliminación de ${vale.folio}"
-                        )
-                    }
-                    "ENTRADA" -> {
-                        db.entradaDao().deleteItemsForEntrada(vale.id)
-                        db.entradaDao().deleteEntrada(vale.id)
-                        inventoryRepo.reverseReferenceEvents(
-                            InventoryReferenceType.ENTRADA,
-                            vale.id,
-                            "Anulación por eliminación de ${vale.folio}"
-                        )
-                    }
-                    "ACCESORIOS", "DEV. ACCESORIOS" -> {
-                        db.accesorioDao().deleteItemsForVale(vale.id)
-                        db.accesorioDao().deleteVale(vale.id)
-                        inventoryRepo.reverseReferenceEvents(
-                            InventoryReferenceType.ACCESORIO_VALE,
-                            vale.id,
-                            "Anulación por eliminación de ${vale.folio}"
-                        )
-                    }
-                    "DEVOLUCION" -> {
-                        db.devolucionDao().deleteItemsForDevolucion(vale.id)
-                        db.devolucionDao().deleteDevolucion(vale.id)
-                        inventoryRepo.reverseReferenceEvents(
-                            InventoryReferenceType.DEVOLUCION,
-                            vale.id,
-                            "Anulación por eliminación de ${vale.folio}"
-                        )
-                    }
+                val referenceType = when (vale.tipo) {
+                    "DESPACHO" -> InventoryReferenceType.DESPACHO
+                    "ENTRADA" -> InventoryReferenceType.ENTRADA
+                    "ACCESORIOS", "DEV. ACCESORIOS" -> InventoryReferenceType.ACCESORIO_VALE
+                    "DEVOLUCION" -> InventoryReferenceType.DEVOLUCION
+                    else -> null
+                }
+                if (referenceType != null) {
+                    inventoryRepo.deleteValeAndReverse(
+                        referenceType,
+                        vale.id,
+                        "Anulación por eliminación de ${vale.folio}"
+                    )
                 }
                 selectedIds.remove(vale.tipo to vale.id)
             }

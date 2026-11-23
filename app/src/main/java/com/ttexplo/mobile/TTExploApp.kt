@@ -18,6 +18,7 @@ class TTExploApp : Application() {
             eventDao = database.inventoryEventDao(),
             codeEventDao = database.inventoryCodeEventDao(),
             productoDao = database.productoDao(),
+            valeDeletionDao = database.valeDeletionDao(),
             deviceIdProvider = { LicenseManager.getFormattedDeviceId(this) },
             polvorinProvider = { settings.getTicketHeader().ifBlank { "POLVORÍN PRINCIPAL" } },
             syncSessionDao = database.syncSessionDao()
