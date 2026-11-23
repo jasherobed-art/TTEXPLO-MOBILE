@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,7 +49,7 @@ fun InventorySyncScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedTab by remember(initialTab) { mutableIntStateOf(initialTab.coerceIn(0, 2)) }
+    var selectedTab by rememberSaveable(initialTab) { mutableStateOf(initialTab.coerceIn(0, 2)) }
     var pendingJsonPackage by remember { mutableStateOf<SyncExportPackage?>(null) }
 
     // Auto-carrusel QR cuando está activo en la pestaña Enviar
@@ -419,7 +420,7 @@ private fun SendSyncTab(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
-                border = BorderStroke(1.dp, MineBorderGray)
+                border = BorderStroke(1.dp, MineOutline)
             ) {
                 Column(
                     modifier = Modifier
@@ -568,7 +569,7 @@ private fun SendSyncTab(
                         .height(48.dp)
                         .testTag("sync_qr_prev_button"),
                     shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, MineBorderGray),
+                    border = BorderStroke(1.dp, MineOutline),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MineTextPrimary)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "QR anterior")
@@ -607,7 +608,7 @@ private fun SendSyncTab(
                         .height(48.dp)
                         .testTag("sync_qr_next_button"),
                     shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, MineBorderGray),
+                    border = BorderStroke(1.dp, MineOutline),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MineTextPrimary)
                 ) {
                     Text("Siguiente", fontWeight = FontWeight.Bold, fontSize = 12.sp)

@@ -158,7 +158,7 @@ fun buildExplosiveFilterChips(
             title = "Agente",
             empaqueShort = "",
             count = agenteCount,
-            accentColor = MineAgentCyan,
+            accentColor = MineInfoText,
             isTypeFilter = true
         )
     )
@@ -265,7 +265,7 @@ fun CompactScanMetricsRibbon(
                     .testTag("toggle_scan_panel_button"),
                 color = if (isPanelExpanded) accentColor.copy(alpha = 0.2f) else MineDarkBackground,
                 shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, if (isPanelExpanded) accentColor else MineBorderGray)
+                border = BorderStroke(1.dp, if (isPanelExpanded) accentColor else MineOutline)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -507,7 +507,7 @@ fun HorizontalProductFilterRow(
                 border = FilterChipDefaults.filterChipBorder(
                     enabled = true,
                     selected = allSelected,
-                    borderColor = MineBorderGray,
+                    borderColor = MineOutline,
                     selectedBorderColor = accentColor
                 )
             )

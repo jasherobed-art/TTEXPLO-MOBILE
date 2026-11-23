@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
@@ -37,10 +38,10 @@ fun EntradasHeaderScreen(
     onNavigateBack: () -> Unit,
     onContinueToScan: (proveedor: String, polvorin: String, factura: String) -> Unit
 ) {
-    var proveedor by remember { mutableStateOf("") }
-    var polvorin by remember { mutableStateOf("") }
-    var factura by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
+    var proveedor by rememberSaveable { mutableStateOf("") }
+    var polvorin by rememberSaveable { mutableStateOf("") }
+    var factura by rememberSaveable { mutableStateOf("") }
+    var showError by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     val db = remember { (context.applicationContext as TTExploApp).database }
@@ -132,7 +133,7 @@ fun EntradasHeaderScreen(
                             }
                             OutlinedButton(
                                 onClick = { showDiscardDialog = true },
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MineErrorRed)
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MineErrorText)
                             ) {
                                 Text("Descartar")
                             }
@@ -182,7 +183,7 @@ fun EntradasHeaderScreen(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MineSafetyYellow,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = MineSafetyYellow
@@ -208,7 +209,7 @@ fun EntradasHeaderScreen(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MineSafetyYellow,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = MineSafetyYellow
@@ -242,7 +243,7 @@ fun EntradasHeaderScreen(
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MineSafetyYellow,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = MineSafetyYellow
@@ -253,7 +254,7 @@ fun EntradasHeaderScreen(
                 Text(
                     text = "Por favor complete los 3 campos antes de continuar.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MineErrorRed
+                    color = MineErrorText
                 )
             }
 

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
@@ -37,15 +38,15 @@ fun AccesoriosHeaderScreen(
     onNavigateBack: () -> Unit,
     onContinueToScan: (vale: String, empresa: String, lugar: String, transportista: String, turno: String, recibio: String, entrego: String, voladura: String) -> Unit
 ) {
-    var vale by remember { mutableStateOf("") }
-    var empresa by remember { mutableStateOf("") }
-    var lugar by remember { mutableStateOf("") }
-    var transportista by remember { mutableStateOf("") }
-    var turno by remember { mutableStateOf("1") }
-    var recibio by remember { mutableStateOf("") }
-    var entrego by remember { mutableStateOf("") }
-    var voladura by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
+    var vale by rememberSaveable { mutableStateOf("") }
+    var empresa by rememberSaveable { mutableStateOf("") }
+    var lugar by rememberSaveable { mutableStateOf("") }
+    var transportista by rememberSaveable { mutableStateOf("") }
+    var turno by rememberSaveable { mutableStateOf("1") }
+    var recibio by rememberSaveable { mutableStateOf("") }
+    var entrego by rememberSaveable { mutableStateOf("") }
+    var voladura by rememberSaveable { mutableStateOf("") }
+    var showError by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     val db = remember { (context.applicationContext as TTExploApp).database }
@@ -144,7 +145,7 @@ fun AccesoriosHeaderScreen(
                             }
                             OutlinedButton(
                                 onClick = { showDiscardDialog = true },
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MineErrorRed)
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MineErrorText)
                             ) {
                                 Text("Descartar")
                             }
@@ -192,7 +193,7 @@ fun AccesoriosHeaderScreen(
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = accentColor
@@ -210,7 +211,7 @@ fun AccesoriosHeaderScreen(
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = accentColor
@@ -227,7 +228,7 @@ fun AccesoriosHeaderScreen(
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = accentColor
@@ -244,7 +245,7 @@ fun AccesoriosHeaderScreen(
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MineBorderGray,
+                    unfocusedBorderColor = MineOutline,
                     focusedTextColor = MineTextPrimary,
                     unfocusedTextColor = MineTextPrimary,
                     focusedLabelColor = accentColor
@@ -266,7 +267,7 @@ fun AccesoriosHeaderScreen(
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Right) }),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MineBorderGray,
+                        unfocusedBorderColor = MineOutline,
                         focusedTextColor = MineTextPrimary,
                         unfocusedTextColor = MineTextPrimary,
                         focusedLabelColor = accentColor
@@ -283,7 +284,7 @@ fun AccesoriosHeaderScreen(
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MineBorderGray,
+                        unfocusedBorderColor = MineOutline,
                         focusedTextColor = MineTextPrimary,
                         unfocusedTextColor = MineTextPrimary,
                         focusedLabelColor = accentColor
@@ -306,7 +307,7 @@ fun AccesoriosHeaderScreen(
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Right) }),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MineBorderGray,
+                        unfocusedBorderColor = MineOutline,
                         focusedTextColor = MineTextPrimary,
                         unfocusedTextColor = MineTextPrimary,
                         focusedLabelColor = accentColor
@@ -332,7 +333,7 @@ fun AccesoriosHeaderScreen(
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = MineBorderGray,
+                        unfocusedBorderColor = MineOutline,
                         focusedTextColor = MineTextPrimary,
                         unfocusedTextColor = MineTextPrimary,
                         focusedLabelColor = accentColor
@@ -344,7 +345,7 @@ fun AccesoriosHeaderScreen(
                 Text(
                     text = "Por favor ingrese al menos el número de vale y la empresa.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MineErrorRed
+                    color = MineErrorText
                 )
             }
 

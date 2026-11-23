@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -486,70 +488,76 @@ internal fun ConflictsAndHistoryTab(
     onMarkConflictReviewed: (String) -> Unit,
     onRestoreReviewed: () -> Unit
 ) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // SECCIÓN 1: CONFLICTOS ACTIVOS
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "ALERTAS DE CONFLICTO (${uiState.activeConflicts.size})",
-                color = if (uiState.activeConflicts.isNotEmpty()) MineErrorRedLight else MineSuccessGreenLight,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.8.sp
-            )
-            if (uiState.reviewedConflictsCount > 0) {
-                TextButton(onClick = onRestoreReviewed) {
-                    Text(
-                        text = "Ver ${uiState.reviewedConflictsCount} revisado(s)",
-                        color = MineAgentCyan,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+        item {
+            // SECCIÓN 1: CONFLICTOS ACTIVOS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ALERTAS DE CONFLICTO (${uiState.activeConflicts.size})",
+                    color = if (uiState.activeConflicts.isNotEmpty()) MineErrorRedLight else MineSuccessGreenLight,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.8.sp
+                )
+                if (uiState.reviewedConflictsCount > 0) {
+                    TextButton(onClick = onRestoreReviewed) {
+                        Text(
+                            text = "Ver ${uiState.reviewedConflictsCount} revisado(s)",
+                            color = MineAgentCyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
 
         if (uiState.activeConflicts.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
-                border = BorderStroke(1.dp, MineSuccessGreenLight.copy(alpha = 0.45f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
+                    border = BorderStroke(1.dp, MineSuccessGreenLight.copy(alpha = 0.45f))
                 ) {
-                    Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = MineSuccessGreenLight, modifier = Modifier.size(26.dp))
-                    Column {
-                        Text(
-                            text = "Sin conflictos operativos pendientes",
-                            color = MineTextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                        Text(
-                            text = "No se detectaron dobles despachos SEDENA, conteos paralelos ni saldos negativos.",
-                            color = MineTextSecondary,
-                            fontSize = 11.sp
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = MineSuccessGreenLight, modifier = Modifier.size(26.dp))
+                        Column {
+                            Text(
+                                text = "Sin conflictos operativos pendientes",
+                                color = MineTextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = "No se detectaron dobles despachos SEDENA, conteos paralelos ni saldos negativos.",
+                                color = MineTextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
             }
         } else {
-            uiState.activeConflicts.forEach { conflict ->
+            items(
+                items = uiState.activeConflicts,
+                key = { it.conflictId }
+            ) { conflict ->
                 ConflictAlertCard(
                     conflict = conflict,
                     onInspectProduct = { onInspectProduct(conflict.productId) },
@@ -558,30 +566,41 @@ internal fun ConflictsAndHistoryTab(
             }
         }
 
-        HorizontalDivider(color = MineBorderGray.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 4.dp))
+        item {
+            HorizontalDivider(color = MineOutline.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 4.dp))
+        }
 
-        // SECCIÓN 2: HISTORIAL DE CRUCES
-        Text(
-            text = "HISTORIAL DE SINCRONIZACIONES (${uiState.syncSessions.size})",
-            color = MineAgentCyan,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.8.sp
-        )
+        item {
+            // SECCIÓN 2: HISTORIAL DE CRUCES
+            Text(
+                text = "HISTORIAL DE SINCRONIZACIONES (${uiState.syncSessions.size})",
+                color = MineAgentCyan,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.8.sp
+            )
+        }
 
         if (uiState.syncSessions.isEmpty()) {
-            Text(
-                text = "Aún no se han registrado cruces QR o JSON en esta terminal.",
-                color = MineTextSecondary,
-                fontSize = 12.sp
-            )
+            item {
+                Text(
+                    text = "Aún no se han registrado cruces QR o JSON en esta terminal.",
+                    color = MineTextSecondary,
+                    fontSize = 12.sp
+                )
+            }
         } else {
-            uiState.syncSessions.forEach { session ->
+            items(
+                items = uiState.syncSessions,
+                key = { it.sessionUuid }
+            ) { session ->
                 SyncSessionHistoryCard(session = session)
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
