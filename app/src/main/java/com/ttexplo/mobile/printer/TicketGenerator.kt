@@ -56,7 +56,6 @@ object TicketGenerator {
 
     private fun writeEscPosBottomMargin(out: ByteArrayOutputStream) {
         out.write(ESC_FEED_BOTTOM_MARGIN)
-        out.write("\r\n".repeat(BOTTOM_MARGIN_ESC_LINES).toByteArray(CHARSET))
     }
 
     private fun appendPlainBottomMargin(sb: StringBuilder) {

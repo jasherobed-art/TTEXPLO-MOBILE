@@ -16,7 +16,7 @@ El responsable reportó que, en la impresora física MUNBYN, la firma del ticket
 - Una sola constante `BOTTOM_MARGIN_ESC_LINES = 7` en `TicketGenerator`, documentada como ~3 cm en papel térmico de 80 mm (≈4 mm/línea).
 - ESC/POS: mantener el `ESC_FEED_6_LINES` actual (5 usos) y **añadir** 7 líneas nuevas de margen. Total al final: 13 líneas de avance.
 - Texto plano: 7 saltos `\r\n` adicionales tras los 6 actuales.
-- CPCL: `totalHeight += 220` dots (≈3 cm a ~7,2 dots/mm en 80 mm) y una línea en blanco antes de `PRINT`.
+- CPCL: `totalHeight += 220` dots (≈3 cm a ~7,2 dots/mm en 80 mm). No se añade línea `TEXT` vacía: la altura de página ya reserva el papel en blanco y una línea vacía podría imprimir un carácter visible.
 - Un único helper `writeEscPosBottomMargin(out)` / `appendPlainBottomMargin(sb)` para no repetir literales; CPCL solo cambia `totalHeight`.
 
 ## Restricciones

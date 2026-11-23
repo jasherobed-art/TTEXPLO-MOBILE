@@ -17,6 +17,15 @@ class TicketBottomMarginTest {
     }
 
     @Test
+    fun escposExtraFeedDoesNotDoubleAdvancePaper() {
+        val text = String(TicketGenerator.generateTestTicket(), Charsets.US_ASCII)
+        val marker = "\u001Bd\u0007"
+        val i = text.lastIndexOf(marker)
+        assertThat(i).isAtLeast(0)
+        assertThat(text.substring(i + marker.length)).isEqualTo("\r\n".repeat(4))
+    }
+
+    @Test
     fun plainTicketEndsWithExtraBlankLines() {
         val text = String(TicketGenerator.generatePlainTestTicket(), Charsets.US_ASCII)
         assertThat(text.endsWith("\r\n".repeat(13))).isTrue()
