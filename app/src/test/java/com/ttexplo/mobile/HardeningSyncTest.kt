@@ -36,6 +36,38 @@ class HardeningSyncTest {
         assertThat(QrSyncCodec.verifyQrPacket(mutated)).isFalse()
     }
 
+    /** La firma V4 cubre el BASE45 completo: el paquete multiparte se verifica y una mutación se rechaza. */
+    @Test
+    fun multipartV4PacketVerifiesOverReassembledPayload() {
+        val events = (1..8).joinToString(",") { i ->
+            """{"event_uuid":"mp-$i","product_id":"315","timestamp_iso":"2026-11-22T10:0$i:00Z","timestamp_epoch_ms":${1000 + i},"notes":"Movimiento numero $i con descripcion larga y unica para forzar multiples bloques QR $i"}"""
+        }
+        val json = """{"schema_version":"ttexplo-inventory-events-v2","device_id":"T2","events":[$events]}"""
+        val pkg = QrSyncCodec.encodeV4(
+            binaryPayload = QrSyncCodec.gzipCompress(json.toByteArray(Charsets.UTF_8)),
+            rawJsonBytes = json.toByteArray(Charsets.UTF_8).size,
+            maxChunkChars = 120,
+            sessionIdOverride = "MP1234"
+        )
+        assertThat(pkg.chunks.size).isAtLeast(3)
+
+        val rawChunks = pkg.chunks.map { it.rawText }
+        assertThat(QrSyncCodec.verifyQrPacket(rawChunks)).isTrue()
+        // Un chunk suelto no es verificable sin sus hermanos (documentado en el KDoc de la sobrecarga String).
+        assertThat(QrSyncCodec.verifyQrPacket(rawChunks.first())).isFalse()
+
+        val target = pkg.chunks[1]
+        val fields = target.rawText.split(":", limit = 5)
+        val mutatedPayload = fields[4].dropLast(1) + if (fields[4].last() == 'A') 'B' else 'A'
+        val mutatedChunk = listOf(fields[0], fields[1], fields[2], fields[3], mutatedPayload)
+            .joinToString(":")
+        val mutatedChunks = pkg.chunks.map { if (it === target) mutatedChunk else it.rawText }
+        assertThat(QrSyncCodec.verifyQrPacket(mutatedChunks)).isFalse()
+
+        // La verificación autoritativa del reassembler sigue devolviendo el JSON exacto.
+        assertThat(reassemble(rawChunks)).isEqualTo(json)
+    }
+
     /** Durante el despliegue mixto, los QR V2 y V3 legítimos siguen decodificando. */
     @Test
     fun legacyV2AndV3PacketsStillDecode() {

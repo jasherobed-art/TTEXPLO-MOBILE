@@ -447,7 +447,12 @@ object QrSyncCodec {
     }
 
     /**
-     * Verifica un paquete QR firmado `TTEX4:<SID>:<i/N>:<HMAC_HEX64>:<BASE45>`.
+     * Verifica un paquete QR firmado `TTEX4:<SID>:<i/N>:<HMAC_HEX64>:<BASE45>` de un solo bloque (`1/1`).
+     *
+     * La firma cubre el BASE45 **completo**, no el fragmento de este bloque. Un chunk suelto de un
+     * paquete multiparte no es verificable sin sus hermanos y devuelve `false`; en ese caso use la
+     * sobrecarga [verifyQrPacket] con la lista completa de chunks.
+     *
      * Los QR legacy V2/V3 no tienen firma: se decodifican por separado durante el despliegue mixto.
      */
     fun verifyQrPacket(raw: String): Boolean {
@@ -455,12 +460,31 @@ object QrSyncCodec {
         if (!clean.startsWith("$PROTOCOL_V4_PREFIX:")) return false
         val parts = clean.split(":", limit = 5)
         if (parts.size != 5) return false
-        val hmacHex = parts[3].trim().uppercase(Locale.US)
-        val payload = parts[4]
-        if (payload.isEmpty() || hmacHex.length != 64 ||
-            !hmacHex.all { it in '0'..'9' || it in 'A'..'F' }
-        ) return false
-        return verifyHmacSha256(payload, hmacHex)
+        val (_, totalParts) = parsePartPair(parts[2]) ?: return false
+        if (totalParts != 1) return false
+        return verifyQrPacket(listOf(clean))
+    }
+
+    /**
+     * Verifica un paquete V4 completo reensamblando los bloques en orden `1..N` y calculando el HMAC
+     * sobre el payload BASE45 completo: el mismo camino que [QrSyncReassembler.acceptScan] emplea como
+     * verificación autoritativa. Acepta los chunks en cualquier orden; rechaza duplicados, sesiones
+     * mezcladas, bloques faltantes y cualquier mutación del payload firmado.
+     */
+    fun verifyQrPacket(chunks: List<String>): Boolean {
+        if (chunks.isEmpty()) return false
+        val parsed = chunks.map { parseChunk(it).getOrNull() ?: return false }
+        if (parsed.any { it.protocolVersion != PROTOCOL_V4_VERSION }) return false
+        val session = parsed.first().sessionId
+        val hmacHex = parsed.first().expectedCrc32Hex
+        val totalParts = parsed.first().totalParts
+        if (parsed.any {
+            it.sessionId != session || it.expectedCrc32Hex != hmacHex || it.totalParts != totalParts
+        }) return false
+        val byIndex = parsed.associateBy { it.partIndex }
+        if (byIndex.size != totalParts || (1..totalParts).any { it !in byIndex }) return false
+        val combinedPayload = (1..totalParts).joinToString("") { byIndex.getValue(it).payloadChunk }
+        return verifyHmacSha256(combinedPayload, hmacHex)
     }
 
     fun gzipCompress(data: ByteArray, bestCompression: Boolean = true): ByteArray {
