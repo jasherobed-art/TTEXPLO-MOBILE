@@ -114,4 +114,5 @@ sealed class Screen(val route: String) {
     object License : Screen("license?canBack={canBack}") {
         fun createRoute(canBack: Boolean = false): String = "license?canBack=$canBack"
     }
+    object LicenseVault : Screen("license_vault")
 }

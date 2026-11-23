@@ -52,6 +52,16 @@ class LicenseVaultTest {
     }
 
     @Test
+    fun replaceAllRoundTrips() {
+        val entries = listOf(
+            LicenseVault.VaultEntry("a", "A", "TTEX:a", "t1"),
+            LicenseVault.VaultEntry("b", "B", "TTEX:b", "t2")
+        )
+        LicenseVault.replaceAll(context, entries)
+        assertThat(LicenseVault.load(context)).containsExactlyElementsIn(entries)
+    }
+
+    @Test
     fun addRejectsInvalidToken() {
         val result = LicenseVault.add(context, "Mala", "basura")
         assertThat(result.isFailure).isTrue()

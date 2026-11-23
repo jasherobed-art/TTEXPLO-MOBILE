@@ -45,6 +45,7 @@ import com.ttexplo.mobile.ui.screens.home.HomeScreen
 import com.ttexplo.mobile.ui.screens.inventory.InventoryScreen
 import com.ttexplo.mobile.ui.screens.inventory.InventorySyncScreen
 import com.ttexplo.mobile.ui.screens.license.LicenseScreen
+import com.ttexplo.mobile.ui.screens.license.LicenseVaultScreen
 import com.ttexplo.mobile.ui.screens.settings.SettingsScreen
 import com.ttexplo.mobile.ui.theme.MineDarkBackground
 import com.ttexplo.mobile.ui.theme.TTExploTheme
@@ -404,6 +405,9 @@ fun TTExploAppNavigation() {
                 onNavigateToSync = { tab ->
                     navController.navigate(Screen.InventorySync.createRoute(tab))
                 },
+                onNavigateToLicenseVault = {
+                    navController.navigate(Screen.LicenseVault.route)
+                },
                 initialInspectProductId = inspectProdId,
                 onConsumeInspectProductId = {
                     backStackEntry.savedStateHandle.remove<String>("inspect_product_id")
@@ -427,6 +431,10 @@ fun TTExploAppNavigation() {
                     navController.popBackStack()
                 }
             )
+        }
+
+        composable(Screen.LicenseVault.route) {
+            LicenseVaultScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         // 9. LICENCIA & DISPOSITIVO MODULE

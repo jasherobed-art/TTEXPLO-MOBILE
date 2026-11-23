@@ -45,6 +45,10 @@ object LicenseVault {
         file(context).writeText(toJson(load(context).filterNot { it.id == id }))
     }
 
+    fun replaceAll(context: Context, entries: List<VaultEntry>) {
+        file(context).writeText(toJson(entries))
+    }
+
     fun toJson(entries: List<VaultEntry>): String {
         val array = JSONArray()
         entries.forEach { e ->

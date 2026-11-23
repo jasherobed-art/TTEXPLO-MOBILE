@@ -49,6 +49,7 @@ internal fun categoryAccentColor(category: InventoryCategory): Color = when (cat
 fun InventoryScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSync: (initialTab: Int) -> Unit = {},
+    onNavigateToLicenseVault: () -> Unit = {},
     initialInspectProductId: String? = null,
     onConsumeInspectProductId: () -> Unit = {},
     viewModel: InventoryViewModel = viewModel()
@@ -62,6 +63,7 @@ fun InventoryScreen(
 
     var showQuickDialog by remember { mutableStateOf(false) }
     var quickDialogInitialProduct by remember { mutableStateOf<InventoryStockItem?>(null) }
+    var showMoreMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialInspectProductId) {
         if (!initialInspectProductId.isNullOrBlank()) {
@@ -138,6 +140,34 @@ fun InventoryScreen(
                                 imageVector = Icons.Default.Sync,
                                 contentDescription = "Abrir Centro de Sincronización Multi-Escáner",
                                 tint = if (uiState.activeConflictCount > 0) MineErrorRedLight else MineAgentCyan
+                            )
+                        }
+                    }
+                    Box {
+                        IconButton(
+                            onClick = { showMoreMenu = true },
+                            modifier = Modifier.testTag("inventory_more_menu")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Más opciones",
+                                tint = MineTextPrimary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Licencias") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Key, contentDescription = null, tint = MineAgentCyan)
+                                },
+                                onClick = {
+                                    showMoreMenu = false
+                                    onNavigateToLicenseVault()
+                                },
+                                modifier = Modifier.testTag("inventory_license_vault_item")
                             )
                         }
                     }
