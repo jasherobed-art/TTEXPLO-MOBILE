@@ -12,6 +12,7 @@ import com.ttexplo.mobile.data.local.entity.InventoryEventEntity
 import com.ttexplo.mobile.data.repository.InventoryRepository
 import com.ttexplo.mobile.domain.inventory.InventoryEventType
 import com.ttexplo.mobile.domain.inventory.InventoryReferenceType
+import com.ttexplo.mobile.domain.inventory.QrSyncCodec
 import com.ttexplo.mobile.domain.inventory.QrSyncPackage
 import com.ttexplo.mobile.domain.inventory.InventorySyncStatus
 import com.ttexplo.mobile.domain.inventory.SyncExportPackage
@@ -72,6 +73,18 @@ class HardeningDataTest {
         timestampEpochMs = 1_000L,
         syncStatus = InventorySyncStatus.PENDING
     )
+
+    @Test
+    fun exportedQrUsesAuthenticatedV4Protocol() = runBlocking {
+        db.inventoryEventDao().insertEvents(listOf(qtyEvent("emit-uuid-1")))
+
+        val pkg = repo.buildSyncExportPackage(SyncExportScope.PENDING_ONLY)
+        val raw = pkg.qrPackage.chunks.first().rawText
+
+        assertThat(pkg.qrPackage.protocolVersion).isEqualTo("V4")
+        assertThat(raw).startsWith("TTEX4:")
+        assertThat(QrSyncCodec.verifyQrPacket(raw)).isTrue()
+    }
 
     @Test
     fun exportSessionDoesNotMarkExportedEventsAsSynced() = runBlocking {

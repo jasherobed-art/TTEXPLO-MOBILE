@@ -468,11 +468,12 @@ class InventoryMultiScannerSyncTest {
         val totalCombined = pkgV3.eventUuids.size + pkgV3.codeEventUuids.size
         assertThat(totalCombined).isEqualTo(27)
 
-        // Compuerta de capacidad: los 27 eventos combinados caben en 1 SOLO QR V3 (< 1,400 chars)
-        assertThat(pkgV3.qrPackage.protocolVersion).isEqualTo("V3")
+        // Compuerta de capacidad: los 27 eventos combinados caben en 1 SOLO QR V4 (< 1,400 chars)
+        assertThat(pkgV3.qrPackage.protocolVersion).isEqualTo("V4")
         assertThat(pkgV3.qrPackage.chunks).hasSize(1)
         val singleQrText = pkgV3.qrPackage.chunks.first().rawText
-        assertThat(singleQrText).startsWith("TTEX3:")
+        assertThat(singleQrText).startsWith("TTEX4:")
+        assertThat(QrSyncCodec.verifyQrPacket(singleQrText)).isTrue()
         assertThat(Base45Codec.isQrAlphanumeric(singleQrText)).isTrue()
         assertThat(pkgV3.qrPackage.compressedEncodedChars).isLessThan(1400)
 

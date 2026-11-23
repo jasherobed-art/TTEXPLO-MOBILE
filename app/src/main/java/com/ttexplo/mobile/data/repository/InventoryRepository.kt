@@ -626,7 +626,7 @@ class InventoryRepository(
             events = events,
             codeEvents = codeEvents
         )
-        val qrPackage = QrSyncCodec.encodeV3Binary(
+        val qrPackage = QrSyncCodec.encodeV4(
             binaryPayload = binaryV3,
             rawJsonBytes = compactJson.toByteArray(Charsets.UTF_8).size,
             eventCount = events.size,
