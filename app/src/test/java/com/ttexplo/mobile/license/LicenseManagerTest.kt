@@ -57,6 +57,29 @@ class LicenseManagerTest {
     }
 
     @Test
+    fun verifyTokenForDevice_tokenWithAppVersionField_succeeds() {
+        val payload = JSONObject().apply {
+            put("v", 1)
+            put("id", "LCN-APPV-260")
+            put("client", "Prueba")
+            put("mine", "Polvorín")
+            put("supervisor", "Supervisor")
+            put("dev", "*")
+            put("tier", "ANUAL")
+            put("appVersion", "2.6.0")
+            put("issued", Instant.now().toString())
+            put("expires", Instant.now().plus(365, ChronoUnit.DAYS).toString())
+            put("mods", JSONArray(listOf("ENTRADAS", "SALIDAS", "ACCESORIOS", "DEVOLUCIONES")))
+        }.toString()
+        val b64 = Base64.getEncoder().encodeToString(payload.toByteArray(Charsets.UTF_8))
+        val token = "TTEX:$b64.${LicenseManager.computeHmacSha256(payload, LicenseManager.MASTER_SECRET).take(32)}"
+
+        val result = LicenseManager.verifyTokenForDevice(token, "CUALQUIER-ID")
+        assertThat(result.isSuccess).isTrue()
+        assertThat(result.getOrThrow().id).isEqualTo("LCN-APPV-260")
+    }
+
+    @Test
     fun verifyTokenForDevice_licFileJsonPayload_succeeds() {
         val token = generateWebToolToken(prefix = "TTEX:", dev = "*")
         val licJson = JSONObject().apply {
