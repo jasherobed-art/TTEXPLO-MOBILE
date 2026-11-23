@@ -11,8 +11,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.ttexplo.mobile.ui.theme.*
 
 /**
@@ -27,9 +29,9 @@ fun ExitScanConfirmDialog(
     onDismiss: () -> Unit
 ) {
     val bodyText = if (savedAsDraft) {
-        "Tienes $itemCount elemento(s) escaneado(s) en curso.\n\nTu progreso permanece respaldado como BORRADOR en el equipo y podrás retomarlo al volver a entrar. ¿Deseas salir de la pantalla de escaneo?"
+        stringResource(R.string.scan_exit_body_draft, itemCount)
     } else {
-        "Tienes $itemCount elemento(s) escaneado(s) SIN GUARDAR.\n\nSi sales ahora sin presionar Guardar, se perderán las lecturas de esta sesión. ¿Seguro que deseas salir?"
+        stringResource(R.string.scan_exit_body_unsaved, itemCount)
     }
 
     AlertDialog(
@@ -43,7 +45,7 @@ fun ExitScanConfirmDialog(
         },
         title = {
             Text(
-                text = if (savedAsDraft) "¿Salir del escaneo?" else "¿Salir sin guardar?",
+                text = stringResource(if (savedAsDraft) R.string.scan_exit_title_draft else R.string.scan_exit_title_unsaved),
                 color = MineTextPrimary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
@@ -66,7 +68,7 @@ fun ExitScanConfirmDialog(
                 )
             ) {
                 Text(
-                    text = if (savedAsDraft) "Sí, salir" else "Salir sin guardar",
+                    text = stringResource(if (savedAsDraft) R.string.scan_exit_confirm_draft else R.string.scan_exit_confirm_unsaved),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -76,7 +78,7 @@ fun ExitScanConfirmDialog(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("cancel_exit_scan_button")
             ) {
-                Text("Seguir escaneando", color = MineTextPrimary)
+                Text(stringResource(R.string.scan_exit_dismiss), color = MineTextPrimary)
             }
         },
         containerColor = MineDarkSurface

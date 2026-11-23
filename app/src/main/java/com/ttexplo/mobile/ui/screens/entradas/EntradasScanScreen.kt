@@ -38,11 +38,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.printer.PrinterProfile
@@ -464,7 +466,7 @@ fun EntradasScanScreen(
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                 modifier = Modifier.height(28.dp)
                             ) {
-                                Text("+ ID", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text(stringResource(R.string.scan_add_id), fontWeight = FontWeight.Bold, fontSize = 10.sp)
                             }
                         }
                     }
@@ -499,7 +501,7 @@ fun EntradasScanScreen(
                     )
                     if (selectedFilterKey != null) {
                         Text(
-                            text = "Ver todos",
+                            text = stringResource(R.string.scan_view_all),
                             style = MaterialTheme.typography.labelSmall,
                             color = MineAgentCyan,
                             fontWeight = FontWeight.Bold,
@@ -568,7 +570,7 @@ fun EntradasScanScreen(
                         Icon(imageVector = Icons.Default.Print, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         AutoShrinkText(
-                            text = if (uiState.isPrinting) "Imprimiendo..." else "Imprimir",
+                            text = stringResource(if (uiState.isPrinting) R.string.scan_printing else R.string.scan_print),
                             fontWeight = FontWeight.Bold,
                             targetTextSize = 12.sp,
                             minTextSize = 9.sp,
@@ -598,7 +600,7 @@ fun EntradasScanScreen(
                         Icon(imageVector = Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         AutoShrinkText(
-                            text = "Guardar Entrada (${uiState.scannedItems.size})",
+                            text = stringResource(R.string.scan_save_entrada, uiState.scannedItems.size),
                             fontWeight = FontWeight.Bold,
                             targetTextSize = 13.sp,
                             minTextSize = 10.sp,

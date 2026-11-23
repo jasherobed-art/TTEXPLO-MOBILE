@@ -12,10 +12,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.ttexplo.mobile.ui.theme.*
 
 /**
@@ -64,7 +66,7 @@ fun TwoStepDeleteDialog(
                     modifier = Modifier.padding(bottom = 6.dp)
                 ) {
                     Text(
-                        text = if (step == 1) "CONFIRMACIÓN 1 DE 2" else "CONFIRMACIÓN 2 DE 2 • FINAL",
+                        text = stringResource(if (step == 1) R.string.delete_step1 else R.string.delete_step2),
                         color = if (step == 1) MineSafetyYellow else MineErrorRed,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -72,7 +74,7 @@ fun TwoStepDeleteDialog(
                     )
                 }
                 AutoShrinkText(
-                    text = if (step == 1) "¿Retirar código escaneado?" else "¡Advertencia: Acción definitiva!",
+                    text = stringResource(if (step == 1) R.string.delete_title_step1 else R.string.delete_title_step2),
                     fontWeight = FontWeight.Bold,
                     color = MineTextPrimary,
                     targetTextSize = 16.sp,
@@ -86,11 +88,7 @@ fun TwoStepDeleteDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = if (step == 1) {
-                        "¿Desea eliminar este código de la lista activa?"
-                    } else {
-                        "El código se eliminará del registro. Esta acción no se puede deshacer. ¿Está completamente seguro de borrarlo?"
-                    },
+                    text = stringResource(if (step == 1) R.string.delete_body_step1 else R.string.delete_body_step2),
                     color = MineTextSecondary,
                     fontSize = 13.sp,
                     lineHeight = 17.sp
@@ -141,7 +139,7 @@ fun TwoStepDeleteDialog(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "CONTINUAR (1/2)",
+                        text = stringResource(R.string.delete_continue),
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
@@ -159,7 +157,7 @@ fun TwoStepDeleteDialog(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = "SÍ, ELIMINAR (2/2)",
+                        text = stringResource(R.string.delete_confirm),
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
@@ -176,7 +174,7 @@ fun TwoStepDeleteDialog(
                 border = androidx.compose.foundation.BorderStroke(1.dp, MineBorderGray)
             ) {
                 Text(
-                    text = "Cancelar",
+                    text = stringResource(R.string.delete_cancel),
                     fontSize = 12.sp
                 )
             }

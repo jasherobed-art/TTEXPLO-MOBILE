@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">TTExplo Mobile</string>
+
+    <!-- Botones de las pantallas de escaneo -->
+    <string name="scan_print">Imprimir</string>
+    <string name="scan_printing">Imprimiendo...</string>
+    <string name="scan_view_all">Ver todos</string>
+    <string name="scan_add_id">+ ID</string>
+    <string name="scan_save_entrada">Guardar Entrada (%1$d)</string>
+    <string name="scan_save_vale">Guardar Vale (%1$d)</string>
+    <string name="scan_save_devolucion">Guardar (%1$d)</string>
+
+    <!-- Diálogo al salir del escaneo -->
+    <string name="scan_exit_title_draft">¿Salir del escaneo?</string>
+    <string name="scan_exit_title_unsaved">¿Salir sin guardar?</string>
+    <string name="scan_exit_body_draft">Tienes %1$d elemento(s) escaneado(s) en curso.\n\nTu progreso permanece respaldado como BORRADOR en el equipo y podrás retomarlo al volver a entrar. ¿Deseas salir de la pantalla de escaneo?</string>
+    <string name="scan_exit_body_unsaved">Tienes %1$d elemento(s) escaneado(s) SIN GUARDAR.\n\nSi sales ahora sin presionar Guardar, se perderán las lecturas de esta sesión. ¿Seguro que deseas salir?</string>
+    <string name="scan_exit_confirm_draft">Sí, salir</string>
+    <string name="scan_exit_confirm_unsaved">Salir sin guardar</string>
+    <string name="scan_exit_dismiss">Seguir escaneando</string>
+
+    <!-- Diálogo de borrado en dos pasos -->
+    <string name="delete_step1">CONFIRMACIÓN 1 DE 2</string>
+    <string name="delete_step2">CONFIRMACIÓN 2 DE 2 • FINAL</string>
+    <string name="delete_title_step1">¿Retirar código escaneado?</string>
+    <string name="delete_title_step2">¡Advertencia: Acción definitiva!</string>
+    <string name="delete_body_step1">¿Desea eliminar este código de la lista activa?</string>
+    <string name="delete_body_step2">El código se eliminará del registro. Esta acción no se puede deshacer. ¿Está completamente seguro de borrarlo?</string>
+    <string name="delete_continue">CONTINUAR (1/2)</string>
+    <string name="delete_confirm">SÍ, ELIMINAR (2/2)</string>
+    <string name="delete_cancel">Cancelar</string>
 </resources>

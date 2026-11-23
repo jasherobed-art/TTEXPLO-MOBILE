@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import com.ttexplo.mobile.domain.model.InventoryCategory
 import com.ttexplo.mobile.domain.model.ProductType
@@ -558,7 +560,7 @@ fun AccesoriosScanScreen(
                     )
                     if (selectedCodeFilter != null) {
                         Text(
-                            text = "Ver todos",
+                            text = stringResource(R.string.scan_view_all),
                             style = MaterialTheme.typography.labelSmall,
                             color = MineAgentCyan,
                             fontWeight = FontWeight.Bold,
@@ -624,7 +626,7 @@ fun AccesoriosScanScreen(
                         Icon(imageVector = Icons.Default.Print, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         AutoShrinkText(
-                            text = if (uiState.isPrinting) "Imprimiendo..." else "Imprimir",
+                            text = stringResource(if (uiState.isPrinting) R.string.scan_printing else R.string.scan_print),
                             initialTextSize = 12.sp,
                             minTextSize = 9.sp,
                             fontWeight = FontWeight.Bold,
@@ -660,7 +662,10 @@ fun AccesoriosScanScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         AutoShrinkText(
-                            text = if (isDevolucion) "Guardar ($displayTotal)" else "Guardar Vale ($displayTotal)",
+                            text = stringResource(
+                                if (isDevolucion) R.string.scan_save_devolucion else R.string.scan_save_vale,
+                                displayTotal
+                            ),
                             initialTextSize = 13.sp,
                             minTextSize = 9.sp,
                             fontWeight = FontWeight.Bold,
