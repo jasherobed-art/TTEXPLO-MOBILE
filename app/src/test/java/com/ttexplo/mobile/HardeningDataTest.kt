@@ -147,7 +147,7 @@ class HardeningDataTest {
         assertThat(codeReversals).hasSize(1)
         assertThat(qtyReversals.single().eventUuid).isEqualTo(
             UUID.nameUUIDFromBytes(
-                "REVERSAL:${InventoryReferenceType.DESPACHO}:88:$reason:$qtySeed".toByteArray()
+                "REVERSAL:${InventoryReferenceType.DESPACHO}:88:$reason:315:$qtySeed".toByteArray()
             ).toString()
         )
         assertThat(codeReversals.single().eventUuid).isEqualTo(
@@ -188,6 +188,51 @@ class HardeningDataTest {
 
         record(-40)
         assertThat(repo.getCurrentStockForProduct(code)).isWithin(1e-4).of(40.0)
+    }
+
+    @Test
+    fun singleEditWithTwoProductsInsertsTwoDistinctReversals() = runBlocking {
+        val first = "XCOR-PENT-5G"
+        val second = "XCAN-SEG-3M"
+        db.inventoryEventDao().insertEvents(
+            listOf(
+                qtyEvent("00000000-0000-0000-0000-000000000011").copy(
+                    referenceType = InventoryReferenceType.ACCESORIO_VALE,
+                    referenceId = 77L,
+                    productId = first,
+                    deltaQuantity = 25.0
+                ),
+                qtyEvent("00000000-0000-0000-0000-000000000012").copy(
+                    referenceType = InventoryReferenceType.ACCESORIO_VALE,
+                    referenceId = 77L,
+                    productId = second,
+                    deltaQuantity = 10.0
+                )
+            )
+        )
+
+        repo.recordAccesoriosVale(
+            valeId = 77L,
+            vale = "ACC9001",
+            empresa = "MPRG",
+            lugar = "NIVEL 500",
+            isDevolucion = false,
+            items = listOf(
+                AccessoryItemRecord(first, -30, "2026-11-22 10:00:00"),
+                AccessoryItemRecord(second, -12, "2026-11-22 10:00:01")
+            )
+        )
+
+        val reversals = db.inventoryEventDao()
+            .getEventsByReference(InventoryReferenceType.ACCESORIO_VALE, 77L)
+            .filter { it.eventType == InventoryEventType.REVERSAL.name }
+
+        assertThat(reversals).hasSize(2)
+        assertThat(reversals.map { it.eventUuid }.toSet()).hasSize(2)
+        assertThat(reversals.first { it.productId == first }.deltaQuantity).isWithin(1e-4).of(-25.0)
+        assertThat(reversals.first { it.productId == second }.deltaQuantity).isWithin(1e-4).of(-10.0)
+        assertThat(repo.getCurrentStockForProduct(first)).isWithin(1e-4).of(30.0)
+        assertThat(repo.getCurrentStockForProduct(second)).isWithin(1e-4).of(12.0)
     }
 
     @Test

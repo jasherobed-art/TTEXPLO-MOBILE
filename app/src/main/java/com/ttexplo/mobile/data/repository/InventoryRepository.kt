@@ -1342,7 +1342,7 @@ class InventoryRepository(
                 val seed = generationSeed ?: list.minBy { it.eventUuid }.eventUuid
                 InventoryEventEntity(
                     eventUuid = UUID.nameUUIDFromBytes(
-                        "REVERSAL:${last.referenceType}:${last.referenceId}:$reason:$seed".toByteArray()
+                        "REVERSAL:${last.referenceType}:${last.referenceId}:$reason:$productId:$seed".toByteArray()
                     ).toString(),
                     deviceId = deviceId,
                     polvorin = last.polvorin,
