@@ -49,6 +49,20 @@ object TicketGenerator {
     private val ESC_NORMAL_SIZE = byteArrayOf(0x1B, 0x21, 0x00)
     private val ESC_FEED_6_LINES = byteArrayOf(0x1B, 0x64, 0x06)
 
+    // Margen inferior ~3 cm en papel térmico de 80 mm (≈4 mm por línea).
+    const val BOTTOM_MARGIN_ESC_LINES = 7
+    const val BOTTOM_MARGIN_CPCL_DOTS = 220
+    private val ESC_FEED_BOTTOM_MARGIN = byteArrayOf(0x1B, 0x64, BOTTOM_MARGIN_ESC_LINES.toByte())
+
+    private fun writeEscPosBottomMargin(out: ByteArrayOutputStream) {
+        out.write(ESC_FEED_BOTTOM_MARGIN)
+        out.write("\r\n".repeat(BOTTOM_MARGIN_ESC_LINES).toByteArray(CHARSET))
+    }
+
+    private fun appendPlainBottomMargin(sb: StringBuilder) {
+        sb.append("\r\n".repeat(BOTTOM_MARGIN_ESC_LINES))
+    }
+
     fun stripAccents(text: String): String {
         return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
             .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
@@ -390,6 +404,7 @@ object TicketGenerator {
         }
 
         out.write(ESC_FEED_6_LINES)
+        writeEscPosBottomMargin(out)
         out.write("\r\n\r\n\r\n\r\n".toByteArray(CHARSET))
         return out.toByteArray()
     }
@@ -472,6 +487,7 @@ object TicketGenerator {
             sb.append(divider).append("\r\n\r\n")
         }
 
+        appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")
         return sb.toString().toByteArray(CHARSET)
     }
@@ -609,7 +625,7 @@ object TicketGenerator {
             y += 20
         }
 
-        val totalHeight = y + 40
+        val totalHeight = y + 40 + BOTTOM_MARGIN_CPCL_DOTS
         val sb = StringBuilder()
         sb.append("! 0 200 200 $totalHeight 1\r\n")
         sb.append("PAGE-WIDTH $pageWidth\r\n")
@@ -715,6 +731,7 @@ object TicketGenerator {
         }
 
         out.write(ESC_FEED_6_LINES)
+        writeEscPosBottomMargin(out)
         out.write("\r\n\r\n\r\n\r\n".toByteArray(CHARSET))
         return out.toByteArray()
     }
@@ -796,6 +813,7 @@ object TicketGenerator {
             sb.append(divider).append("\r\n\r\n")
         }
 
+        appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")
         return sb.toString().toByteArray(CHARSET)
     }
@@ -938,7 +956,7 @@ object TicketGenerator {
             y += 20
         }
 
-        val totalHeight = y + 40
+        val totalHeight = y + 40 + BOTTOM_MARGIN_CPCL_DOTS
         val sb = StringBuilder()
         sb.append("! 0 200 200 $totalHeight 1\r\n")
         sb.append("PAGE-WIDTH $pageWidth\r\n")
@@ -1034,6 +1052,7 @@ object TicketGenerator {
         }
 
         out.write(ESC_FEED_6_LINES)
+        writeEscPosBottomMargin(out)
         out.write("\r\n\r\n\r\n\r\n".toByteArray(CHARSET))
         return out.toByteArray()
     }
@@ -1094,6 +1113,7 @@ object TicketGenerator {
             sb.append("RECIBIO EN POLVORIN:\r\n\r\n\r\n$sigLine\r\nFirma Responsable Polvorin\r\n\r\n\r\n")
             sb.append("ENTREGO PROVEEDOR:\r\n\r\n\r\n$sigLine\r\n${stripAccents(record.proveedor)}\r\n$divider\r\n\r\n")
         }
+        appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")
         return sb.toString().toByteArray(CHARSET)
     }
@@ -1205,7 +1225,7 @@ object TicketGenerator {
             y += 20
         }
 
-        val totalHeight = y + 40
+        val totalHeight = y + 40 + BOTTOM_MARGIN_CPCL_DOTS
         val sb = StringBuilder()
         sb.append("! 0 200 200 $totalHeight 1\r\n")
         sb.append("PAGE-WIDTH $pageWidth\r\n")
@@ -1298,6 +1318,7 @@ object TicketGenerator {
         }
 
         out.write(ESC_FEED_6_LINES)
+        writeEscPosBottomMargin(out)
         out.write("\r\n\r\n\r\n\r\n".toByteArray(CHARSET))
         return out.toByteArray()
     }
@@ -1356,6 +1377,7 @@ object TicketGenerator {
             sb.append("ENTREGO:\r\n\r\n\r\n$sigLine\r\n${stripAccents(record.empleadoEntrega)}\r\n\r\n\r\n")
             sb.append("RECIBIO:\r\n\r\n\r\n$sigLine\r\n${stripAccents(record.empleadoRecibe)}\r\n$divider\r\n\r\n")
         }
+        appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")
         return sb.toString().toByteArray(CHARSET)
     }
@@ -1465,7 +1487,7 @@ object TicketGenerator {
             y += 20
         }
 
-        val totalHeight = y + 40
+        val totalHeight = y + 40 + BOTTOM_MARGIN_CPCL_DOTS
         val sb = StringBuilder()
         sb.append("! 0 200 200 $totalHeight 1\r\n")
         sb.append("PAGE-WIDTH $pageWidth\r\n")
@@ -1517,6 +1539,7 @@ object TicketGenerator {
         out.write("T&T EXPLO MOBILE - Control en Sitio\r\n".toByteArray(CHARSET))
         out.write("$divider\r\n".toByteArray(CHARSET))
         out.write(ESC_FEED_6_LINES)
+        writeEscPosBottomMargin(out)
         out.write("\r\n\r\n\r\n\r\n".toByteArray(CHARSET))
         return out.toByteArray()
     }
@@ -1538,6 +1561,7 @@ object TicketGenerator {
         sb.append("FECHA/HORA: ").append(DateTimeUtils.currentTimestamp()).append("\r\n")
         sb.append("Si puede leer esto, su impresora funciona en modo RAW.\r\n")
         sb.append(divider).append("\r\n")
+        appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")
         return sb.toString().toByteArray(CHARSET)
     }
@@ -1589,7 +1613,7 @@ object TicketGenerator {
         lines.add("LINE 10 $y $lineEnd $y 3")
         y += 40
 
-        val totalHeight = y + 20
+        val totalHeight = y + 20 + BOTTOM_MARGIN_CPCL_DOTS
         sb.append("! 0 200 200 $totalHeight 1\r\n")
         sb.append("PAGE-WIDTH $pageWidth\r\n")
         for (line in lines) {
