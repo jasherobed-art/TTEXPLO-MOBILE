@@ -175,27 +175,37 @@ fun InventoryScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkBackground)
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    quickDialogInitialProduct = null
-                    viewModel.clearSampleScanFeedback()
-                    showQuickDialog = true
-                },
-                containerColor = MineSafetyYellow,
-                contentColor = MineDarkBackground,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .testTag("inventory_quick_load_button")
+        bottomBar = {
+            Surface(
+                color = MineDarkBackground,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "CARGA RÁPIDA / AJUSTE",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 13.sp
-                )
+                Button(
+                    onClick = {
+                        quickDialogInitialProduct = null
+                        viewModel.clearSampleScanFeedback()
+                        showQuickDialog = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .navigationBarsPadding()
+                        .testTag("inventory_quick_load_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MineSafetyYellow,
+                        contentColor = MineDarkBackground
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "CARGA RÁPIDA / AJUSTE",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp
+                    )
+                }
             }
         },
         containerColor = MineDarkBackground
@@ -395,7 +405,6 @@ fun InventoryScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    contentPadding = PaddingValues(bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (showGroupHeaders) {
