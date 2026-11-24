@@ -186,7 +186,7 @@ class PrinterProfilesAndTicketInverseTest {
                 String(TicketGenerator.generateDespachoCpcl(sampleDespacho, paperWidth = width), Charsets.US_ASCII)
             )
             for (text in despachoOutputs) {
-                assertThat(text).contains("LISTADO DE CODIGOS ESCANEADOS (3):")
+                assertThat(text).contains("LISTADO DE CODIGOS (3):")
                 assertThat(text).contains("[01] 337130626009586009641005228514")
                 assertThat(text).contains("2026-11-22 10:00:00")
                 assertThat(text).contains("EMULEX 1 (1\" X 8\")")
@@ -202,7 +202,7 @@ class PrinterProfilesAndTicketInverseTest {
                 String(TicketGenerator.generateEntradaCpcl(sampleEntrada, paperWidth = width), Charsets.US_ASCII)
             )
             for (text in entradaOutputs) {
-                assertThat(text).contains("LISTADO DE CODIGOS ESCANEADOS (2):")
+                assertThat(text).contains("LISTADO DE CODIGOS (2):")
                 assertThat(text).contains("[01] 337130626009586009641005228514")
                 assertThat(text).contains("2026-11-22 08:15:00")
                 assertThat(text).contains("EMULEX 1 (CAJA)")
@@ -218,7 +218,7 @@ class PrinterProfilesAndTicketInverseTest {
                 String(TicketGenerator.generateDevolucionCpcl(sampleDevolucion, paperWidth = width), Charsets.US_ASCII)
             )
             for (text in devolucionOutputs) {
-                assertThat(text).contains("LISTADO DE CODIGOS ESCANEADOS (1):")
+                assertThat(text).contains("LISTADO DE CODIGOS (1):")
                 assertThat(text).contains("[01] 337130626009586009641005228514")
                 assertThat(text).contains("2026-11-22 14:20:00")
                 assertThat(text).contains("EMULEX 1 (CAJA)")
