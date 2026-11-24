@@ -179,7 +179,9 @@ fun InventoryScreen(
             Surface(
                 color = MineDarkBackground,
                 shadowElevation = 8.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
             ) {
                 Button(
                     onClick = {
@@ -190,7 +192,6 @@ fun InventoryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 14.dp, vertical = 8.dp)
-                        .navigationBarsPadding()
                         .testTag("inventory_quick_load_button"),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MineSafetyYellow,
