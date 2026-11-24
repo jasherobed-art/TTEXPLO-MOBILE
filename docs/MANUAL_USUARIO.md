@@ -228,6 +228,31 @@ Aquí ves el Device ID, el cliente autorizado, la mina, la vigencia, la versión
 
 Aquí ves cada pantalla con sus contadores y filtros. Es para reconocerla rápido cuando estés frente a la terminal.
 
+| Ventana | Dónde se abre |
+|---|---|
+| Inicio | Al abrir la app. |
+| Encabezado de entrada | Módulo 1. |
+| Escaneo de entrada | Botón CONTINUAR A ESCANEO del módulo 1. |
+| Encabezado de despacho | Módulo 2. |
+| Escaneo de despacho | Botón CONTINUAR A DESPACHO del módulo 2. |
+| Accesorios | Módulo 3 y módulo 5. |
+| Devolución de alto | Módulo 4. |
+| Devolución de accesorios | Módulo 5. |
+| Inventario y filtros | Módulo 6. |
+| Estado vacío | Módulo 6 sin existencias. |
+| Diálogo de carga rápida | Botón fijo de Inventario o Ajustar en una tarjeta. |
+| Menú de Inventario | Tres puntos en Inventario. |
+| Licencias guardadas | Menú de Inventario → Licencias. |
+| Sincronización | Icono de sincronización en Inventario. |
+| Historial | Módulo 7. |
+| Detalle de vale | Al tocar un vale en Historial. |
+| Configuración general | Módulo 8. |
+| Impresoras | Configuración → Impresoras Bluetooth. |
+| Catálogo de productos | Configuración → Ver Catálogo Completo. |
+| Hoja de producto | Al tocar una tarjeta en Inventario. |
+| Activación de licencia | Configuración o aviso de vencimiento. |
+| Diálogos y avisos | Según la acción que estés haciendo. |
+
 ### Inicio
 
 La pantalla de arriba muestra la versión y los ocho módulos. Cada tarjeta tiene un ícono, un título y una línea de texto que dice qué hace. Si la licencia está por vencer, aparece un aviso amarillo arriba.
@@ -293,6 +318,37 @@ Trae el dispositivo, la licencia, datos de la mina, catálogo, impresoras y vers
 ### Impresoras
 
 Cada perfil muestra alias, MAC, protocolo y ancho en pulgadas. El botón **+ Agregar** crea uno nuevo. El perfil activo es el que se usa al imprimir.
+
+### Devolución de accesorios
+
+La misma pantalla de accesorios, pero la cantidad se guarda en negativo. El encabezado pide quién entrega y quién recibe en el polvorín. Después capturas cada accesorio con su cantidad.
+
+### Catálogo de productos
+
+Se abre desde Configuración con **Ver Catálogo Completo y Consultar Códigos**. Aquí ves los productos activos, puedes buscar por ID o nombre, editar uno y ver sus códigos. Si el catálogo cambió, se recarga con **Recargar Base** o se trae un CSV con **Importar CSV**.
+
+### Hoja de producto
+
+Al tocar una tarjeta en Inventario se abre esta hoja. Trae dos pestañas: **Kardex** con los movimientos y **Códigos** con las series escaneadas. Arriba muestra el producto, su familia, la existencia actual y el peso unitario. El botón **Ajustar** abre la carga rápida para ese producto.
+
+### Detalle de vale
+
+Desde el Historial puedes abrir un vale. La vista muestra el encabezado, el listado de códigos y los totales. Desde ahí se reimprime o se borra. El botón de imprimir usa la impresora activa; no necesitas volver a capturar el vale.
+
+### Activación de licencia
+
+La pantalla de licencia muestra el Device ID, el estado de la licencia, el cliente, la mina, la modalidad y la vigencia. Abajo está el campo para pegar una clave o token, con botones para pegar, importar `.lic` y **ACTIVAR LICENCIA**.
+
+### Diálogos y avisos
+
+Estas ventanas no son pantallas completas, pero también aparecen:
+
+- **Salir de escaneo**: pregunta si quieres salir con lecturas capturadas. Elige cancelar para seguir capturando o confirma para perder lo que no guardaste.
+- **Eliminar en dos pasos**: pide un código de 4 dígitos antes de borrar un vale o un producto.
+- **Seleccionar impresora**: aparece si hay varias impresoras guardadas. Elige una y queda como activa para ese trabajo.
+- **Reimprimir vale**: lista los vales guardados para volver a imprimir uno.
+- **Editar producto**: abre desde el catálogo para corregir nombre, familia, presentación o calibraciones.
+- **Destello de escaneo**: un borde verde, ámbar o rojo confirma lectura válida, duplicado o error. No es una pantalla, solo un aviso visual.
 
 ## Qué significa cada elemento dentro de las pantallas
 
