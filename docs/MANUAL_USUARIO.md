@@ -381,6 +381,60 @@ Si no sabes para qué sirve un botón, mira aquí.
 | Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias. |
 | Informe de fusión | Sincronización | Cuántos eventos entraron y qué conflictos hay. |
 
+## Estructura del programa
+
+Esta parte no es para operar la app, sino para entender cómo está armada. Sirve cuando hay que dar soporte o pedir un cambio.
+
+La app es nativa en Kotlin con Jetpack Compose. Todo se guarda en el celular con Room (SQLite). No hay servidor. Las terminales se pasan datos con QR o JSON.
+
+### Puntos de entrada
+
+- `MainActivity.kt`: abre la app, arma la navegación, pide permisos y conecta las pantallas.
+- `TTExploApp.kt`: crea la base de datos y el repositorio principal cuando arranca la app.
+- `ui/navigation/AppNavigation.kt`: define las rutas. Cada ruta lleva a una pantalla.
+
+### Capa de pantallas
+
+- `ui/screens/home`: menú principal de ocho módulos.
+- `ui/screens/entradas`, `despacho`, `accesorios`, `devolucion`: captura de vales. Cada uno tiene pantalla de encabezado, pantalla de escaneo y su ViewModel.
+- `ui/screens/inventory`: inventario, Kardex, carga rápida y sincronización.
+- `ui/screens/license`: activación de licencia y bóveda.
+- `ui/screens/history`: consulta y exportación de vales.
+- `ui/screens/settings`: mina, catálogo, impresoras, audio y versión.
+- `ui/common`: piezas reutilizables: textos que se ajustan, tarjetas de escaneo, diálogos, sonido y destello.
+- `ui/theme`: colores, fuentes y formas de Material 3.
+
+### Capa de datos
+
+- `data/local/AppDatabase.kt`: base Room con sus migraciones.
+- `data/local/dao`: consultas a eventos, códigos, productos, vales y sesiones.
+- `data/local/entity`: tablas de la base.
+- `data/repository/InventoryRepository.kt`: reúne inventario, vales, eventos y sincronización.
+- `data/repository/SettingsRepository.kt`: preferencias de mina, impresora y sonido.
+- `data/repository/CatalogRepository.kt`: catálogo de productos.
+
+### Reglas de negocio
+
+- `domain/model`: modelos de movimientos y clasificación de productos.
+- `domain/inventory`: cálculo de peso unitario, análisis de conflictos y códecs de sincronización.
+- `domain/export`: formato de archivo plano.
+- `domain/scanner`: validación de códigos SEDENA.
+
+### Impresión, licencia y escáner
+
+- `printer/TicketGenerator.kt`: arma tickets en ESC/POS, CPCL y texto plano.
+- `printer/BluetoothPrinterManager.kt`: conexión y envío a la impresora.
+- `printer/ValePrintHelper.kt`: une el vale con el perfil de impresora.
+- `license/LicenseManager.kt`: valida firmas, activa licencias y revisa vigencia.
+- `license/LicenseVault.kt`: guarda licencias por terminal.
+- `scanner/ZebraScannerReceiver.kt`: recibe los broadcast del lector Zebra.
+
+### Cómo fluye la información
+
+La pantalla llama al ViewModel. El ViewModel llama al repositorio. El repositorio escribe o lee Room. Para imprimir, el repositorio usa el paquete `printer`. Para sincronizar, usa `domain/inventory` y genera QR o JSON. La licencia se valida en `license` antes de habilitar la operación.
+
+En corto: Pantalla → ViewModel → Repositorio → Room. De ahí sale a Impresión, Licencia o Sincronización.
+
 ## Buenos hábitos
 
 - Cierra el vale antes de irte. No dejes cosas en borrador.
