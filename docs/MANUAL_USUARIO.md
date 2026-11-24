@@ -1,360 +1,360 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.6.0 (build 21) es una aplicación para controlar explosivos en polvorín, capturar vales, consultar existencias y sincronizar datos entre terminales de forma offline. Este manual explica las tareas diarias de un operador, desde activar la licencia hasta imprimir un vale.
+T&T Explo Mobile 2.6.0 (build 21) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
-La aplicación funciona sin internet. Los datos se guardan en la terminal y se comparten con otras terminales mediante QR o archivos JSON.
+Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
 ## Antes de empezar
 
-Cada terminal tiene un identificador único de hardware (Device ID). La licencia se genera fuera de la app, en License Master Pro, y se emite para ese Device ID. No use una licencia de otra terminal.
+Cada terminal tiene su ID (Device ID). Anótalo bien: la licencia se hace para ese ID y no sirve en otra terminal.
 
 ### Activar la licencia
 
-1. En la pantalla de inicio, abra **8. Configuración y Personalización**.
-2. En la sección de licenciamiento, copie el **Device ID** con **COPIAR ID**.
-3. En License Master Pro, genere una licencia para ese Device ID.
-4. En la app, pegue la clave corta `TTEX-...`, el token `TTEX:...`, importe un archivo `.lic` o escanee el QR de la licencia.
-5. Pulse **ACTIVAR LICENCIA**.
+1. En el inicio, abre **8. Configuración y Personalización**.
+2. Copia el **Device ID** con **COPIAR ID**.
+3. En License Master Pro genera la licencia para ese ID.
+4. En la app pega la clave corta `TTEX-...`, el token `TTEX:...`, importa el `.lic` o escanea el QR.
+5. Toca **ACTIVAR LICENCIA**.
 
-Cuando la licencia es válida, la app muestra **AUTORIZADA**. Si aparece **PRÓXIMA A VENCER**, renueva la licencia antes de la fecha indicada.
+Si salió bien, verás **AUTORIZADA**. Si dice **PRÓXIMA A VENCER**, renueva antes de la fecha que marca.
 
 > [!IMPORTANT]
-> La APK se entrega con una licencia temporal de 1 día. Mientras esa licencia esté activa, los paneles **MODO PRUEBA** están visibles para capacitación. Al instalar una licencia real, esos paneles desaparecen. Ese comportamiento es normal.
+> La APK viene con una licencia de prueba de 1 día. Mientras esté activa, verás los paneles **MODO PRUEBA**. Cuando metas una licencia real, esos paneles desaparecen. Es normal, no es un error.
 
 ## Pantalla de inicio
 
-La pantalla de inicio muestra la versión `v2.6.0` y ocho módulos. Cada módulo se abre con un toque.
+Arriba verás `v2.6.0`. Debajo están los ocho módulos. Tocas y entras.
 
-| Módulo | Uso principal |
+| Módulo | Para qué lo usas |
 |---|---|
-| **1. Entradas de Alto y Agente** | Recibir material y darlo de alta en el polvorín. |
-| **2. Salidas de Alto y Agente** | Despachar material a barrenos e imprimir el vale. |
+| **1. Entradas de Alto y Agente** | Recibir material y darlo de alta. |
+| **2. Salidas de Alto y Agente** | Despachar a barreno e imprimir el vale. |
 | **3. Salida de Accesorios** | Despachar detonadores, cordón y artificios. |
-| **4. Devolución de Alto y Agente** | Reingresar explosivos o agentes sobrantes. |
-| **5. Devolución de Accesorios** | Reingresar accesorios con cantidad negativa. |
-| **6. Inventario en Polvorín (En Vivo)** | Consultar existencias, ajustar físico y ver Kardex. |
-| **7. Historial de Vales & Consolidado** | Consultar vales guardados y exportarlos. |
-| **8. Configuración y Personalización** | Impresora, datos de mina, catálogo y licencia. |
+| **4. Devolución de Alto y Agente** | Meter de vuelta lo que sobró. |
+| **5. Devolución de Accesorios** | Meter de vuelta accesorios con cantidad negativa. |
+| **6. Inventario en Polvorín (En Vivo)** | Ver saldos, ajustar y consultar Kardex. |
+| **7. Historial de Vales & Consolidado** | Buscar vales y exportarlos. |
+| **8. Configuración y Personalización** | Impresora, mina, catálogo y licencia. |
 
-El botón de engranaje abre la configuración. Si la licencia está por vencer, aparece un aviso en la parte superior.
+El engranaje de arriba abre Configuración. Si la licencia está por vencer, verás un aviso arriba.
 
 ## Registrar una entrada
 
-1. Abra **1. Entradas de Alto y Agente**.
-2. Complete los campos del encabezado: número de proveedor, número de polvorín y factura o remisión.
-3. Pulse **CONTINUAR A ESCANEO**.
-4. Escanee cada código SEDENA con el lector integrado o escriba el código en el campo de captura.
-5. Revise la cinta superior: muestra total de ítems y conteo de cajas, sacos y cartuchos.
-6. Si necesita corregir un ítem, ábralo desde la lista y elimínelo o ajústelo.
-7. Pulse **GUARDAR** para guardar el vale. Después puede imprimir el ticket térmico desde la pantalla del vale.
+1. Abre **1. Entradas de Alto y Agente**.
+2. Llena proveedor, polvorín y factura o remisión.
+3. Toca **CONTINUAR A ESCANEO**.
+4. Escanea cada código SEDENA. Si el lector falla, escrib el código a mano en el campo de captura.
+5. Mira la cinta de arriba: ahí ves cuántos ítems llevas y cuántas cajas, sacos y cartuchos.
+6. Si te equivocaste en uno, abre el ítem en la lista y corrigelo o bórralo.
+7. Toca **GUARDAR**. Después puedes imprimir el ticket desde la pantalla del vale.
 
-La app recupera automáticamente un vale en progreso si la pantalla se cierra antes de guardar. Verá el aviso **Vale en progreso recuperado**.
+Si se te cierra la app a mitad de vale, no perdiste lo capturado. Al volver verás **Vale en progreso recuperado**.
 
 ## Registrar una salida de alto y agente
 
-1. Abra **2. Salidas de Alto y Agente**.
-2. Complete número de vale, empresa, lugar, transportista, turno y voladura o mina.
-3. Pulse **CONTINUAR A DESPACHO**.
-4. Escanee los códigos SEDENA de los sacos o cajas que salen.
-5. Revise el total de materiales y el desglose por presentación.
-6. Guarde el vale e imprima el ticket con la impresora activa.
+1. Abre **2. Salidas de Alto y Agente**.
+2. Llena vale, empresa, lugar, transportista, turno y voladura o mina.
+3. Toca **CONTINUAR A DESPACHO**.
+4. Escanea los sacos o cajas que salen.
+5. Revisa el total y el desglose por presentación.
+6. Guarda e imprime con la impresora activa.
 
-El ticket incluye las líneas de entrega y recepción. El margen inferior del ticket deja espacio suficiente para la firma.
+El ticket trae las dos líneas, quién entrega y quién recibe, y espacio de sobra para la firma.
 
 ## Registrar salida o devolución de accesorios
 
-1. Abra **3. Salida de Accesorios** o **5. Devolución de Accesorios**.
-2. Complete número de vale, empresa, lugar, transportista, quién recibe y quién entrega, turno y voladura o referencia.
-3. Continúe a la pantalla de escaneo.
-4. Escriba o escanee el código del accesorio y capture la cantidad.
-5. La unidad puede ser **PZA** (piezas) o **MTS** (metros). Seleccione la correcta antes de guardar.
-6. Guarde el vale e imprima el ticket si corresponde.
+1. Abre **3. Salida de Accesorios** o **5. Devolución de Accesorios**.
+2. Llena vale, empresa, lugar, transportista, quién recibe, quién entrega, turno y voladura o referencia.
+3. Pasa a la pantalla de escaneo.
+4. Escanea o escribe el código del accesorio y pon la cantidad.
+5. Elige bien la unidad: **PZA** para piezas, **MTS** para metros.
+6. Guarda e imprime si corresponde.
 
-En las devoluciones de accesorios, la cantidad se registra como negativa para descontar del inventario.
+En las devoluciones la cantidad sale negativa. Así el inventario entiende que ese material volvió.
 
 ## Registrar una devolución de alto y agente
 
-1. Abra **4. Devolución de Alto y Agente**.
-2. Indique quién entrega el material y quién lo recibe en el polvorín.
-3. Escanee los códigos que regresan.
-4. Revise el total y guarde el vale.
+1. Abre **4. Devolución de Alto y Agente**.
+2. Di quién entrega y quién recibe en el polvorín.
+3. Escanea los códigos que regresan.
+4. Revisa el total y guarda.
 
-La devolución genera eventos compensatorios en el libro de inventario, de modo que el saldo vuelve a entrar al polvorín.
+Con eso el saldo vuelve a entrar al polvorín. No hace falta el QR de salida otra vez.
 
 ## Usar el simulador de escaneo
 
-Antes de instalar una licencia real, cada pantalla de escaneo muestra un panel plegable **MODO PRUEBA**. Sirve para practicar sin escáner físico.
+Mientras la terminal siga con la licencia de prueba, verás un panel **MODO PRUEBA** en las pantallas de escaneo. Sirve para practicar sin escáner.
 
-1. Abra el panel **MODO PRUEBA**.
-2. Elija un caso de prueba: código válido, duplicado, error de coherencia SEDENA u otros.
-3. Envíe el código de prueba al flujo de escaneo.
-4. Cierre el panel cuando termine.
+1. Despliega el panel **MODO PRUEBA**.
+2. Elige el caso: válido, duplicado, error SEDENA u otro.
+3. Manda el código al flujo de escaneo.
+4. Cierra el panel cuando termines.
 
-No use este panel para capturar material real. Después de instalar una licencia real, el panel desaparece.
+Esto es solo para capacitación. No lo uses para material real. Con licencia real, el panel ya no aparece.
 
 ## Inventario en polvorín
 
-El módulo **6. Inventario en Polvorín (En Vivo)** muestra el saldo por familia SEDENA, existencias en KG, PZA y MTS, y el estado de sincronización.
+Aquí ves lo que hay en el polvorín: saldo por familia, KG, PZA, MTS y si hay eventos pendientes de pasar a otra terminal.
 
 ### Consultar existencias
 
-1. Abra **Inventario en Polvorín**.
-2. Use las cinco tarjetas superiores para filtrar por familia: Alto Explosivo, Agente Explosivo, Cordón, Cañuelas o Detonadores.
-3. Escriba un ID, producto, familia o código `X...` en el buscador.
-4. Toque **Todas** para quitar un filtro activo.
-5. En la lista de productos, toque **Kardex** para ver movimientos o **Códigos SEDENA** para ver series.
+1. Abre **Inventario en Polvorín**.
+2. Toca una de las cinco tarjetas para filtrar: Alto, Agente, Cordón, Cañuelas o Detonadores.
+3. Escribe un ID, producto, familia o código `X...` en el buscador.
+4. Toca **Todas** para quitar el filtro.
+5. En una tarjeta de producto, **Kardex** te muestra los movimientos y **Códigos SEDENA** las series.
 
 ### Hacer carga rápida o ajuste físico
 
-El botón fijo **CARGA RÁPIDA / AJUSTE** está en la parte inferior de la pantalla. No tapa la lista.
+El botón **CARGA RÁPIDA / AJUSTE** va fijo abajo. Ya no tapa la lista.
 
-1. Pulse **CARGA RÁPIDA / AJUSTE**.
-2. Escanee un código de producto o seleccione un producto del catálogo.
-3. Elija el modo: carga inicial o ajuste físico.
-4. Capture cantidades de cajas, sacos, cartuchos, piezas o metros, según la familia.
-5. Si corresponde, capture peso de caja, peso de saco y cartuchos por caja.
-6. Agregue una observación de turno o auditoría si es necesaria.
-7. Pulse **GUARDAR**.
+1. Toca **CARGA RÁPIDA / AJUSTE**.
+2. Escanea el producto o elígelo del catálogo.
+3. Elige: carga inicial o ajuste físico.
+4. Pon cantidades de cajas, sacos, cartuchos, piezas o metros, según el caso.
+5. Si aplica, pon peso de caja, peso de saco y cartuchos por caja.
+6. Añade una observación de turno o auditoría si hace falta.
+7. Guarda.
 
-También puede abrir el diálogo desde la tarjeta de un producto, con la acción **Ajustar** de esa tarjeta.
+También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 
 ### Abrir la bóveda de licencias
 
-1. En Inventario, pulse el menú de tres puntos de la barra superior.
-2. Seleccione **Licencias**.
-3. La pantalla **Licencias guardadas** muestra el Device ID de la terminal y las licencias guardadas.
+1. En Inventario, toca los tres puntos de arriba.
+2. Elige **Licencias**.
+3. Verás el Device ID de esta terminal y las licencias guardadas.
 
 ## Bóveda de licencias
 
-La bóveda guarda licencias emitidas en License Master Pro. No genera licencias dentro de la app.
+Aquí guardas las licencias que generaste en License Master Pro. La app no fabrica licencias.
 
 ### Agregar una licencia
 
-1. En **Licencias guardadas**, pulse **Agregar**.
-2. Escriba un alias fácil de recordar, por ejemplo `Polvorín Norte`.
-3. Pegue el token `TTEX:...` o la clave corta `TTEX-...`.
-4. Pulse **Guardar**. La app valida la firma antes de guardar.
-5. Si la licencia pertenece a otra terminal, la tarjeta muestra **OTRA TERMINAL**. No se puede instalar en esta terminal.
+1. En **Licencias guardadas**, toca **Agregar**.
+2. Pon un alias que te recuerde dónde va, por ejemplo `Polvorín Norte`.
+3. Pega el token `TTEX:...` o la clave corta `TTEX-...`.
+4. Toca **Guardar**. La app revisa la firma antes de guardarla.
+5. Si es para otra terminal, la tarjeta dice **OTRA TERMINAL**. Ahí no la instales.
 
 ### Instalar una licencia guardada
 
-1. En la tarjeta de la licencia, compruebe que el estado sea **VIGENTE** y la terminal destino sea esta.
-2. Pulse **Instalar**.
-3. Si la licencia no corresponde al Device ID de la terminal, la app muestra un error de dispositivo no autorizado.
-4. Después de instalar, los modos de prueba se ocultan.
+1. Revisa que la tarjeta diga **VIGENTE** y que el destino sea esta terminal.
+2. Toca **Instalar**.
+3. Si el ID no coincide, la app avisa que el dispositivo no está autorizado. Estás en la terminal equivocada.
+4. Después de instalar, los modos de prueba desaparecen.
 
 ### Copiar, compartir y borrar
 
-- El icono de copiar copia el token al portapapeles.
-- El icono de compartir abre el menú de compartir de Android.
-- El icono de eliminar quita la licencia de la bóveda. No elimina la licencia activa instalada.
+- Copiar: manda el token al portapapeles.
+- Compartir: abre el menú de compartir de Android.
+- Eliminar: saca la licencia de la bóveda. No toca la licencia ya instalada.
 
 ### Exportar e importar la bóveda
 
-Use estos botones para llevar licencias a otra terminal.
+Para llevar licencias a otra terminal:
 
-1. Pulse **Exportar** y elija una ubicación. Se crea un archivo JSON con las licencias guardadas.
-2. En la otra terminal, abra **Licencias guardadas** y pulse **Importar**.
-3. Seleccione el archivo JSON.
-4. Compruebe las tarjetas importadas antes de instalar una licencia.
+1. Toca **Exportar** y elige dónde guardar. Sale un JSON con tus licencias.
+2. En la otra terminal, abre **Licencias guardadas** y toca **Importar**.
+3. Selecciona el JSON.
+4. Revisa las tarjetas antes de instalar.
 
-La importación reemplaza la bóveda actual. Exporte una copia antes de importar si quiere conservar las licencias existentes.
+Ojo: importar reemplaza la bóveda actual. Si quieres conservar la tuya, exporta primero.
 
 ## Sincronización entre terminales
 
-La sincronización se abre desde el icono de sincronización del Inventario o desde el módulo correspondiente. La pantalla tiene tres pestañas: **Enviar**, **Recibir** e **Historial**.
+Para pasar datos a otra terminal, toca el icono de sincronización en Inventario. Verás tres pestañas: **Enviar**, **Recibir** e **Historial**.
 
-La app emite QR firmados `TTEX4` y también acepta QR o JSON de versiones anteriores durante la transición. Un QR V4 incluye una firma HMAC-SHA256; no modifique el texto del QR.
+Los QR salen firmados (`TTEX4`). No les cambies nada: cópialos tal cual. La app también acepta QR y JSON de versiones anteriores mientras hacemos la transición.
 
 ### Enviar datos
 
-1. Abra la pestaña **Enviar**.
-2. Elija el alcance del paquete:
-   - **Pendientes**: eventos nuevos sin sincronizar.
-   - **24 horas**: eventos del último día.
-   - **Todo**: historial completo, útil para cargar una terminal nueva.
-3. Elija la densidad del QR:
-   - **Alta (1,400)**: menos QRs, más datos por imagen.
-   - **Fácil (600)**: más QRs, más fáciles de leer.
-4. Muestre cada QR a la otra terminal o exporte el archivo JSON con **EXPORTAR ARCHIVO .JSON (RESPALDO / USB)**.
-5. Si el lote tiene varias partes, muestre todos los QRs. La terminal receptora puede leerlos en cualquier orden.
+1. Abre **Enviar**.
+2. Elige alcance:
+   - **Pendientes**: lo nuevo que aún no se pasó.
+   - **24 horas**: lo del último día.
+   - **Todo**: el historial completo. Útil para cargar una terminal nueva.
+3. Elige densidad:
+   - **Alta (1,400)**: menos QR, más cargados.
+   - **Fácil (600)**: más QR, pero se leen mejor.
+4. Muestra los QR a la otra terminal o saca el JSON con **EXPORTAR ARCHIVO .JSON (RESPALDO / USB)**.
+5. Si el lote trae varias partes, muestra todas. La otra terminal puede leerlas en cualquier orden.
 
 ### Recibir datos
 
-1. Abra la pestaña **Recibir**.
-2. Escanee los QRs o pegue la cadena `TTEX4:...`, `TTEX3:...` o `TTEXSYNC|V2|...`.
-3. También puede pegar el JSON completo.
-4. Pulse **PROCESAR BLOQUE / JSON**.
-5. Revise el informe de fusión. La app detecta duplicados, doble despacho de un mismo código SEDENA y saldos negativos.
+1. Abre **Recibir**.
+2. Escanea los QR o pega la cadena `TTEX4:...`, `TTEX3:...` o `TTEXSYNC|V2|...`.
+3. También puedes pegar el JSON completo.
+4. Toca **PROCESAR BLOQUE / JSON**.
+5. Lee el informe. Ahí salen duplicados, doble despacho del mismo código y saldos negativos.
 
-La recepción es idempotente: si vuelve a enviar el mismo lote, no se duplican los eventos.
+Si envías el mismo lote dos veces, no se duplica nada. Ya está probado.
 
 ### Historial y conflictos
 
-La pestaña **Historial** muestra las sesiones de sincronización y los conflictos detectados. Toque una fila para ver el detalle o saltar al Kardex del producto afectado.
+En **Historial** ves las sesiones y los conflictos. Toca una fila para ver el detalle o saltar al Kardex del producto.
 
 ## Historial de vales
 
-1. Abra **7. Historial de Vales & Consolidado**.
-2. Busque un vale por folio, fecha, empresa o transportista.
-3. Toque un vale para ver el detalle, reimprimirlo o eliminarlo.
-4. Para exportar, use **EXPORTAR CONSOLIDADO** o seleccione varios vales y use **EXPORTAR SELECCIONADOS**.
+1. Abre **7. Historial de Vales & Consolidado**.
+2. Busca por folio, fecha, empresa o transportista.
+3. Toca un vale para verlo, reimprimirlo o borrarlo.
+4. Para exportar, usa **EXPORTAR CONSOLIDADO** o selecciona varios y usa **EXPORTAR SELECCIONADOS**.
 
-La eliminación de vales pide una confirmación en dos pasos con un código de 4 dígitos.
+Borrar no es de un toque: pide un código de 4 dígitos. Esa molestia es a propósito.
 
 ## Configuración
 
-El módulo **8. Configuración y Personalización** reúne datos de la mina, catálogo, impresoras y licencia.
+En **8. Configuración y Personalización** está lo de siempre: mina, catálogo, impresoras y licencia.
 
 ### Datos de la mina
 
-Complete estos campos porque aparecen en los tickets:
+Llena estos campos porque salen en los tickets:
 
 - **Nombre de la Mina / Empresa**.
 - **Número de Permiso General (SEDENA)**.
 - **Encabezado Adicional / Nota Polvorín**.
 
-Pulse **GUARDAR ARCHIVO PLANO (CARPETA / USB)** para exportar un respaldo legible.
+Si quieres un respaldo legible, toca **GUARDAR ARCHIVO PLANO (CARPETA / USB)**.
 
 ### Catálogo de productos
 
-Puede ver el catálogo completo, recargar la base y importar un CSV con **Importar CSV**. Después de importar, verifique las calibraciones de peso unitario y cartuchos por caja.
+Puedes ver el catálogo, recargar la base e importar CSV con **Importar CSV**. Después de importar, revisa pesos unitarios y cartuchos por caja.
 
 ### Impresora térmica
 
-En la sección de impresoras puede crear perfiles con:
+Aquí creas perfiles con:
 
 - Alias o nombre en el polvorín.
 - Dirección MAC Bluetooth.
 - Protocolo: ESC/POS, CPCL o texto plano.
-- Ancho de papel: 58 mm, 80 mm o 104 mm.
-- Botón para usarla como impresora activa.
+- Papel: 58 mm, 80 mm o 104 mm.
+- El botón para dejarla como impresora activa.
 
-Antes de imprimir, active Bluetooth en Android y conceda los permisos de dispositivos cercanos cuando la app los pida.
+Antes de imprimir, enciende Bluetooth y acepta el permiso de dispositivos cercanos cuando la app lo pida.
 
 ### Estado de licencia y versión
 
-La configuración muestra el Device ID, el cliente autorizado, la unidad minera, la vigencia, la versión instalada y los tipos de salida y lector soportados.
+Aquí ves el Device ID, el cliente autorizado, la mina, la vigencia, la versión instalada y qué lector y salida de ticket soporta la terminal.
 
 ## Diagramas de flujo y guía visual de controles
 
-Esta sección resume los caminos más comunes dentro de la app y explica la función de cada control importante. Úsela como referencia rápida antes de capacitar a un operador nuevo.
+Aquí va lo que más se usa, dibujado. Si estás capacitando a alguien nuevo, empieza por aquí.
 
 ### Flujo de una entrada
 
-El objetivo es recibir material y dejarlo registrado en el polvorín.
+Recibir material y dejarlo registrado.
 
-1. Encabezado: proveedor, polvorín y factura o remisión.
+1. Encabezado: proveedor, polvorín y factura.
 2. Escaneo: códigos SEDENA de cajas, sacos o cartuchos.
-3. Resumen: total de ítems y conteo por presentación.
-4. Guardado: el vale queda en el historial y genera eventos UUID.
-5. Impresión: ticket térmico con líneas de firma y margen inferior.
+3. Resumen: totales por presentación.
+4. Guardado: el vale queda en el historial.
+5. Impresión: ticket con firma.
 
-Secuencia abreviada: Encabezado → Escaneo → Totales → Guardar → Imprimir.
+En corto: Encabezado → Escaneo → Totales → Guardar → Imprimir.
 
 ### Flujo de un despacho
 
-El objetivo es sacar material del polvorín hacia un barreno.
+Sacar material del polvorín hacia un barreno.
 
-1. Encabezado: vale, empresa, lugar, transportista, turno y voladura.
-2. Escaneo: códigos SEDENA de lo que se entrega.
-3. Validación: la app detecta duplicados o saldos negativos.
-4. Guardado: se generan eventos compensatorios en el inventario.
-5. Impresión: el vale queda listo para firma del responsable.
+1. Vale: empresa, lugar, transportista, turno.
+2. Escaneo: lo que se entrega.
+3. Validación: duplicados y saldos.
+4. Guardado: eventos UUID.
+5. Impresión: entrega y recepción.
 
-Secuencia abreviada: Encabezado → Escaneo → Validación → Guardar → Imprimir.
+En corto: Vale → Escaneo → Validación → Guardar → Imprimir.
 
 ### Flujo de ajuste físico
 
-El objetivo es corregir el saldo real de un producto en el polvorín.
+Corregir el saldo real de un producto.
 
-1. Inventario en Polvorín: pulse CARGA RÁPIDA / AJUSTE o la acción Ajustar de una tarjeta.
-2. Producto: escanee un código o seleccione un producto del catálogo.
-3. Modo: elija carga inicial o ajuste físico.
-4. Cantidades: capture cajas, sacos, cartuchos, piezas o metros.
-5. Guardado: la app calcula el nuevo saldo y deja el evento listo para sincronizar.
+1. Inventario: botón de abajo o **Ajustar** en la tarjeta.
+2. Producto: escaneas o eliges del catálogo.
+3. Modo: inicial o ajuste.
+4. Cantidades: unidades y pesos.
+5. Guardado: sale el nuevo saldo.
 
-Secuencia abreviada: Inventario → Producto → Modo → Cantidades → Guardar.
+En corto: Inventario → Producto → Modo → Cantidades → Guardar.
 
 ### Flujo de sincronización
 
-El objetivo es llevar los eventos de una terminal a otra sin internet.
+Pasar eventos a otra terminal sin internet.
 
-1. Enviar: elija alcance Pendientes, 24 horas o Todo.
-2. Densidad: elija Alta (1,400) o Fácil (600).
-3. Paquete: la app crea un QR V4 firmado o un JSON.
-4. Recibir: la otra terminal escanea el QR o pega el JSON.
-5. Informe: revise eventos fusionados, duplicados y conflictos.
+1. Alcance: Pendientes, 24 horas o Todo.
+2. Densidad: Alta o Fácil.
+3. Paquete: QR V4 o JSON.
+4. Recepción: la otra terminal lee.
+5. Informe: fusiones y conflictos.
 
-Secuencia abreviada: Alcance → Densidad → QR/JSON → Recepción → Informe.
+En corto: Alcance → Densidad → QR/JSON → Recepción → Informe.
 
 ### Flujo de licenciamiento
 
-El objetivo es autorizar la terminal con una licencia generada fuera de la app.
+Autorizar la terminal con una licencia hecha fuera de la app.
 
-1. Device ID: copie el identificador de la terminal.
-2. License Master Pro: genere una licencia para ese Device ID.
-3. Activación: pegue la clave, importe el .lic o escanee el QR.
-4. Bóveda: guarde la licencia con un alias para reutilizarla.
-5. Instalación: instale la licencia en la terminal correcta.
+1. Copiar el Device ID.
+2. Generar en License Master Pro.
+3. Activar con clave, token o QR.
+4. Guardar en la bóveda con un alias.
+5. Instalar en la terminal correcta.
 
-Secuencia abreviada: Device ID → Generación externa → Activación → Bóveda → Instalación.
+En corto: Device ID → Generación → Activación → Bóveda → Instalación.
 
 ### Qué es cada control importante
 
-Use esta tabla para explicar rápidamente los elementos que aparecen en pantalla.
+Si no sabes para qué sirve un botón, mira aquí.
 
 | Control | Dónde aparece | Para qué sirve |
 |---|---|---|
-| Device ID | Configuración y Licencias guardadas | Identifica la terminal. La licencia se genera para ese ID. |
-| Barra inferior CARGA RÁPIDA / AJUSTE | Inventario en Polvorín | Abre el diálogo para cargar o corregir existencias. |
-| Cinta de métricas | Pantallas de escaneo | Muestra totales de ítems, cajas, sacos y cartuchos. |
-| Filtros de familia | Inventario en Polvorín | Muestran solo Alto, Agente, Cordón, Cañuelas o Detonadores. |
-| Kardex | Tarjeta de producto | Muestra el historial de movimientos de ese producto. |
-| Códigos SEDENA | Tarjeta de producto | Muestra las series escaneadas de ese producto. |
-| QR V4 | Sincronización | Transporta eventos firmados con HMAC-SHA256. |
-| Perfil de impresora | Configuración | Define protocolo, ancho de papel y dirección Bluetooth. |
-| Modo prueba | Pantallas de escaneo | Simula lecturas para capacitación. Desaparece con licencia real. |
-| Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias por terminal. |
-| Informe de fusión | Sincronización | Explica cuántos eventos se fusionaron y qué conflictos hay. |
+| Device ID | Configuración y Licencias guardadas | Identifica la terminal. La licencia se hace para ese ID. |
+| Barra CARGA RÁPIDA / AJUSTE | Inventario | Abre el diálogo para cargar o corregir existencias. |
+| Cinta de métricas | Escaneo | Totales de ítems, cajas, sacos y cartuchos. |
+| Filtros de familia | Inventario | Muestran Alto, Agente, Cordón, Cañuelas o Detonadores. |
+| Kardex | Tarjeta de producto | Historial de movimientos de ese producto. |
+| Códigos SEDENA | Tarjeta de producto | Series escaneadas de ese producto. |
+| QR V4 | Sincronización | Eventos firmados con HMAC-SHA256. |
+| Perfil de impresora | Configuración | Protocolo, ancho de papel y MAC Bluetooth. |
+| Modo prueba | Escaneo | Simula lecturas. Se va con la licencia real. |
+| Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias. |
+| Informe de fusión | Sincronización | Cuántos eventos entraron y qué conflictos hay. |
 
 ## Buenos hábitos
 
-- Guarde el vale al terminar cada turno; no deje vales en borrador.
-- Verifique el Device ID antes de pedir una licencia nueva.
-- Exporte la bóveda de licencias si va a migrar a otra terminal.
-- Revise los conflictos de sincronización antes de borrar vales.
-- No use los paneles **MODO PRUEBA** con material real.
-- Si imprime tickets, compruebe que la impresora activa tenga papel y suficiente batería.
+- Cierra el vale antes de irte. No dejes cosas en borrador.
+- Revisa el Device ID antes de pedir otra licencia.
+- Exporta la bóveda si vas a cambiar de terminal.
+- Mira los conflictos antes de borrar vales.
+- No uses **MODO PRUEBA** con material real.
+- Si imprimes, revisa que haya papel y batería.
 
 ## Problemas comunes
 
 ### La app pide permisos de Bluetooth
 
-Acepte el permiso de dispositivos cercanos. La app lo necesita para encontrar la impresora térmica y para algunas funciones de lectura.
+Acepta el permiso de dispositivos cercanos. Lo necesita para encontrar la impresora y para algunas lecturas.
 
 ### La impresora no imprime
 
-Compruebe que esté encendida, vinculada en Android y seleccionada como activa. Si usa CPCL o ESC/POS, confirme que el perfil tenga el protocolo y ancho de papel correctos.
+Revisa que esté encendida, vinculada en Android y activa en la app. Si usas CPCL o ESC/POS, confirma protocolo y ancho de papel en el perfil.
 
 ### Un QR no se reconoce
 
-Use la cadena completa, sin espacios ni saltos de línea. Si viene de una terminal antigua, la app acepta `TTEX3` y `TTEXSYNC|V2|`, pero una terminal antigua no podrá leer un QR `TTEX4`.
+Pega la cadena completa, sin espacios ni saltos. Si viene de una terminal vieja, aceptamos `TTEX3` y `TTEXSYNC|V2|`. Una terminal vieja, en cambio, no sabe leer `TTEX4`.
 
 ### La licencia aparece vencida
 
-Genere una licencia nueva en License Master Pro para el Device ID actual y actívela desde la pantalla de licencias o desde la bóveda.
+Genera otra en License Master Pro para el Device ID actual y actívala desde Licencias o desde la bóveda.
 
 ### Desaparecieron los paneles de prueba
 
-Es correcto: significa que hay una licencia real instalada. Los paneles de prueba solo están disponibles con la licencia temporal de fábrica.
+Es lo correcto. Significa que ya hay una licencia real instalada. Los paneles solo estaban con la licencia de fábrica.
 
 ## Soporte
 
-Cuando reporte un problema, incluya:
+Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión instalada, por ejemplo `v2.6.0 (Build 21)`.
-- Número de vale o ID de producto relacionado.
+- Versión, por ejemplo `v2.6.0 (Build 21)`.
+- Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
-- Captura del mensaje de error, si aparece.
+- Captura del error, si salió.
