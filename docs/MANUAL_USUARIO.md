@@ -18,12 +18,12 @@ Cada terminal tiene su ID (Device ID). Anótalo bien: la licencia se hace para e
 
 Si salió bien, verás **AUTORIZADA**. Si dice **PRÓXIMA A VENCER**, renueva antes de la fecha que marca.
 
-> [!IMPORTANT]
+> [!IMPORTANTE]
 > La APK viene con una licencia temporal de 1 día. Activa la licencia definitiva antes de operar de verdad.
 
 ## Pantalla de inicio
 
-Arriba verás `v2.6.0`. Debajo están los ocho módulos. Tocas y entras.
+Arriba verás `v2.6.0`. Debajo están los ocho módulos. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
 
 | Módulo | Para qué lo usas |
 |---|---|
@@ -263,7 +263,7 @@ Antes de escanear pides proveedor, polvorín y factura. Este encabezado es el qu
 
 ### Escaneo de entrada
 
-La cinta de arriba trae cuatro contadores: **TOTAL**, **CAJAS**, **SACOS** y **CARTUCHOS**. Se actualizan con cada código que entra. Debajo está el encabezado plegable y la lista de códigos capturados.
+La cinta de arriba trae cuatro contadores: **TOTAL**, **CAJAS**, **SACOS** y **CARTUCHOS**. Se actualizan con cada código que entra. Debajo está el encabezado plegable y la lista de códigos capturados. Lo mismo aplica en despacho, accesorios y devolución.
 
 ### Encabezado de despacho
 
@@ -349,6 +349,7 @@ Estas ventanas no son pantallas completas, pero también aparecen:
 - **Reimprimir vale**: lista los vales guardados para volver a imprimir uno.
 - **Editar producto**: abre desde el catálogo para corregir nombre, familia, presentación o calibraciones.
 - **Destello de escaneo**: un borde verde, ámbar o rojo confirma lectura válida, duplicado o error. No es una pantalla, solo un aviso visual.
+- **Código repetido**: si lees dos veces el mismo código, aparece una fila roja con la insignia **DUPLICADO** en la lista. No cuenta para el total, los kilos ni el vale; el aviso se quita solo cuando capturas un código nuevo válido. Puedes borrar esa fila con el ícono de basura.
 
 ## Qué significa cada elemento dentro de las pantallas
 
