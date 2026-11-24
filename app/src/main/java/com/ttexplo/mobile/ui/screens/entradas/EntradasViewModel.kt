@@ -270,6 +270,9 @@ class EntradasViewModel(application: Application) : AndroidViewModel(application
                     val updatedList = listOf(newItem) + _uiState.value.scannedItems
                     _uiState.value = _uiState.value.copy(
                         scannedItems = updatedList,
+                        duplicateReads = emptyList(),
+                        duplicateAttemptCounts = emptyMap(),
+                        lastDuplicateAlert = null,
                         latestScanResult = result,
                         latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
                     )

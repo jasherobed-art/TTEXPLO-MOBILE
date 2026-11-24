@@ -273,6 +273,9 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
                     _uiState.value = _uiState.value.copy(
                         scannedItems = updatedList,
                         markers = updatedMarkers,
+                        duplicateReads = emptyList(),
+                        duplicateAttemptCounts = emptyMap(),
+                        lastDuplicateAlert = null,
                         latestScanResult = result,
                         latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
                     )

@@ -204,6 +204,9 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
                     sound.playSuccess()
                     _latestFlashEvent.value = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
                     _items.value = listOf(BarcodeItem(res.rawBarcode, res.timestamp, res.productInfo, res.empaque)) + _items.value
+                    _duplicateReads.value = emptyList()
+                    _duplicateAttemptCounts.value = emptyMap()
+                    _lastDuplicateAlert.value = null
                 }
             }
         }

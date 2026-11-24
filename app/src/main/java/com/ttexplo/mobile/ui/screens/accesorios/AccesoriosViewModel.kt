@@ -241,6 +241,7 @@ class AccesoriosViewModel(application: Application) : AndroidViewModel(applicati
 
                 _uiState.value = _uiState.value.copy(
                     items = updatedItems,
+                    duplicateReads = emptyList(),
                     summaries = calculateSummaries(updatedItems),
                     totalPieces = total,
                     lastScanMessage = if (_uiState.value.isDevolucion) "Devuelto: $trimmed (${finalQty} pzas)" else "Agregado: $trimmed x $finalQty pzas",
