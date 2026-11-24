@@ -74,6 +74,32 @@ class TicketGeneratorTest {
     }
 
     @Test
+    fun codeListHeaderUsesAsciiCodigos() {
+        val esc = String(TicketGenerator.generateDespachoEscPos(
+            record = despacho, paperWidth = PaperWidth.WIDTH_3_INCH
+        ), charset)
+        assertThat(esc).contains("LISTADO DE CODIGOS (1):")
+        assertThat(esc).doesNotContain("C?DIGOS")
+
+        val cpcl = String(TicketGenerator.generateDespachoCpcl(
+            despacho = despacho, paperWidth = PaperWidth.WIDTH_3_INCH
+        ), charset)
+        assertThat(cpcl).contains("LISTADO DE CODIGOS (1):")
+        assertThat(cpcl).doesNotContain("C?DIGOS")
+    }
+
+    @Test
+    fun cpclSignatureLineUsesFullPaperWidth() {
+        val cpcl = String(TicketGenerator.generateDespachoCpcl(
+            despacho = despacho, paperWidth = PaperWidth.WIDTH_4_INCH
+        ), charset)
+        assertThat(Regex("LINE 10 \\d+ 812 \\d+ 1").containsMatchIn(cpcl)).isTrue()
+        assertThat(cpcl).contains("TRANSPORTE: GILBERTO MENDOZA")
+        assertThat(cpcl.indexOf("GILBERTO MENDOZA")).isEqualTo(cpcl.lastIndexOf("GILBERTO MENDOZA"))
+        assertThat(cpcl).doesNotContain("Firma Responsable Polvorin")
+    }
+
+    @Test
     fun signaturesDisabledStillSkipsSignatureBlock() {
         val text = String(TicketGenerator.generateDevolucionPlain(
             record = devolucion, paperWidth = PaperWidth.WIDTH_3_INCH,
@@ -197,7 +223,7 @@ class TicketGeneratorTest {
         assertThat(cpclText).contains("MINERA T&T S.A. DE C.V.")
         assertThat(cpclText).contains("PERMISO GENERAL: SEDENA NO. 1234")
         assertThat(cpclText).contains("VALE DE DESPACHO")
-        assertThat(cpclText).contains("LISTADO DE CODIGOS ESCANEADOS (2):")
+        assertThat(cpclText).contains("LISTADO DE CODIGOS (2):")
         assertThat(cpclText).contains("272120826024843282112233445566")
         assertThat(cpclText).contains("2026-11-17 00:49:13")
         assertThat(cpclText).contains("337130626009586009641005228514")

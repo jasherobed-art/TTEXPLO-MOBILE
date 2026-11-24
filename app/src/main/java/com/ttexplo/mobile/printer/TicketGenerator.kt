@@ -378,7 +378,7 @@ object TicketGenerator {
                 out = out,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -463,7 +463,7 @@ object TicketGenerator {
                 sb = sb,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -580,7 +580,7 @@ object TicketGenerator {
                 startY = y,
                 lineEnd = lineEnd,
                 paperWidth = paperWidth,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = despacho.items
             )
         }
@@ -601,20 +601,15 @@ object TicketGenerator {
         y += 20
 
         if (includeSignatures) {
-            val sigEnd = (lineEnd).coerceAtMost(350)
             lines.add("TEXT 7 0 10 $y ENTREGO:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y Firma Responsable Polvorin")
-            y += 35
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
 
             lines.add("TEXT 7 0 10 $y RECIBIO:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y ${stripAccents(despacho.transportista)}")
-            y += 30
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
             lines.add("LINE 10 $y $lineEnd $y 1")
             y += 20
         }
@@ -924,20 +919,15 @@ object TicketGenerator {
         y += 20
 
         if (includeSignatures) {
-            val sigEnd = (lineEnd).coerceAtMost(350)
             lines.add("TEXT 7 0 10 $y ENTREGO:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y ${stripAccents(accesorios.entrego)}")
-            y += 35
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
 
             lines.add("TEXT 7 0 10 $y RECIBIO:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y ${stripAccents(accesorios.recibio)}")
-            y += 30
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
             lines.add("LINE 10 $y $lineEnd $y 1")
             y += 20
         }
@@ -1013,7 +1003,7 @@ object TicketGenerator {
                 out = out,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -1082,7 +1072,7 @@ object TicketGenerator {
                 sb = sb,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -1175,7 +1165,7 @@ object TicketGenerator {
                 startY = y,
                 lineEnd = lineEnd,
                 paperWidth = paperWidth,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -1191,19 +1181,14 @@ object TicketGenerator {
         y += 20
 
         if (includeSignatures) {
-            val sigEnd = (lineEnd).coerceAtMost(350)
             lines.add("TEXT 7 0 10 $y RECIBIO EN POLVORIN:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y Firma Responsable Polvorin")
-            y += 35
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
             lines.add("TEXT 7 0 10 $y ENTREGO PROVEEDOR:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y ${stripAccents(record.proveedor)}")
-            y += 30
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
             lines.add("LINE 10 $y $lineEnd $y 1")
             y += 20
         }
@@ -1276,7 +1261,7 @@ object TicketGenerator {
                 out = out,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -1343,7 +1328,7 @@ object TicketGenerator {
                 sb = sb,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -1434,7 +1419,7 @@ object TicketGenerator {
                 startY = y,
                 lineEnd = lineEnd,
                 paperWidth = paperWidth,
-                sectionTitle = "LISTADO DE CÓDIGOS",
+                sectionTitle = "LISTADO DE CODIGOS",
                 items = record.items
             )
         }
@@ -1450,19 +1435,14 @@ object TicketGenerator {
         y += 20
 
         if (includeSignatures) {
-            val sigEnd = (lineEnd).coerceAtMost(350)
             lines.add("TEXT 7 0 10 $y ENTREGO:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y ${stripAccents(record.empleadoEntrega)}")
-            y += 35
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
             lines.add("TEXT 7 0 10 $y RECIBIO:")
             y += 50
-            lines.add("LINE 10 $y $sigEnd $y 1")
-            y += 15
-            lines.add("TEXT 7 0 10 $y ${stripAccents(record.empleadoRecibe)}")
-            y += 30
+            lines.add("LINE 10 $y $lineEnd $y 1")
+            y += 50
             lines.add("LINE 10 $y $lineEnd $y 1")
             y += 20
         }
