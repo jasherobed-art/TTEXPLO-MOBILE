@@ -294,6 +294,80 @@ Trae el dispositivo, la licencia, datos de la mina, catálogo, impresoras y vers
 
 Cada perfil muestra alias, MAC, protocolo y ancho en pulgadas. El botón **+ Agregar** crea uno nuevo. El perfil activo es el que se usa al imprimir.
 
+## Qué significa cada elemento dentro de las pantallas
+
+Estas notas usan los datos de prueba de las capturas: proveedor `11`, polvorín `2`, factura `FAC-DEMO-001` y tres lecturas capturadas.
+
+### Encabezado de entrada
+
+- **Número de Proveedor**: quién entrega el material. En el ejemplo es `11`.
+- **Número de Polvorín**: dónde entra. En el ejemplo es `2`.
+- **Factura o Remisión**: documento de soporte. En el ejemplo es `FAC-DEMO-001`.
+- **CONTINUAR A ESCANEO**: pasa a la pantalla de lecturas. Si falta un campo, aparece el aviso en rojo.
+
+### Escaneo de entrada
+
+- **TOT 3**: total de códigos capturados en este vale.
+- **C 2**: cajas. En el ejemplo hay dos cajas.
+- **S 1**: sacos. En el ejemplo hay un saco.
+- **U 0**: cartuchos sueltos.
+- **Info**: despliega o esconde el encabezado con proveedor y factura.
+- **Campo Escanear o escribir código**: ahí cae lo que lee el Zebra o lo que teclees.
+- **Lectura correcta**: confirma qué código entró y con qué presentación.
+- **Filtros Todos (3), Alto Exp. (2), Agente (1)**: el número entre paréntesis es cuántos códigos hay en esa familia.
+- **FILTRADOS: 1 DE 3**: estás viendo una parte de las tres lecturas.
+- **Ver todos**: quita el filtro activo.
+- **Tarjeta del código**: muestra tipo (Saco), producto (AUSTINITE 15 CA-1), medida, hora y el UUID del evento.
+- **Papelera roja**: borra esa lectura del vale.
+- **Imprimir**: manda el ticket a la impresora activa sin cerrar el vale.
+- **Guardar Entrada (3)**: cierra el vale con las tres lecturas. El número cambia con cada código.
+
+### Inventario y filtros
+
+- **Cinco tarjetas superiores**: cada una es una familia SEDENA. Se tocan para filtrar.
+- **0 SKUs · 0 calibrados**: cuántos productos hay y cuántos tienen peso unitario configurado.
+- **UUID: 0 mov. · 0 cód.**: eventos y códigos listos para sincronizar con otra terminal.
+- **Buscador**: acepta ID, producto, familia o código `X...`.
+- **Chips Todas / Alto Exp. / Agente / Cordón / Cañuelas / Detonadores**: filtran la lista.
+- **Botón fijo CARGA RÁPIDA / AJUSTE**: abre el diálogo para cargar o corregir existencias.
+- **Tres puntos**: abre el menú con la opción **Licencias**.
+
+### Diálogo de carga rápida
+
+- **Campo de producto**: recibe el código escaneado o permite elegir del catálogo.
+- **Modo carga inicial / ajuste físico**: indica si estás abriendo existencias o corrigiendo un saldo.
+- **Cajas completas, sacos completos, cartuchos sueltos**: cantidades por presentación.
+- **Peso caja / peso saco / cartuchos por caja**: calibraciones para convertir a kilogramos.
+- **Observación**: turno, auditoría o nota de por qué se ajustó.
+
+### Sincronización
+
+- **Enviar / Recibir / Historial**: pestañas del centro de sincronización.
+- **Pendientes / 24 horas / Todo**: alcance de los eventos que se van a empaquetar.
+- **Alta (1,400) / Fácil (600)**: densidad del QR. Alta = menos QRs; Fácil = QRs más grandes.
+- **QR con número de parte**: si el lote es grande, salen varios. Se pueden leer en cualquier orden.
+- **EXPORTAR ARCHIVO .JSON**: respaldo para USB o para pasar a otra terminal sin cámara.
+- **PROCESAR BLOQUE / JSON**: botón de la pestaña Recibir que fusiona lo leído.
+
+### Historial
+
+- **Folio y fecha**: identifican el vale.
+- **Empresa / transportista**: aparecen en la tarjeta del vale.
+- **EXPORTAR CONSOLIDADO**: junta todos los vales en un archivo.
+- **EXPORTAR SELECCIONADOS**: aparece al marcar varios vales.
+- **Código de 4 dígitos**: se pide al borrar para evitar borrados accidentales.
+
+### Configuración e impresora
+
+- **Interruptores de audio, vibración y destello**: avisos industriales para lectura válida, duplicado y error.
+- **Nombre de la Mina / Empresa y Permiso SEDENA**: salen impresos en el ticket.
+- **Ver Catálogo Completo**: abre la lista de productos.
+- **Importar CSV**: carga un catálogo nuevo.
+- **Alias / Nombre en polvorín**: nombre que le pones a la impresora.
+- **Dirección MAC Bluetooth**: dirección de la impresora vinculada.
+- **Protocolo y papel**: ESC/POS, CPCL o texto plano; 2, 3 o 4 pulgadas.
+- **Usar como impresora activa**: define cuál se usa al imprimir.
+
 ## Ejemplo de ticket
 
 Así se ve un vale de entrada impreso en papel térmico de 3 pulgadas. El margen de abajo deja espacio para las firmas.
