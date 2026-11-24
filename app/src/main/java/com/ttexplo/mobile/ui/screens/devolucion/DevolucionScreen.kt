@@ -108,6 +108,9 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
     private val _items = MutableStateFlow<List<BarcodeItem>>(emptyList())
     val items: StateFlow<List<BarcodeItem>> = _items.asStateFlow()
 
+    private val _duplicateReads = MutableStateFlow<List<BarcodeItem>>(emptyList())
+    val duplicateReads: StateFlow<List<BarcodeItem>> = _duplicateReads.asStateFlow()
+
     private val _duplicateAttemptCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val duplicateAttemptCounts: StateFlow<Map<String, Int>> = _duplicateAttemptCounts.asStateFlow()
 
@@ -183,6 +186,15 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
                     val currentCounts = _duplicateAttemptCounts.value
                     val nextAttempt = (currentCounts[res.rawBarcode] ?: 0) + 1
                     _duplicateAttemptCounts.value = currentCounts + (res.rawBarcode to nextAttempt)
+                    _duplicateReads.value = listOf(
+                        BarcodeItem(
+                            code = res.rawBarcode,
+                            timestamp = res.timestamp,
+                            productInfo = res.productInfo,
+                            empaque = res.empaque,
+                            isDuplicateRead = true
+                        )
+                    ) + _duplicateReads.value
                     _lastDuplicateAlert.value = DuplicateCodeAlert(
                         code = res.rawBarcode,
                         attemptCount = nextAttempt
@@ -198,7 +210,23 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun deleteItem(item: BarcodeItem) {
+        if (item.isDuplicateRead) {
+            _duplicateReads.value = _duplicateReads.value.filterNot {
+                it.code == item.code && it.timestamp == item.timestamp
+            }
+            val left = (_duplicateAttemptCounts.value[item.code] ?: 1) - 1
+            _duplicateAttemptCounts.value = if (left <= 0) {
+                _duplicateAttemptCounts.value - item.code
+            } else {
+                _duplicateAttemptCounts.value + (item.code to left)
+            }
+            if (left <= 0 && _lastDuplicateAlert.value?.code == item.code) {
+                _lastDuplicateAlert.value = null
+            }
+            return
+        }
         _items.value = _items.value.filterNot { it.code == item.code && it.timestamp == item.timestamp }
+        _duplicateReads.value = _duplicateReads.value.filterNot { it.code == item.code }
         _duplicateAttemptCounts.value = _duplicateAttemptCounts.value - item.code
         if (_lastDuplicateAlert.value?.code == item.code) {
             _lastDuplicateAlert.value = null
@@ -295,6 +323,7 @@ fun DevolucionScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val items by viewModel.items.collectAsStateWithLifecycle()
+    val duplicateReads by viewModel.duplicateReads.collectAsStateWithLifecycle()
     val duplicateAttemptCounts by viewModel.duplicateAttemptCounts.collectAsStateWithLifecycle()
     val lastDuplicateAlert by viewModel.lastDuplicateAlert.collectAsStateWithLifecycle()
     val latestScanResult by viewModel.latestScanResult.collectAsStateWithLifecycle()
@@ -455,8 +484,8 @@ fun DevolucionScreen(
         )
     }
 
-    val filteredItems = remember(items, selectedFilterKey) {
-        items.filter { item ->
+    val filteredItems = remember(items, duplicateReads, selectedFilterKey) {
+        (duplicateReads + items).filter { item ->
             ScanFilterKeys.matchesBarcodeItem(item, selectedFilterKey, useIdKey = false)
         }
     }
@@ -752,7 +781,7 @@ fun DevolucionScreen(
                             }
                         }
                     } else {
-                        items(filteredItems, key = { it.code + it.timestamp }) { item ->
+                        items(filteredItems) { item ->
                             val empaqueColor = when (item.empaque) {
                                 TipoEmpaque.CAJA -> EmpaqueCajaColor
                                 TipoEmpaque.SACO -> EmpaqueSacoColor

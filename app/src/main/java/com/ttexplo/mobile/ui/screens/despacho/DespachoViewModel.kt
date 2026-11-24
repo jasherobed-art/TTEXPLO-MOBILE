@@ -49,6 +49,7 @@ data class DespachoUiState(
     val turno: String = "",
     val voladura: String = "",
     val scannedItems: List<BarcodeItem> = emptyList(),
+    val duplicateReads: List<BarcodeItem> = emptyList(),
     val duplicateAttemptCounts: Map<String, Int> = emptyMap(),
     val lastDuplicateAlert: DuplicateCodeAlert? = null,
     val latestScanResult: ScanResult? = null,
@@ -226,7 +227,15 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
                     val currentCounts = _uiState.value.duplicateAttemptCounts
                     val nextAttempt = (currentCounts[result.rawBarcode] ?: 0) + 1
                     val updatedCounts = currentCounts + (result.rawBarcode to nextAttempt)
+                    val duplicateRead = BarcodeItem(
+                        code = result.rawBarcode,
+                        timestamp = result.timestamp,
+                        productInfo = result.productInfo,
+                        empaque = result.empaque,
+                        isDuplicateRead = true
+                    )
                     _uiState.value = _uiState.value.copy(
+                        duplicateReads = listOf(duplicateRead) + _uiState.value.duplicateReads,
                         duplicateAttemptCounts = updatedCounts,
                         lastDuplicateAlert = DuplicateCodeAlert(
                             code = result.rawBarcode,
@@ -275,27 +284,45 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
     fun deleteItem(item: BarcodeItem) {
         viewModelScope.launch {
             scanMutex.withLock {
-                val draftId = _uiState.value.draftId
+                val current = _uiState.value
+                val resultMessage = ScanResult(
+                    rawBarcode = item.code,
+                    timestamp = DateTimeUtils.currentTimestamp(),
+                    productInfo = item.productInfo,
+                    isDuplicate = false,
+                    isValid = true,
+                    message = "Código ${item.code} eliminado"
+                )
+                if (item.isDuplicateRead) {
+                    val remaining = current.duplicateReads.filterNot {
+                        it.code == item.code && it.timestamp == item.timestamp
+                    }
+                    val left = (current.duplicateAttemptCounts[item.code] ?: 1) - 1
+                    val counts = if (left <= 0) {
+                        current.duplicateAttemptCounts - item.code
+                    } else {
+                        current.duplicateAttemptCounts + (item.code to left)
+                    }
+                    _uiState.value = current.copy(
+                        duplicateReads = remaining,
+                        duplicateAttemptCounts = counts,
+                        lastDuplicateAlert = current.lastDuplicateAlert?.takeUnless { it.code == item.code && left <= 0 },
+                        latestScanResult = resultMessage
+                    )
+                    return@withLock
+                }
+                val draftId = current.draftId
                 if (draftId != null) {
                     db.despachoDao().deleteItem(draftId, item.code)
                 }
-                val updated = _uiState.value.scannedItems.filterNot { it.code == item.code }
-                val markers = calculateMarkers(updated)
-                val updatedDuplicates = _uiState.value.duplicateAttemptCounts - item.code
-                val updatedAlert = _uiState.value.lastDuplicateAlert?.takeUnless { it.code == item.code }
-                _uiState.value = _uiState.value.copy(
+                val updated = current.scannedItems.filterNot { it.code == item.code }
+                _uiState.value = current.copy(
                     scannedItems = updated,
-                    duplicateAttemptCounts = updatedDuplicates,
-                    lastDuplicateAlert = updatedAlert,
-                    markers = markers,
-                    latestScanResult = ScanResult(
-                        rawBarcode = item.code,
-                        timestamp = DateTimeUtils.currentTimestamp(),
-                        productInfo = item.productInfo,
-                        isDuplicate = false,
-                        isValid = true,
-                        message = "Código ${item.code} eliminado"
-                    )
+                    duplicateReads = current.duplicateReads.filterNot { it.code == item.code },
+                    duplicateAttemptCounts = current.duplicateAttemptCounts - item.code,
+                    lastDuplicateAlert = current.lastDuplicateAlert?.takeUnless { it.code == item.code },
+                    markers = calculateMarkers(updated),
+                    latestScanResult = resultMessage
                 )
             }
         }

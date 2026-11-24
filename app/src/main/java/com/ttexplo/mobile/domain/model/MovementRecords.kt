@@ -45,5 +45,6 @@ data class ScannedCodeRecord(
 data class AccessoryItemRecord(
     val code: String,
     val quantity: Int,
-    val timestamp: String
+    val timestamp: String,
+    val isDuplicateRead: Boolean = false
 )

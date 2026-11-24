@@ -17,7 +17,8 @@ data class BarcodeItem(
     val code: String,
     val timestamp: String,
     val productInfo: ProductInfo,
-    val empaque: TipoEmpaque = TipoEmpaque.DESCONOCIDO
+    val empaque: TipoEmpaque = TipoEmpaque.DESCONOCIDO,
+    val isDuplicateRead: Boolean = false
 )
 
 data class ScanResult(

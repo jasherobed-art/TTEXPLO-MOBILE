@@ -228,8 +228,8 @@ fun EntradasScanScreen(
         )
     }
 
-    val filteredItems = remember(uiState.scannedItems, selectedFilterKey) {
-        uiState.scannedItems.filter { item ->
+    val filteredItems = remember(uiState.scannedItems, uiState.duplicateReads, selectedFilterKey) {
+        (uiState.duplicateReads + uiState.scannedItems).filter { item ->
             ScanFilterKeys.matchesBarcodeItem(item, selectedFilterKey, useIdKey = true)
         }
     }
@@ -541,7 +541,7 @@ fun EntradasScanScreen(
                             }
                         }
                     } else {
-                        items(filteredItems, key = { it.code + it.timestamp }) { item ->
+                        items(filteredItems) { item ->
                             val dupAttempts = uiState.duplicateAttemptCounts[item.code] ?: 0
                             val isDuplicateHighlighted = dupAttempts > 0 || (codeFrequencies[item.code] ?: 0) > 1
                             EntradaScannedItemCard(

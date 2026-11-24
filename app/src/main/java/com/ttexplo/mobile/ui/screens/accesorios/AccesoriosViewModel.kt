@@ -41,6 +41,7 @@ data class AccesoriosUiState(
     val entrego: String = "",
     val voladura: String = "",
     val items: List<AccessoryItemRecord> = emptyList(),
+    val duplicateReads: List<AccessoryItemRecord> = emptyList(),
     val summaries: List<AccessorySummary> = emptyList(),
     val totalPieces: Int = 0,
     val wasRestoredFromDraft: Boolean = false,
@@ -198,6 +199,24 @@ class AccesoriosViewModel(application: Application) : AndroidViewModel(applicati
 
         viewModelScope.launch {
             scanMutex.withLock {
+                val current = _uiState.value
+                if (current.items.any { it.code == trimmed }) {
+                    soundFeedback.playWarning()
+                    _uiState.value = current.copy(
+                        duplicateReads = listOf(
+                            AccessoryItemRecord(
+                                code = trimmed,
+                                quantity = 0,
+                                timestamp = DateTimeUtils.currentTimestamp(),
+                                isDuplicateRead = true
+                            )
+                        ) + current.duplicateReads,
+                        lastScanMessage = "¡CÓDIGO DUPLICADO! $trimmed (no cuenta)",
+                        latestFlashEvent = ScanFlashEvent(type = ScanFeedbackType.ERROR)
+                    )
+                    return@withLock
+                }
+
                 val draftId = ensureDraftCreated()
                 val timestamp = DateTimeUtils.currentTimestamp()
 
@@ -234,14 +253,25 @@ class AccesoriosViewModel(application: Application) : AndroidViewModel(applicati
     fun deleteItem(item: AccessoryItemRecord) {
         viewModelScope.launch {
             scanMutex.withLock {
-                val draftId = _uiState.value.draftId
+                val current = _uiState.value
+                if (item.isDuplicateRead) {
+                    _uiState.value = current.copy(
+                        duplicateReads = current.duplicateReads.filterNot {
+                            it.code == item.code && it.timestamp == item.timestamp
+                        },
+                        lastScanMessage = "Lectura duplicada ${item.code} eliminada"
+                    )
+                    return@withLock
+                }
+                val draftId = current.draftId
                 if (draftId != null) {
                     db.accesorioDao().deleteItem(draftId, item.code)
                 }
-                val updated = _uiState.value.items.filterNot { it.code == item.code && it.timestamp == item.timestamp }
+                val updated = current.items.filterNot { it.code == item.code && it.timestamp == item.timestamp }
                 val total = updated.sumOf { it.quantity }
-                _uiState.value = _uiState.value.copy(
+                _uiState.value = current.copy(
                     items = updated,
+                    duplicateReads = current.duplicateReads.filterNot { it.code == item.code },
                     summaries = calculateSummaries(updated),
                     totalPieces = total,
                     lastScanMessage = "Accesorio ${item.code} eliminado"

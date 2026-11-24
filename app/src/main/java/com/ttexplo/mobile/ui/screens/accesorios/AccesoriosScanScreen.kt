@@ -54,6 +54,7 @@ import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
+import com.ttexplo.mobile.ui.common.DuplicateBadgeChip
 import com.ttexplo.mobile.ui.common.DummyAccesoriosScannerBar
 import com.ttexplo.mobile.ui.common.ExitScanConfirmDialog
 import com.ttexplo.mobile.ui.common.HorizontalProductFilterRow
@@ -269,20 +270,21 @@ fun AccesoriosScanScreen(
         list
     }
 
-    val filteredItems = remember(uiState.items, selectedCodeFilter) {
+    val filteredItems = remember(uiState.items, uiState.duplicateReads, selectedCodeFilter) {
+        val allItems = uiState.duplicateReads + uiState.items
         when {
-            selectedCodeFilter == null -> uiState.items
+            selectedCodeFilter == null -> allItems
             selectedCodeFilter!!.startsWith(ScanFilterKeys.TYPE_PREFIX) -> {
                 val catName = selectedCodeFilter!!.removePrefix(ScanFilterKeys.TYPE_PREFIX)
-                uiState.items.filter {
+                allItems.filter {
                     InventoryCategory.inferCategory(ProductType.ACCESORIO, it.code).name == catName
                 }
             }
             selectedCodeFilter!!.startsWith(ScanFilterKeys.PROD_PREFIX) -> {
                 val code = selectedCodeFilter!!.removePrefix(ScanFilterKeys.PROD_PREFIX)
-                uiState.items.filter { it.code == code }
+                allItems.filter { it.code == code }
             }
-            else -> uiState.items
+            else -> allItems
         }
     }
 
@@ -600,10 +602,11 @@ fun AccesoriosScanScreen(
                             }
                         }
                     } else {
-                        items(filteredItems, key = { it.code + it.timestamp }) { item ->
+                        items(filteredItems) { item ->
                             AccessoryRowCard(
                                 item = item,
                                 accentColor = accentColor,
+                                isDuplicateRead = item.isDuplicateRead,
                                 onDelete = { itemToDelete = item }
                             )
                         }
@@ -748,24 +751,28 @@ fun AccesoriosScanScreen(
 fun AccessoryRowCard(
     item: AccessoryItemRecord,
     accentColor: androidx.compose.ui.graphics.Color = MineAccessoryPurple,
+    isDuplicateRead: Boolean = false,
     onDelete: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MineDarkSurface)
-            .border(1.dp, MineBorderGray, RoundedCornerShape(8.dp))
+            .background(if (isDuplicateRead) MineErrorRedBackground else MineDarkSurface)
+            .border(1.dp, if (isDuplicateRead) MineErrorRed else MineBorderGray, RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 7.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 6.dp)) {
+            if (isDuplicateRead) {
+                DuplicateBadgeChip(attemptCount = 1)
+            }
             AutoShrinkText(
                 text = item.code,
                 initialTextSize = 14.sp,
                 minTextSize = 10.sp,
-                color = MineTextPrimary,
+                color = if (isDuplicateRead) MineErrorRedLight else MineTextPrimary,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
                 softWrap = true
@@ -782,14 +789,14 @@ fun AccessoryRowCard(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(accentColor)
+                    .background(if (isDuplicateRead) MineErrorRed else accentColor)
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "${item.quantity} pzas",
+                    text = if (isDuplicateRead) "NO CUENTA" else "${item.quantity} pzas",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (accentColor == MineAgentCyan) MineDarkBackground else MineTextPrimary
+                    color = if (isDuplicateRead) MineTextPrimary else if (accentColor == MineAgentCyan) MineDarkBackground else MineTextPrimary
                 )
             }
 
