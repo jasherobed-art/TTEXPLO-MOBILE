@@ -236,6 +236,88 @@ Antes de imprimir, active Bluetooth en Android y conceda los permisos de disposi
 
 La configuración muestra el Device ID, el cliente autorizado, la unidad minera, la vigencia, la versión instalada y los tipos de salida y lector soportados.
 
+## Diagramas de flujo y guía visual de controles
+
+Esta sección resume los caminos más comunes dentro de la app y explica la función de cada control importante. Úsela como referencia rápida antes de capacitar a un operador nuevo.
+
+### Flujo de una entrada
+
+El objetivo es recibir material y dejarlo registrado en el polvorín.
+
+1. Encabezado: proveedor, polvorín y factura o remisión.
+2. Escaneo: códigos SEDENA de cajas, sacos o cartuchos.
+3. Resumen: total de ítems y conteo por presentación.
+4. Guardado: el vale queda en el historial y genera eventos UUID.
+5. Impresión: ticket térmico con líneas de firma y margen inferior.
+
+Secuencia abreviada: Encabezado → Escaneo → Totales → Guardar → Imprimir.
+
+### Flujo de un despacho
+
+El objetivo es sacar material del polvorín hacia un barreno.
+
+1. Encabezado: vale, empresa, lugar, transportista, turno y voladura.
+2. Escaneo: códigos SEDENA de lo que se entrega.
+3. Validación: la app detecta duplicados o saldos negativos.
+4. Guardado: se generan eventos compensatorios en el inventario.
+5. Impresión: el vale queda listo para firma del responsable.
+
+Secuencia abreviada: Encabezado → Escaneo → Validación → Guardar → Imprimir.
+
+### Flujo de ajuste físico
+
+El objetivo es corregir el saldo real de un producto en el polvorín.
+
+1. Inventario en Polvorín: pulse CARGA RÁPIDA / AJUSTE o la acción Ajustar de una tarjeta.
+2. Producto: escanee un código o seleccione un producto del catálogo.
+3. Modo: elija carga inicial o ajuste físico.
+4. Cantidades: capture cajas, sacos, cartuchos, piezas o metros.
+5. Guardado: la app calcula el nuevo saldo y deja el evento listo para sincronizar.
+
+Secuencia abreviada: Inventario → Producto → Modo → Cantidades → Guardar.
+
+### Flujo de sincronización
+
+El objetivo es llevar los eventos de una terminal a otra sin internet.
+
+1. Enviar: elija alcance Pendientes, 24 horas o Todo.
+2. Densidad: elija Alta (1,400) o Fácil (600).
+3. Paquete: la app crea un QR V4 firmado o un JSON.
+4. Recibir: la otra terminal escanea el QR o pega el JSON.
+5. Informe: revise eventos fusionados, duplicados y conflictos.
+
+Secuencia abreviada: Alcance → Densidad → QR/JSON → Recepción → Informe.
+
+### Flujo de licenciamiento
+
+El objetivo es autorizar la terminal con una licencia generada fuera de la app.
+
+1. Device ID: copie el identificador de la terminal.
+2. License Master Pro: genere una licencia para ese Device ID.
+3. Activación: pegue la clave, importe el .lic o escanee el QR.
+4. Bóveda: guarde la licencia con un alias para reutilizarla.
+5. Instalación: instale la licencia en la terminal correcta.
+
+Secuencia abreviada: Device ID → Generación externa → Activación → Bóveda → Instalación.
+
+### Qué es cada control importante
+
+Use esta tabla para explicar rápidamente los elementos que aparecen en pantalla.
+
+| Control | Dónde aparece | Para qué sirve |
+|---|---|---|
+| Device ID | Configuración y Licencias guardadas | Identifica la terminal. La licencia se genera para ese ID. |
+| Barra inferior CARGA RÁPIDA / AJUSTE | Inventario en Polvorín | Abre el diálogo para cargar o corregir existencias. |
+| Cinta de métricas | Pantallas de escaneo | Muestra totales de ítems, cajas, sacos y cartuchos. |
+| Filtros de familia | Inventario en Polvorín | Muestran solo Alto, Agente, Cordón, Cañuelas o Detonadores. |
+| Kardex | Tarjeta de producto | Muestra el historial de movimientos de ese producto. |
+| Códigos SEDENA | Tarjeta de producto | Muestra las series escaneadas de ese producto. |
+| QR V4 | Sincronización | Transporta eventos firmados con HMAC-SHA256. |
+| Perfil de impresora | Configuración | Define protocolo, ancho de papel y dirección Bluetooth. |
+| Modo prueba | Pantallas de escaneo | Simula lecturas para capacitación. Desaparece con licencia real. |
+| Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias por terminal. |
+| Informe de fusión | Sincronización | Explica cuántos eventos se fusionaron y qué conflictos hay. |
+
 ## Buenos hábitos
 
 - Guarde el vale al terminar cada turno; no deje vales en borrador.
