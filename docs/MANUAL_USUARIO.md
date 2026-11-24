@@ -59,7 +59,7 @@ Si se te cierra la app a mitad de vale, no perdiste lo capturado. Al volver ver�
 5. Revisa el total y el desglose por presentación.
 6. Guarda e imprime con la impresora activa.
 
-El ticket trae las dos líneas, quién entrega y quién recibe, y espacio de sobra para la firma.
+El encabezado trae quién entrega y quién recibe. Al final quedan solo **ENTREGO:** y **RECIBIO:** con una línea para firmar a mano, sin nombres impresos. La línea se ajusta al ancho del papel de la impresora activa.
 
 ## Registrar salida o devolución de accesorios
 
@@ -217,6 +217,8 @@ Aquí creas perfiles con:
 - Protocolo: ESC/POS, CPCL o texto plano.
 - Papel: 2, 3 o 4 pulgadas.
 - El botón para dejarla como impresora activa.
+
+En **CONTENIDO DEL TICKET TÉRMICO** decides qué lleva el vale. **Incluir líneas de firmas** pone o quita el bloque de **ENTREGO:** y **RECIBIO:**. **Listado de códigos con fecha/hora** incluye u omite el detalle de códigos; cuando va, el encabezado dice **LISTADO DE CODIGOS**. La elección aplica a los cuatro vales.
 
 Antes de imprimir, enciende Bluetooth y acepta el permiso de dispositivos cercanos cuando la app lo pida.
 
