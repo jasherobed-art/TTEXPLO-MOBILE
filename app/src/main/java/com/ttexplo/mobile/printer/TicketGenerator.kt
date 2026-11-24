@@ -67,6 +67,9 @@ object TicketGenerator {
             .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
     }
 
+    private fun signatureLine(paperWidth: PaperWidth): String =
+        "_".repeat((paperWidth.lineLength - 4).coerceAtLeast(1))
+
     data class CpclFont(
         val fontNumber: Int,
         val fontSize: Int,
@@ -391,14 +394,11 @@ object TicketGenerator {
         out.write("$divider\r\n\r\n".toByteArray(CHARSET))
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            out.write("ENTREGO:\r\n\r\n\r\n".toByteArray(CHARSET))
+            val sigLine = signatureLine(paperWidth)
+            out.write("ENTREGO:\r\n".toByteArray(CHARSET))
+            out.write("$sigLine\r\n\r\n".toByteArray(CHARSET))
+            out.write("RECIBIO:\r\n".toByteArray(CHARSET))
             out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("Firma Responsable Polvorin\r\n\r\n\r\n".toByteArray(CHARSET))
-
-            out.write("RECIBIO:\r\n\r\n\r\n".toByteArray(CHARSET))
-            out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("${stripAccents(record.transportista)}\r\n".toByteArray(CHARSET))
             out.write("$divider\r\n\r\n\r\n".toByteArray(CHARSET))
         }
 
@@ -475,14 +475,9 @@ object TicketGenerator {
         sb.append(divider).append("\r\n\r\n")
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            sb.append("ENTREGO:\r\n\r\n\r\n")
-            sb.append("$sigLine\r\n")
-            sb.append("Firma Responsable Polvorin\r\n\r\n\r\n")
-
-            sb.append("RECIBIO:\r\n\r\n\r\n")
-            sb.append("$sigLine\r\n")
-            sb.append(stripAccents(record.transportista)).append("\r\n")
+            val sigLine = signatureLine(paperWidth)
+            sb.append("ENTREGO:\r\n").append(sigLine).append("\r\n\r\n")
+            sb.append("RECIBIO:\r\n").append(sigLine).append("\r\n")
             sb.append(divider).append("\r\n\r\n")
         }
 
@@ -718,14 +713,11 @@ object TicketGenerator {
         out.write("$divider\r\n\r\n".toByteArray(CHARSET))
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            out.write("ENTREGO:\r\n\r\n\r\n".toByteArray(CHARSET))
+            val sigLine = signatureLine(paperWidth)
+            out.write("ENTREGO:\r\n".toByteArray(CHARSET))
+            out.write("$sigLine\r\n\r\n".toByteArray(CHARSET))
+            out.write("RECIBIO:\r\n".toByteArray(CHARSET))
             out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("${stripAccents(record.entrego)}\r\n\r\n\r\n".toByteArray(CHARSET))
-
-            out.write("RECIBIO:\r\n\r\n\r\n".toByteArray(CHARSET))
-            out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("${stripAccents(record.recibio)}\r\n".toByteArray(CHARSET))
             out.write("$divider\r\n\r\n\r\n".toByteArray(CHARSET))
         }
 
@@ -801,14 +793,9 @@ object TicketGenerator {
         sb.append(divider).append("\r\n\r\n")
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            sb.append("ENTREGO:\r\n\r\n\r\n")
-            sb.append("$sigLine\r\n")
-            sb.append(stripAccents(record.entrego)).append("\r\n\r\n\r\n")
-
-            sb.append("RECIBIO:\r\n\r\n\r\n")
-            sb.append("$sigLine\r\n")
-            sb.append(stripAccents(record.recibio)).append("\r\n")
+            val sigLine = signatureLine(paperWidth)
+            sb.append("ENTREGO:\r\n").append(sigLine).append("\r\n\r\n")
+            sb.append("RECIBIO:\r\n").append(sigLine).append("\r\n")
             sb.append(divider).append("\r\n\r\n")
         }
 
@@ -1039,14 +1026,11 @@ object TicketGenerator {
         out.write("$divider\r\n\r\n".toByteArray(CHARSET))
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            out.write("RECIBIO EN POLVORIN:\r\n\r\n\r\n".toByteArray(CHARSET))
+            val sigLine = signatureLine(paperWidth)
+            out.write("RECIBIO EN POLVORIN:\r\n".toByteArray(CHARSET))
+            out.write("$sigLine\r\n\r\n".toByteArray(CHARSET))
+            out.write("ENTREGO PROVEEDOR:\r\n".toByteArray(CHARSET))
             out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("Firma Responsable Polvorin\r\n\r\n\r\n".toByteArray(CHARSET))
-
-            out.write("ENTREGO PROVEEDOR:\r\n\r\n\r\n".toByteArray(CHARSET))
-            out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("${stripAccents(record.proveedor)}\r\n".toByteArray(CHARSET))
             out.write("$divider\r\n\r\n\r\n".toByteArray(CHARSET))
         }
 
@@ -1108,9 +1092,9 @@ object TicketGenerator {
         sb.append(divider).append("\r\n\r\n")
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            sb.append("RECIBIO EN POLVORIN:\r\n\r\n\r\n$sigLine\r\nFirma Responsable Polvorin\r\n\r\n\r\n")
-            sb.append("ENTREGO PROVEEDOR:\r\n\r\n\r\n$sigLine\r\n${stripAccents(record.proveedor)}\r\n$divider\r\n\r\n")
+            val sigLine = signatureLine(paperWidth)
+            sb.append("RECIBIO EN POLVORIN:\r\n").append(sigLine).append("\r\n\r\n")
+            sb.append("ENTREGO PROVEEDOR:\r\n").append(sigLine).append("\r\n$divider\r\n\r\n")
         }
         appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")
@@ -1305,14 +1289,11 @@ object TicketGenerator {
         out.write("$divider\r\n\r\n".toByteArray(CHARSET))
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            out.write("ENTREGO (DEVOLUCION):\r\n\r\n\r\n".toByteArray(CHARSET))
+            val sigLine = signatureLine(paperWidth)
+            out.write("ENTREGO (DEVOLUCION):\r\n".toByteArray(CHARSET))
+            out.write("$sigLine\r\n\r\n".toByteArray(CHARSET))
+            out.write("RECIBIO (POLVORIN):\r\n".toByteArray(CHARSET))
             out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("${stripAccents(record.empleadoEntrega)}\r\n\r\n\r\n".toByteArray(CHARSET))
-
-            out.write("RECIBIO (POLVORIN):\r\n\r\n\r\n".toByteArray(CHARSET))
-            out.write("$sigLine\r\n".toByteArray(CHARSET))
-            out.write("${stripAccents(record.empleadoRecibe)}\r\n".toByteArray(CHARSET))
             out.write("$divider\r\n\r\n\r\n".toByteArray(CHARSET))
         }
 
@@ -1372,9 +1353,9 @@ object TicketGenerator {
         sb.append(divider).append("\r\n\r\n")
 
         if (includeSignatures) {
-            val sigLine = "_".repeat((w - 4).coerceAtMost(27))
-            sb.append("ENTREGO:\r\n\r\n\r\n$sigLine\r\n${stripAccents(record.empleadoEntrega)}\r\n\r\n\r\n")
-            sb.append("RECIBIO:\r\n\r\n\r\n$sigLine\r\n${stripAccents(record.empleadoRecibe)}\r\n$divider\r\n\r\n")
+            val sigLine = signatureLine(paperWidth)
+            sb.append("ENTREGO:\r\n").append(sigLine).append("\r\n\r\n")
+            sb.append("RECIBIO:\r\n").append(sigLine).append("\r\n$divider\r\n\r\n")
         }
         appendPlainBottomMargin(sb)
         sb.append("\r\n\r\n\r\n\r\n\r\n\r\n")

@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import com.ttexplo.mobile.domain.model.DespachoRecord
+import com.ttexplo.mobile.domain.model.DevolucionRecord
 import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import org.junit.Test
 import java.nio.charset.Charset
@@ -11,6 +12,76 @@ import java.nio.charset.Charset
 class TicketGeneratorTest {
 
     private val charset = Charset.forName("CP437")
+
+    private val despacho = DespachoRecord(
+        vale = "7712",
+        empresa = "MPRG",
+        lugar = "576-S/RMP/576/PIBOTEO",
+        transportista = "GILBERTO MENDOZA AGUIRRE",
+        turno = "3",
+        voladura = "1",
+        items = listOf(
+            ScannedCodeRecord("272120826024843282", "2026-10-07 04:41:01", "AUSTINITE 15 CA-1", "SACO")
+        )
+    )
+
+    private val accesorios = AccesoriosRecord(
+        vale = "7712",
+        empresa = "MPRG",
+        lugar = "576-S/RMP/576/PIBOTEO",
+        transportista = "GILBERTO MENDOZA AGUIRRE",
+        turno = "3",
+        recibio = "MPRG",
+        entrego = "GILBERTO MENDOZA AGUIRRE",
+        voladura = "1",
+        items = listOf(AccessoryItemRecord("X100182000000009", 2, "2026-10-07 06:21:57"))
+    )
+
+    private val devolucion = DevolucionRecord(
+        empleadoEntrega = "GILBERTO MENDOZA AGUIRRE",
+        empleadoRecibe = "MPRG",
+        items = listOf(
+            ScannedCodeRecord("272120826024843282", "2026-10-07 04:41:01", "AUSTINITE 15 CA-1", "SACO")
+        )
+    )
+
+    @Test
+    fun signatureLineEscPosMatches58MmWidth() {
+        val text = String(TicketGenerator.generateDespachoEscPos(
+            record = despacho, paperWidth = PaperWidth.WIDTH_2_INCH
+        ), charset)
+        assertThat(text).contains("ENTREGO:\r\n${"_".repeat(28)}\r\n")
+        assertThat(text).contains("RECIBIO:\r\n${"_".repeat(28)}\r\n")
+    }
+
+    @Test
+    fun signatureLineGrowsWithPaperWidth() {
+        val wide = String(TicketGenerator.generateDespachoPlain(
+            record = despacho, paperWidth = PaperWidth.WIDTH_4_INCH
+        ), charset)
+        assertThat(wide).contains("ENTREGO:\r\n${"_".repeat(52)}\r\n")
+        assertThat(wide).contains("RECIBIO:\r\n${"_".repeat(52)}\r\n")
+    }
+
+    @Test
+    fun headerKeepsDataWhenSignatureNamesRemoved() {
+        val text = String(TicketGenerator.generateAccesoriosEscPos(
+            accesorios, PaperWidth.WIDTH_3_INCH
+        ), charset)
+        assertThat(text).contains("EMPRESA: MPRG")
+        assertThat(text).doesNotContain("Firma Responsable")
+        assertThat(text).doesNotContain("GILBERTO MENDOZA AGUIRRE\r\n\r\n")
+    }
+
+    @Test
+    fun signaturesDisabledStillSkipsSignatureBlock() {
+        val text = String(TicketGenerator.generateDevolucionPlain(
+            record = devolucion, paperWidth = PaperWidth.WIDTH_3_INCH,
+            includeSignatures = false
+        ), charset)
+        assertThat(text).doesNotContain("ENTREGO:")
+        assertThat(text).doesNotContain("RECIBIO:")
+    }
 
     @Test
     fun testGenerateDespachoTicket_withCustomMineAndPermit() {
