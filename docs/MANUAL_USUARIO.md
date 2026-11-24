@@ -43,7 +43,7 @@ El engranaje de arriba abre Configuración. Si la licencia está por vencer, ver
 1. Abre **1. Entradas de Alto y Agente**.
 2. Llena proveedor, polvorín y factura o remisión.
 3. Toca **CONTINUAR A ESCANEO**.
-4. Escanea cada código SEDENA. Si el lector falla, escrib el código a mano en el campo de captura.
+4. Escanea cada código SEDENA. Si el lector falla, escribe el código a mano en el campo de captura.
 5. Mira la cinta de arriba: ahí ves cuántos ítems llevas y cuántas cajas, sacos y cartuchos.
 6. Si te equivocaste en uno, abre el ítem en la lista y corrigelo o bórralo.
 7. Toca **GUARDAR**. Después puedes imprimir el ticket desde la pantalla del vale.
@@ -113,7 +113,7 @@ El botón **CARGA RÁPIDA / AJUSTE** va fijo abajo. Ya no tapa la lista.
 3. Elige: carga inicial o ajuste físico.
 4. Pon cantidades de cajas, sacos, cartuchos, piezas o metros, según el caso.
 5. Si aplica, pon peso de caja, peso de saco y cartuchos por caja.
-6. Añade una observación de turno o auditoría si hace falta.
+6. Agrega una observación de turno o auditoría si hace falta.
 7. Guarda.
 
 También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
