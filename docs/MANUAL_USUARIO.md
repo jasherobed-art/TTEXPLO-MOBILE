@@ -19,7 +19,7 @@ Cada terminal tiene su ID (Device ID). Anótalo bien: la licencia se hace para e
 Si salió bien, verás **AUTORIZADA**. Si dice **PRÓXIMA A VENCER**, renueva antes de la fecha que marca.
 
 > [!IMPORTANT]
-> La APK viene con una licencia de prueba de 1 día. Mientras esté activa, verás los paneles **MODO PRUEBA**. Cuando metas una licencia real, esos paneles desaparecen. Es normal, no es un error.
+> La APK viene con una licencia temporal de 1 día. Activa la licencia definitiva antes de operar de verdad.
 
 ## Pantalla de inicio
 
@@ -81,17 +81,6 @@ En las devoluciones la cantidad sale negativa. Así el inventario entiende que e
 
 Con eso el saldo vuelve a entrar al polvorín. No hace falta el QR de salida otra vez.
 
-## Usar el simulador de escaneo
-
-Mientras la terminal siga con la licencia de prueba, verás un panel **MODO PRUEBA** en las pantallas de escaneo. Sirve para practicar sin escáner.
-
-1. Despliega el panel **MODO PRUEBA**.
-2. Elige el caso: válido, duplicado, error SEDENA u otro.
-3. Manda el código al flujo de escaneo.
-4. Cierra el panel cuando termines.
-
-Esto es solo para capacitación. No lo uses para material real. Con licencia real, el panel ya no aparece.
-
 ## Inventario en polvorín
 
 Aquí ves lo que hay en el polvorín: saldo por familia, KG, PZA, MTS y si hay eventos pendientes de pasar a otra terminal.
@@ -141,7 +130,6 @@ Aquí guardas las licencias que generaste en License Master Pro. La app no fabri
 1. Revisa que la tarjeta diga **VIGENTE** y que el destino sea esta terminal.
 2. Toca **Instalar**.
 3. Si el ID no coincide, la app avisa que el dispositivo no está autorizado. Estás en la terminal equivocada.
-4. Después de instalar, los modos de prueba desaparecen.
 
 ### Copiar, compartir y borrar
 
@@ -227,7 +215,7 @@ Aquí creas perfiles con:
 - Alias o nombre en el polvorín.
 - Dirección MAC Bluetooth.
 - Protocolo: ESC/POS, CPCL o texto plano.
-- Papel: 58 mm, 80 mm o 104 mm.
+- Papel: 2, 3 o 4 pulgadas.
 - El botón para dejarla como impresora activa.
 
 Antes de imprimir, enciende Bluetooth y acepta el permiso de dispositivos cercanos cuando la app lo pida.
@@ -235,6 +223,82 @@ Antes de imprimir, enciende Bluetooth y acepta el permiso de dispositivos cercan
 ### Estado de licencia y versión
 
 Aquí ves el Device ID, el cliente autorizado, la mina, la vigencia, la versión instalada y qué lector y salida de ticket soporta la terminal.
+
+## Recorrido visual por todas las pantallas
+
+Aquí ves cada pantalla con sus contadores y filtros. Es para reconocerla rápido cuando estés frente a la terminal.
+
+### Inicio
+
+La pantalla de arriba muestra la versión y los ocho módulos. Cada tarjeta tiene un ícono, un título y una línea de texto que dice qué hace. Si la licencia está por vencer, aparece un aviso amarillo arriba.
+
+### Encabezado de entrada
+
+Antes de escanear pides proveedor, polvorín y factura. Este encabezado es el que luego aparece en el ticket.
+
+### Escaneo de entrada
+
+La cinta de arriba trae cuatro contadores: **TOTAL**, **CAJAS**, **SACOS** y **CARTUCHOS**. Se actualizan con cada código que entra. Debajo está el encabezado plegable y la lista de códigos capturados.
+
+### Encabezado de despacho
+
+Aquí llenas vale, empresa, lugar, transportista, turno y voladura. Esos datos salen en el vale impreso.
+
+### Escaneo de despacho
+
+Igual que en entrada: cinta con **TOTAL**, **CAJAS**, **SACOS** y **CARTUCHOS**. La lista de abajo muestra cada código con su hora. El total de materiales aparece en negro al final.
+
+### Accesorios
+
+La pantalla de accesorios pide vale, empresa, lugar, transportista, quién recibe, quién entrega, turno y voladura. En el escaneo, la cantidad se cuenta en **PZA** o **MTS**.
+
+### Devolución de alto
+
+Aquí solo indicas quién entrega y quién recibe en el polvorín. Después escaneas lo que regresa. El saldo se suma de nuevo al inventario.
+
+### Inventario y filtros
+
+Arriba ves cinco tarjetas: Alto, Agente, Cordón, Cañuelas y Detonadores. Tocas una y se filtra la lista. Debajo dice cuántos SKUs hay, cuántos están calibrados y cuántos movimientos UUID hay pendientes.
+
+El buscador acepta ID, producto, familia o código `X...`. Los chips de filtro son **Todas**, **Alto Exp.**, **Agente**, **Cordón**, **Cañuelas** y **Detonadores**. Si quitas un filtro, tocas **Todas**.
+
+### Estado vacío
+
+Cuando no hay existencias, sale un recuadro con el mensaje «Polvorín sin existencias registradas» y un botón para cargar el inventario inicial.
+
+### Diálogo de carga rápida
+
+Se abre desde el botón fijo de abajo o desde **Ajustar** en una tarjeta. Pides el producto, eliges carga inicial o ajuste, y capturas cajas, sacos, cartuchos, piezas o metros. Si aplica, también peso y cartuchos por caja.
+
+### Menú de Inventario
+
+Los tres puntos de arriba abren el menú. Ahí está **Licencias**, que lleva a la bóveda. El botón de flechas abre el Centro de Sincronización.
+
+### Licencias guardadas
+
+Muestra el Device ID de la terminal y las tarjetas de licencia. Cada tarjeta dice estado, tipo, vigencia y terminal destino. Las acciones son Instalar, Copiar, Compartir y Eliminar.
+
+### Sincronización
+
+Tiene tres pestañas: **Enviar**, **Recibir** e **Historial**. En Enviar ves los chips de alcance (**Pendientes**, **24 horas**, **Todo**) y los de densidad (**Alta**, **Fácil**). El QR se muestra en pantalla con su número de parte.
+
+### Historial
+
+Lista de vales con folio, fecha y empresa. Abajo está **EXPORTAR CONSOLIDADO**. Si seleccionas varios, el botón cambia a **EXPORTAR SELECCIONADOS**.
+
+### Configuración general
+
+Trae el dispositivo, la licencia, datos de la mina, catálogo, impresoras y versión. Los interruptores de sonido, vibración y destello están arriba.
+
+### Impresoras
+
+Cada perfil muestra alias, MAC, protocolo y ancho en pulgadas. El botón **+ Agregar** crea uno nuevo. El perfil activo es el que se usa al imprimir.
+
+## Ejemplo de ticket
+
+Así se ve un vale de entrada impreso en papel térmico de 3 pulgadas. El margen de abajo deja espacio para las firmas.
+
+Los datos son de ejemplo: vale `E-2026-118`, factura `FAC-2026-118`, 12 cajas de AUSTINITE y 3 sacos de EMULEX. El total es 15 piezas. No copies estos datos en un vale real.
 
 ## Diagramas de flujo y guía visual de controles
 
@@ -314,7 +378,6 @@ Si no sabes para qué sirve un botón, mira aquí.
 | Códigos SEDENA | Tarjeta de producto | Series escaneadas de ese producto. |
 | QR V4 | Sincronización | Eventos firmados con HMAC-SHA256. |
 | Perfil de impresora | Configuración | Protocolo, ancho de papel y MAC Bluetooth. |
-| Modo prueba | Escaneo | Simula lecturas. Se va con la licencia real. |
 | Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias. |
 | Informe de fusión | Sincronización | Cuántos eventos entraron y qué conflictos hay. |
 
@@ -324,7 +387,6 @@ Si no sabes para qué sirve un botón, mira aquí.
 - Revisa el Device ID antes de pedir otra licencia.
 - Exporta la bóveda si vas a cambiar de terminal.
 - Mira los conflictos antes de borrar vales.
-- No uses **MODO PRUEBA** con material real.
 - Si imprimes, revisa que haya papel y batería.
 
 ## Problemas comunes
@@ -344,10 +406,6 @@ Pega la cadena completa, sin espacios ni saltos. Si viene de una terminal vieja,
 ### La licencia aparece vencida
 
 Genera otra en License Master Pro para el Device ID actual y actívala desde Licencias o desde la bóveda.
-
-### Desaparecieron los paneles de prueba
-
-Es lo correcto. Significa que ya hay una licencia real instalada. Los paneles solo estaban con la licencia de fábrica.
 
 ## Soporte
 
