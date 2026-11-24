@@ -335,20 +335,27 @@ fun AlwaysActiveBarcodeField(
     modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    // El gatillo HID envía el código y ENTER en el mismo instante; la recomposición de `value`
+    // puede llegar tarde, así que este estado se actualiza dentro de onValueChange.
+    var liveText by remember { mutableStateOf(value) }
 
     fun submitCurrent(raw: String) {
         val clean = raw.replace("\r", "").replace("\n", "").trim()
         if (clean.isNotEmpty()) {
             onActivityDetected()
             onSubmitBarcode(clean)
+            liveText = ""
             onValueChange("")
         }
         runCatching { focusRequester.requestFocus() }
     }
 
+    fun submitLatest() = submitCurrent(liveText)
+
     OutlinedTextField(
         value = value,
         onValueChange = { incoming ->
+            liveText = incoming
             if (incoming.contains('\n') || incoming.contains('\r')) {
                 val segments = incoming.split('\n', '\r')
                     .map { it.trim() }
@@ -357,6 +364,7 @@ fun AlwaysActiveBarcodeField(
                     onActivityDetected()
                     segments.forEach { seg -> onSubmitBarcode(seg) }
                 }
+                liveText = ""
                 onValueChange("")
                 runCatching { focusRequester.requestFocus() }
             } else {
@@ -397,9 +405,10 @@ fun AlwaysActiveBarcodeField(
         },
         trailingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (value.isNotEmpty()) {
+                if (liveText.isNotEmpty()) {
                     IconButton(
                         onClick = {
+                            liveText = ""
                             onValueChange("")
                             runCatching { focusRequester.requestFocus() }
                         },
@@ -414,8 +423,8 @@ fun AlwaysActiveBarcodeField(
                     }
                 }
                 IconButton(
-                    onClick = { submitCurrent(value) },
-                    enabled = value.isNotBlank(),
+                    onClick = { submitLatest() },
+                    enabled = liveText.isNotBlank(),
                     modifier = Modifier
                         .size(44.dp)
                         .testTag("${testTagName}_submit")
@@ -423,7 +432,7 @@ fun AlwaysActiveBarcodeField(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Capturar código",
-                        tint = if (value.isNotBlank()) accentColor else MineTextMuted,
+                        tint = if (liveText.isNotBlank()) accentColor else MineTextMuted,
                         modifier = Modifier.size(19.dp)
                     )
                 }
@@ -433,8 +442,8 @@ fun AlwaysActiveBarcodeField(
         shape = RoundedCornerShape(10.dp),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
         keyboardActions = KeyboardActions(
-            onSend = { submitCurrent(value) },
-            onDone = { submitCurrent(value) }
+            onSend = { submitLatest() },
+            onDone = { submitLatest() }
         ),
         colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = MineDarkSurface,
@@ -453,9 +462,9 @@ fun AlwaysActiveBarcodeField(
             .onPreviewKeyEvent { keyEvent ->
                 if (
                     (keyEvent.key == Key.Enter || keyEvent.key == Key.NumPadEnter) &&
-                    keyEvent.type == KeyEventType.KeyUp
+                    (keyEvent.type == KeyEventType.KeyDown || keyEvent.type == KeyEventType.KeyUp)
                 ) {
-                    submitCurrent(value)
+                    submitLatest()
                     true
                 } else {
                     false
