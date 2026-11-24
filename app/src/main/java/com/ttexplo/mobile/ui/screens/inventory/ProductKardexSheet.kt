@@ -254,7 +254,7 @@ fun ProductKardexSheet(
                         }
                     }
                 } else {
-                    // PESTAÑA 2: INVENTARIO INDIVIDUAL DE CÓDIGOS SEDENA
+                    // PESTAÑA 2: INVENTARIO INDIVIDUAL DE CÓDIGOS
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -369,9 +369,9 @@ fun ProductKardexSheet(
                         ) {
                             Text(
                                 text = if (codeItems.isEmpty()) {
-                                    "Aún no hay códigos SEDENA trazados para este producto.\nEscanee Entradas, Despachos o Devoluciones para ver las series aquí."
+                                    "Aún no hay códigos registrados para este producto.\nEscanee Entradas, Despachos o Devoluciones para ver las series aquí."
                                 } else {
-                                    "Sin códigos SEDENA para el filtro seleccionado."
+                                    "Sin códigos para el filtro seleccionado."
                                 },
                                 color = MineTextSecondary,
                                 fontSize = 12.sp

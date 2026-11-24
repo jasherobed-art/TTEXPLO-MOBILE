@@ -43,7 +43,7 @@ El engranaje de arriba abre Configuración. Si la licencia está por vencer, ver
 1. Abre **1. Entradas de Alto y Agente**.
 2. Llena proveedor, polvorín y factura o remisión.
 3. Toca **CONTINUAR A ESCANEO**.
-4. Escanea cada código SEDENA. Si el lector falla, escribe el código a mano en el campo de captura.
+4. Escanea cada código. Si el lector falla, escribe el código a mano en el campo de captura.
 5. Mira la cinta de arriba: ahí ves cuántos ítems llevas y cuántas cajas, sacos y cartuchos.
 6. Si te equivocaste en uno, abre el ítem en la lista y corrigelo o bórralo.
 7. Toca **GUARDAR**. Después puedes imprimir el ticket desde la pantalla del vale.
@@ -91,7 +91,7 @@ Aquí ves lo que hay en el polvorín: saldo por familia, KG, PZA, MTS y si hay e
 2. Toca una de las cinco tarjetas para filtrar: Alto, Agente, Cordón, Cañuelas o Detonadores.
 3. Escribe un ID, producto, familia o código `X...` en el buscador.
 4. Toca **Todas** para quitar el filtro.
-5. En una tarjeta de producto, **Kardex** te muestra los movimientos y **Códigos SEDENA** las series.
+5. En una tarjeta de producto, **Kardex** te muestra los movimientos y **Códigos** las series.
 
 ### Hacer carga rápida o ajuste físico
 
@@ -383,7 +383,7 @@ Aquí va lo que más se usa, dibujado. Si estás capacitando a alguien nuevo, em
 Recibir material y dejarlo registrado.
 
 1. Encabezado: proveedor, polvorín y factura.
-2. Escaneo: códigos SEDENA de cajas, sacos o cartuchos.
+2. Escaneo: códigos de cajas, sacos o cartuchos.
 3. Resumen: totales por presentación.
 4. Guardado: el vale queda en el historial.
 5. Impresión: ticket con firma.
@@ -449,7 +449,7 @@ Si no sabes para qué sirve un botón, mira aquí.
 | Cinta de métricas | Escaneo | Totales de ítems, cajas, sacos y cartuchos. |
 | Filtros de familia | Inventario | Muestran Alto, Agente, Cordón, Cañuelas o Detonadores. |
 | Kardex | Tarjeta de producto | Historial de movimientos de ese producto. |
-| Códigos SEDENA | Tarjeta de producto | Series escaneadas de ese producto. |
+| Códigos | Tarjeta de producto | Series escaneadas de ese producto. |
 | QR V4 | Sincronización | Eventos firmados con HMAC-SHA256. |
 | Perfil de impresora | Configuración | Protocolo, ancho de papel y MAC Bluetooth. |
 | Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias. |
@@ -492,7 +492,7 @@ La app es nativa en Kotlin con Jetpack Compose. Todo se guarda en el celular con
 - `domain/model`: modelos de movimientos y clasificación de productos.
 - `domain/inventory`: cálculo de peso unitario, análisis de conflictos y códecs de sincronización.
 - `domain/export`: formato de archivo plano.
-- `domain/scanner`: validación de códigos SEDENA.
+- `domain/scanner`: validación de códigos.
 
 ### Impresión, licencia y escáner
 

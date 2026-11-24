@@ -407,7 +407,7 @@ fun ValeHistoryDetailView(
             // 3. Título del listado de códigos escaneados
             item(key = "codes_header") {
                 Text(
-                    text = "LISTADO DE CÓDIGOS ESCANEADOS (${detail.codes.size})",
+                    text = "LISTADO DE CÓDIGOS (${detail.codes.size})",
                     style = MaterialTheme.typography.labelMedium,
                     color = MineSafetyYellow,
                     fontWeight = FontWeight.Bold,

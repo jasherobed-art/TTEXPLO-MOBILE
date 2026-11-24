@@ -375,7 +375,7 @@ object TicketGenerator {
                 out = out,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -463,7 +463,7 @@ object TicketGenerator {
                 sb = sb,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -585,7 +585,7 @@ object TicketGenerator {
                 startY = y,
                 lineEnd = lineEnd,
                 paperWidth = paperWidth,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = despacho.items
             )
         }
@@ -1026,7 +1026,7 @@ object TicketGenerator {
                 out = out,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -1098,7 +1098,7 @@ object TicketGenerator {
                 sb = sb,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -1191,7 +1191,7 @@ object TicketGenerator {
                 startY = y,
                 lineEnd = lineEnd,
                 paperWidth = paperWidth,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -1292,7 +1292,7 @@ object TicketGenerator {
                 out = out,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -1362,7 +1362,7 @@ object TicketGenerator {
                 sb = sb,
                 w = w,
                 thinDivider = thinDivider,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }
@@ -1453,7 +1453,7 @@ object TicketGenerator {
                 startY = y,
                 lineEnd = lineEnd,
                 paperWidth = paperWidth,
-                sectionTitle = "LISTADO DE CODIGOS ESCANEADOS",
+                sectionTitle = "LISTADO DE CÓDIGOS",
                 items = record.items
             )
         }

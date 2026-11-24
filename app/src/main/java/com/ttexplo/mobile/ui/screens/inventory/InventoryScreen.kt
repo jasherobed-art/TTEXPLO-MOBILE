@@ -482,7 +482,7 @@ fun InventoryScreen(
         )
     }
 
-    // HOJA DE DETALLE POR PRODUCTO (TAB 1: KARDEX | TAB 2: CÓDIGOS SEDENA)
+    // HOJA DE DETALLE POR PRODUCTO (TAB 1: KARDEX | TAB 2: CÓDIGOS)
     selectedKardexProductId?.let { prodId ->
         val productItem = uiState.allItems.find { it.productId == prodId }
         if (productItem != null) {
