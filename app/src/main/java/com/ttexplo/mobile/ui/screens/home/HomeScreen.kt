@@ -257,6 +257,16 @@ fun HomeScreen(
                 onClick = { handleGuardedAction(onNavigateToAccesorios) }
             )
 
+            // 4. Conteo en caja
+            MenuActionCard(
+                title = "4. CONTEO EN CAJA",
+                subtitle = "Cuenta piezas reales, corrige KP y exporta el TXT",
+                accentColor = MineSuccessGreenLight,
+                icon = Icons.Default.Inventory2,
+                isCompact = true,
+                onClick = { handleGuardedAction(onNavigateToBoxCount) }
+            )
+
             HorizontalDivider(color = MineBorderGray, thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
 
             Text(
@@ -266,9 +276,9 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            // 4. Devolución de Alto y Agente
+            // 5. Devolución de Alto y Agente
             MenuActionCard(
-                title = "4. Devolución de Alto y Agente",
+                title = "5. Devolución de Alto y Agente",
                 subtitle = "Reingreso de explosivos y agentes sobrantes a polvorín",
                 accentColor = MineAgentBlue,
                 icon = Icons.Default.AssignmentReturn,
@@ -276,9 +286,9 @@ fun HomeScreen(
                 onClick = { handleGuardedAction(onNavigateToDevoluciones) }
             )
 
-            // 5. Devolución de Accesorios
+            // 6. Devolución de Accesorios
             MenuActionCard(
-                title = "5. Devolución de Accesorios",
+                title = "6. Devolución de Accesorios",
                 subtitle = "Reintegro de detonadores y accesorios con cantidad negativa (-)",
                 accentColor = MineAgentCyan,
                 icon = Icons.Default.AssignmentReturn,
@@ -286,9 +296,9 @@ fun HomeScreen(
                 onClick = { handleGuardedAction(onNavigateToDevolucionAccesorios) }
             )
 
-            // 6. Inventario en Polvorín (En Vivo)
+            // 7. Inventario en Polvorín (En Vivo)
             MenuActionCard(
-                title = "6. Inventario en Polvorín (En Vivo)",
+                title = "7. Inventario en Polvorín (En Vivo)",
                 subtitle = "Existencias en KG, PZA y MTS · Carga rápida, peso unitario y Kardex",
                 accentColor = MineSuccessGreenLight,
                 icon = Icons.Default.Inventory2,
@@ -296,9 +306,9 @@ fun HomeScreen(
                 onClick = { handleGuardedAction(onNavigateToInventory) }
             )
 
-            // 7. Historial de Vales
+            // 8. Historial de Vales
             MenuActionCard(
-                title = "7. Historial de Vales & Consolidado",
+                title = "8. Historial de Vales & Consolidado",
                 subtitle = "Consultar vales guardados y exportar en un solo archivo",
                 accentColor = MineSafetyYellow,
                 icon = Icons.Default.History,
@@ -306,24 +316,14 @@ fun HomeScreen(
                 onClick = onNavigateToHistory
             )
 
-            // 8. Configuración del Sistema
+            // 9. Configuración del Sistema
             MenuActionCard(
-                title = "8. Configuración y Personalización",
+                title = "9. Configuración y Personalización",
                 subtitle = "Impresora térmica, datos de mina, catálogo y exportar",
                 accentColor = MineAgentCyan,
                 icon = Icons.Default.Settings,
                 isCompact = true,
                 onClick = onNavigateToSettings
-            )
-
-            // 9. Conteo de cajas
-            MenuActionCard(
-                title = "9. Conteo de cajas",
-                subtitle = "Cuenta piezas reales, corrige KP y exporta el TXT",
-                accentColor = MineSuccessGreenLight,
-                icon = Icons.Default.Inventory2,
-                isCompact = true,
-                onClick = { handleGuardedAction(onNavigateToBoxCount) }
             )
 
             Spacer(modifier = Modifier.height(10.dp))

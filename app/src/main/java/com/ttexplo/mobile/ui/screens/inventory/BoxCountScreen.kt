@@ -39,6 +39,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     var message by remember { mutableStateOf("Escanea o escribe el código de la caja.") }
     var showDuplicate by remember { mutableStateOf(false) }
     var pendingMismatch by remember { mutableStateOf<BoxCountRecord?>(null) }
+    var showExitConfirm by remember { mutableStateOf(false) }
 
     fun handleScan(raw: String) {
         val parsed = BoxCountParser.parse(raw.trim()) ?: BoxCountParser.parseCodeOnly(raw.trim())
@@ -46,7 +47,10 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
             message = "Código de caja inválido (debe tener 30 dígitos)."
             return
         }
-        if (records.any { it.code == parsed.code }) {
+        if (records.any { it.code == parsed.code } ||
+            draft?.code == parsed.code ||
+            pendingMismatch?.code == parsed.code
+        ) {
             showDuplicate = true
             return
         }
@@ -57,12 +61,16 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     }
 
     DisposableEffect(context) {
-        val receiver = ZebraScannerReceiver { scanned -> handleScan(scanned) }
+        val receiver = ZebraScannerReceiver { scanned ->
+            if (!showDuplicate && pendingMismatch == null && !showExitConfirm) handleScan(scanned)
+        }
         ZebraScannerReceiver.register(context, receiver)
         onDispose { ZebraScannerReceiver.unregister(context, receiver) }
     }
 
-    BackHandler { onNavigateBack() }
+    BackHandler {
+        if (records.isNotEmpty() || draft != null) showExitConfirm = true else onNavigateBack()
+    }
 
     fun addRecord(record: BoxCountRecord) {
         records = listOf(record) + records
@@ -97,9 +105,11 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("9. Conteo de cajas", fontWeight = FontWeight.Bold) },
+                title = { Text("4. CONTEO EN CAJA", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        if (records.isNotEmpty() || draft != null) showExitConfirm = true else onNavigateBack()
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
                     }
                 }
@@ -118,7 +128,9 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
             AlwaysActiveBarcodeField(
                 value = barcodeInput,
                 onValueChange = { barcodeInput = it },
-                onSubmitBarcode = { handleScan(it) },
+                onSubmitBarcode = {
+                    if (!showDuplicate && pendingMismatch == null && !showExitConfirm) handleScan(it)
+                },
                 accentColor = MineSafetyYellow,
                 placeholderText = "Escanear código de caja + ENTER...",
                 focusRequester = focusRequester,
@@ -198,7 +210,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { pendingMismatch = null },
             title = { Text("REVISA EL CONTEO") },
-            text = { Text("Tecleaste ${record.pieces} piezas pero el código indica ${draft?.rangeCount}. ¿Es correcto?") },
+            text = { Text("Tecleaste ${record.pieces} piezas pero el código indica ${record.rangeCount}. ¿Es correcto?") },
             confirmButton = {
                 TextButton(onClick = {
                     pendingMismatch = null
@@ -206,6 +218,21 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                 }) { Text("Sí, son ${record.pieces}") }
             },
             dismissButton = { TextButton(onClick = { pendingMismatch = null }) { Text("Corregir") } }
+        )
+    }
+
+    if (showExitConfirm) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirm = false },
+            title = { Text("¿SALIR DEL CONTEO?") },
+            text = { Text("Se perderán ${records.size} conteos que aún no exportaste.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showExitConfirm = false
+                    onNavigateBack()
+                }) { Text("Salir") }
+            },
+            dismissButton = { TextButton(onClick = { showExitConfirm = false }) { Text("Seguir contando") } }
         )
     }
 }

@@ -123,7 +123,7 @@ También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 
 ## Contar cajas
 
-1. Abre **9. Conteo de cajas** desde la pantalla de inicio.
+1. Abre **4. CONTEO EN CAJA** desde la pantalla de inicio.
 2. Escanea el código de la caja o escríbelo en el campo de captura.
 3. La app muestra el código y cuántas piezas indica el rango. Ese número es solo una referencia.
 4. Cuenta físicamente las piezas de la caja. Escribe la línea o KP y la cantidad contada. Puedes corregir ambos campos.
