@@ -198,7 +198,7 @@ class ScanValidator(
                 isValid = false,
                 empaque = empaque,
                 unknownId = null,
-                message = "Fecha de fabricación inválida en el código (${formatManufacturingDate(fechaStr)}). Debe ser posterior a 2020 y un día válido.",
+                message = "Fecha de fabricación inválida en el código (${formatManufacturingDate(fechaStr)}). Fecha dentro del rango permitido y un día válido.",
                 invalidDate = fechaStr
             )
         }

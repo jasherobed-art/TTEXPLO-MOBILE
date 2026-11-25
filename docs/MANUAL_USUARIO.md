@@ -52,7 +52,7 @@ Si se te cierra la app a mitad de vale, no perdiste lo capturado. Al volver ver�
 
 ### Si el código trae la fecha mal
 
-Si el lector captura un código con una fecha de fabricación en 2020 o antes, o con un día que no existe, la app no lo da de alta. Verás **FECHA INCONSISTENTE EN EL CÓDIGO** con el código leído y la fecha que detectó, por ejemplo **19/08/96**.
+Si el lector captura un código con una fecha de fabricación fuera del rango permitido o con un día que no existe, la app no lo da de alta. Verás **FECHA INCONSISTENTE EN EL CÓDIGO** con el código leído y la fecha que detectó, por ejemplo **19/08/96**.
 
 Si dudas de la lectura, toca **VOLVER A LEER EL CÓDIGO** y escanea de nuevo la caja o el saco.
 
