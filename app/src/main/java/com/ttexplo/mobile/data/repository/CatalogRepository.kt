@@ -70,6 +70,7 @@ class CatalogRepositoryImpl(
                 }
                 val resolvedUnitWeight = when {
                     csvUnitWeight > 0.0 -> csvUnitWeight
+                    pu > 0.0 -> pu
                     resolvedCartridges > 0 && peso > 0.0 ->
                         BoxUnitWeightCalculator.calculateUnitWeightKg(peso, resolvedCartridges) ?: 0.0
                     existing != null && existing.pesoUnitarioKg > 0.0 -> existing.pesoUnitarioKg
