@@ -64,6 +64,7 @@ import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.domain.scanner.ScanResult
 import com.ttexplo.mobile.domain.scanner.ScanValidator
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
+import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
 import com.ttexplo.mobile.printer.BluetoothPrinterManager
 import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.printer.ValePrintHelper
@@ -71,6 +72,7 @@ import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.CompactScanMetricsRibbon
+import com.ttexplo.mobile.ui.common.DateCorrectionDialog
 import com.ttexplo.mobile.ui.common.DuplicateBadgeChip
 import com.ttexplo.mobile.ui.common.DuplicateCodeAlert
 import com.ttexplo.mobile.ui.common.DummyExplosivesScannerBar
@@ -356,8 +358,9 @@ fun DevolucionScreen(
     var catalogAddInitialId by remember { mutableStateOf<String?>(null) }
     var itemToDelete by remember { mutableStateOf<BarcodeItem?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
+    var dateCorrectionTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    val anyDialogOpen = showSavedReprintDialog || showPrinterPickerDialog || showCatalogDialog || itemToDelete != null || showExitConfirm
+    val anyDialogOpen = showSavedReprintDialog || showPrinterPickerDialog || showCatalogDialog || itemToDelete != null || showExitConfirm || dateCorrectionTarget != null
 
     fun refreshPrinters() {
         savedProfiles = viewModel.settingsRepository.getPrinterProfiles()
@@ -466,12 +469,22 @@ fun DevolucionScreen(
 
     DisposableEffect(context) {
         val receiver = ZebraScannerReceiver { scannedCode ->
-            isHeaderExpanded = false
-            viewModel.onScanned(scannedCode)
+            if (dateCorrectionTarget == null) {
+                isHeaderExpanded = false
+                viewModel.onScanned(scannedCode)
+            }
         }
         ZebraScannerReceiver.register(context, receiver)
         onDispose {
             ZebraScannerReceiver.unregister(context, receiver)
+        }
+    }
+
+    LaunchedEffect(latestScanResult) {
+        val result = latestScanResult
+        val invalidDate = result?.invalidDate
+        if (result != null && invalidDate != null) {
+            dateCorrectionTarget = result.rawBarcode to invalidDate
         }
     }
 
@@ -651,7 +664,9 @@ fun DevolucionScreen(
                 AlwaysActiveBarcodeField(
                     value = manualInput,
                     onValueChange = { manualInput = it },
-                    onSubmitBarcode = { code -> viewModel.onScanned(code) },
+                    onSubmitBarcode = { code ->
+                        if (dateCorrectionTarget == null) viewModel.onScanned(code)
+                    },
                     accentColor = MineAgentCyan,
                     placeholderText = "Escanear o escribir devolución + ENTER...",
                     focusRequester = barcodeFocusRequester,
@@ -1004,6 +1019,18 @@ fun DevolucionScreen(
                 onNavigateBack()
             },
             onDismiss = { showExitConfirm = false }
+        )
+    }
+
+    dateCorrectionTarget?.let { (rawCode, detectedDate) ->
+        DateCorrectionDialog(
+            detectedDate = detectedDate,
+            onConfirm = { correctedDate ->
+                val correctedCode = correctBarcodeDate(rawCode, correctedDate)
+                dateCorrectionTarget = null
+                if (correctedCode != null) viewModel.onScanned(correctedCode)
+            },
+            onDismiss = { dateCorrectionTarget = null }
         )
     }
 }

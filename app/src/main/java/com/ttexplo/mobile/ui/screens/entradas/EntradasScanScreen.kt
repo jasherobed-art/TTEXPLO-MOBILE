@@ -47,11 +47,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
+import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
 import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.CompactScanMetricsRibbon
+import com.ttexplo.mobile.ui.common.DateCorrectionDialog
 import com.ttexplo.mobile.ui.common.DuplicateBadgeChip
 import com.ttexplo.mobile.ui.common.DummyExplosivesScannerBar
 import com.ttexplo.mobile.ui.common.ExitScanConfirmDialog
@@ -99,8 +101,9 @@ fun EntradasScanScreen(
     var showExitConfirm by remember { mutableStateOf(false) }
     var selectedFilterKey by remember { mutableStateOf<String?>(null) }
     var lastHandledDuplicateEventId by remember { mutableStateOf<Long?>(null) }
+    var dateCorrectionTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    val anyDialogOpen = showSavedReprintDialog || showPrinterPickerDialog || showCatalogDialog || itemToDelete != null || showExitConfirm
+    val anyDialogOpen = showSavedReprintDialog || showPrinterPickerDialog || showCatalogDialog || itemToDelete != null || showExitConfirm || dateCorrectionTarget != null
 
     fun refreshPrinters() {
         savedProfiles = viewModel.settingsRepository.getPrinterProfiles()
@@ -203,12 +206,22 @@ fun EntradasScanScreen(
 
     DisposableEffect(context) {
         val receiver = ZebraScannerReceiver { scannedBarcode ->
-            isHeaderExpanded = false
-            viewModel.onBarcodeScanned(scannedBarcode)
+            if (dateCorrectionTarget == null) {
+                isHeaderExpanded = false
+                viewModel.onBarcodeScanned(scannedBarcode)
+            }
         }
         ZebraScannerReceiver.register(context, receiver)
         onDispose {
             ZebraScannerReceiver.unregister(context, receiver)
+        }
+    }
+
+    LaunchedEffect(uiState.latestScanResult) {
+        val result = uiState.latestScanResult
+        val invalidDate = result?.invalidDate
+        if (result != null && invalidDate != null) {
+            dateCorrectionTarget = result.rawBarcode to invalidDate
         }
     }
 
@@ -405,7 +418,9 @@ fun EntradasScanScreen(
                 AlwaysActiveBarcodeField(
                     value = manualInput,
                     onValueChange = { manualInput = it },
-                    onSubmitBarcode = { code -> viewModel.onBarcodeScanned(code) },
+                    onSubmitBarcode = { code ->
+                        if (dateCorrectionTarget == null) viewModel.onBarcodeScanned(code)
+                    },
                     accentColor = MineSafetyYellow,
                     placeholderText = "Escanear o escribir código + ENTER...",
                     focusRequester = barcodeFocusRequester,
@@ -685,6 +700,18 @@ fun EntradasScanScreen(
                 onNavigateBack()
             },
             onDismiss = { showExitConfirm = false }
+        )
+    }
+
+    dateCorrectionTarget?.let { (rawCode, detectedDate) ->
+        DateCorrectionDialog(
+            detectedDate = detectedDate,
+            onConfirm = { correctedDate ->
+                val correctedCode = correctBarcodeDate(rawCode, correctedDate)
+                dateCorrectionTarget = null
+                if (correctedCode != null) viewModel.onBarcodeScanned(correctedCode)
+            },
+            onDismiss = { dateCorrectionTarget = null }
         )
     }
 }
