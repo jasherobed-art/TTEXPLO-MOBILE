@@ -715,6 +715,7 @@ fun DespachoScanScreen(
 
     dateCorrectionTarget?.let { (rawCode, detectedDate) ->
         DateCorrectionDialog(
+            rawCode = rawCode,
             detectedDate = detectedDate,
             onConfirm = { correctedDate ->
                 val correctedCode = correctBarcodeDate(rawCode, correctedDate)

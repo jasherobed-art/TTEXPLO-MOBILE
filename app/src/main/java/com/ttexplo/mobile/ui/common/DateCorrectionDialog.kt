@@ -13,9 +13,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ttexplo.mobile.domain.scanner.isValidManufacturingDate
 import com.ttexplo.mobile.ui.theme.*
@@ -23,6 +27,7 @@ import com.ttexplo.mobile.ui.theme.*
 /** Aviso de fecha de fabricación sospechosa: permite teclear solo los 6 dígitos DDMMYY. */
 @Composable
 fun DateCorrectionDialog(
+    rawCode: String,
     detectedDate: String,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
@@ -41,31 +46,51 @@ fun DateCorrectionDialog(
         },
         title = {
             Text(
-                text = "FECHA SOSPECHOSA EN EL CÓDIGO",
+                text = "FECHA INCONSISTENTE EN EL CÓDIGO",
                 color = MineTextPrimary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
         },
         text = {
-            Text(
-                text = "Detectada: $formattedDetected\nDebe ser entre 2020 y 2030 y un día válido.",
-                color = MineTextSecondary,
-                fontSize = 13.sp
-            )
-            OutlinedTextField(
-                value = input.value,
-                onValueChange = { value -> input.value = value.filter { it.isDigit() }.take(6) },
-                label = { Text("Fecha correcta (DDMMYY)") },
-                placeholder = { Text("DDMMYY") },
-                maxLines = 1,
-                modifier = Modifier.testTag("date_correction_input"),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MineSafetyYellow,
-                    focusedTextColor = MineTextPrimary,
-                    unfocusedTextColor = MineTextPrimary
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Código leído: $rawCode",
+                    color = MineTextPrimary,
+                    fontSize = 13.sp
                 )
-            )
+                Text(
+                    text = "Fecha que lee: $formattedDetected",
+                    color = MineTextPrimary,
+                    fontSize = 13.sp
+                )
+                Text(
+                    text = "Debe ser entre 2020 y 2030 y un día válido.",
+                    color = MineTextSecondary,
+                    fontSize = 13.sp
+                )
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("date_correction_reread")
+                ) {
+                    Text("Volver a leer el código", color = MineSafetyYellow)
+                }
+                OutlinedTextField(
+                    value = input.value,
+                    onValueChange = { value -> input.value = value.filter { it.isDigit() }.take(6) },
+                    label = { Text("Fecha correcta (DDMMYY)") },
+                    placeholder = { Text("DDMMYY") },
+                    maxLines = 1,
+                    modifier = Modifier.testTag("date_correction_input"),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MineSafetyYellow,
+                        focusedTextColor = MineTextPrimary,
+                        unfocusedTextColor = MineTextPrimary
+                    )
+                )
+            }
         },
         confirmButton = {
             Button(
