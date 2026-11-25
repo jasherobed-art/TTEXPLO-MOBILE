@@ -50,6 +50,12 @@ El engranaje de arriba abre Configuración. Si la licencia está por vencer, ver
 
 Si se te cierra la app a mitad de vale, no perdiste lo capturado. Al volver verás **Vale en progreso recuperado**.
 
+### Si el código trae la fecha mal
+
+Si el lector captura un código con una fecha de fabricación fuera de 2020-2030 o con un día que no existe, la app no lo da de alta. Verás **FECHA SOSPECHOSA EN EL CÓDIGO** con la fecha detectada, por ejemplo **19/08/96**.
+
+IMPORTANTE: escribe los 6 dígitos de la fecha correcta en formato `DDMMYY` y toca **CORREGIR**. La app sustituye solo esos dígitos y captura el código corregido. Si tocas **CANCELAR**, la lectura no se agrega al vale.
+
 ## Registrar una salida de alto y agente
 
 1. Abre **2. Salidas de Alto y Agente**.
