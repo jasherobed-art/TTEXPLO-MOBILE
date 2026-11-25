@@ -121,6 +121,18 @@ También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 2. Elige **Licencias**.
 3. Verás el Device ID de esta terminal y las licencias guardadas.
 
+## Contar cajas
+
+1. Abre **9. Conteo de cajas** desde la pantalla de inicio.
+2. Escanea el código de la caja o escríbelo en el campo de captura.
+3. La app muestra el código y cuántas piezas indica el rango. Ese número es solo una referencia.
+4. Cuenta físicamente las piezas de la caja. Escribe la línea o KP y la cantidad contada. Puedes corregir ambos campos.
+5. Toca **CONFIRMAR CONTEO**. Si tu número no coincide con el del rango, la app te pregunta si es correcto antes de agregarlo.
+6. Si lees la misma caja dos veces, verás **CÓDIGO REPETIDO** y la segunda lectura no se agrega.
+7. Toca **EXPORTAR TXT** para guardar el archivo con el código, KP, piezas y fecha y hora de cada caja.
+
+IMPORTANTE: el peso por pieza se calcula con 25 kg entre las piezas que contaste. Si te equivocas al contar, corrige el número antes de confirmar.
+
 ## Bóveda de licencias
 
 Aquí guardas las licencias que generaste en License Master Pro. La app no fabrica licencias.
