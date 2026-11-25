@@ -20,6 +20,17 @@ class BoxCountParserTest {
     }
 
     @Test
+    fun parsesCodeOnlyWithEmptyKpAndRangePieces() {
+        val record = BoxCountParser.parseCodeOnly("CAJ310071026008799008854005399631")
+
+        assertThat(record).isNotNull()
+        assertThat(record!!.code).isEqualTo("310071026008799008854005399631")
+        assertThat(record.kp).isEmpty()
+        assertThat(record.pieces).isEqualTo(55)
+        assertThat(record.rangeCount).isEqualTo(55)
+    }
+
+    @Test
     fun rejectsBlankKpOutOfRangePiecesAndNonDigitCode() {
         assertThat(BoxCountParser.parse("CAJ310071026008799008854005399631,,55,2026-11-25 12:41:56")).isNull()
         assertThat(BoxCountParser.parse("CAJ310071026008799008854005399631,2,0,2026-11-25 12:41:56")).isNull()
