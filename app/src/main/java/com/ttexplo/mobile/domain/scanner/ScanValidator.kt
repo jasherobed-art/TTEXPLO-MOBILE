@@ -9,8 +9,10 @@ fun isValidManufacturingDate(dateStr: String): Boolean {
     if (dateStr.length != 6 || !dateStr.all { it.isDigit() }) return false
     val day = dateStr.substring(0, 2).toIntOrNull() ?: return false
     val month = dateStr.substring(2, 4).toIntOrNull() ?: return false
-    val year = 2000 + (dateStr.substring(4, 6).toIntOrNull() ?: return false)
-    if (year !in 2020..2030) return false
+    val shortYear = dateStr.substring(4, 6).toIntOrNull() ?: return false
+    // Dos dígitos: 70-99 son del siglo pasado (96 = 1996); 00-69 son del presente (31 = 2031).
+    val year = if (shortYear >= 70) 1900 + shortYear else 2000 + shortYear
+    if (year <= 2020) return false
     return try {
         LocalDate.of(year, month, day)
         true
@@ -196,7 +198,7 @@ class ScanValidator(
                 isValid = false,
                 empaque = empaque,
                 unknownId = null,
-                message = "Fecha de fabricación inválida en el código (${formatManufacturingDate(fechaStr)}). Debe ser entre 2020 y 2030 y un día válido.",
+                message = "Fecha de fabricación inválida en el código (${formatManufacturingDate(fechaStr)}). Debe ser posterior a 2020 y un día válido.",
                 invalidDate = fechaStr
             )
         }

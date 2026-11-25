@@ -65,7 +65,7 @@ fun DateCorrectionDialog(
                     fontSize = 13.sp
                 )
                 Text(
-                    text = "Debe ser entre 2020 y 2030 y un día válido.",
+                    text = "Debe ser posterior a 2020 y un día válido.",
                     color = MineTextSecondary,
                     fontSize = 13.sp
                 )

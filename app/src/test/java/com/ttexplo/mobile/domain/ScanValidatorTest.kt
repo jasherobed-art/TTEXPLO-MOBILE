@@ -281,6 +281,14 @@ class ScanValidatorTest {
     }
 
     @Test
+    fun yearsAfter2020AreAcceptedWithoutUpperLimit() = runBlocking {
+        assertThat(scanValidator.processScan("298010131004876376", emptySet()).isValid).isTrue()
+        assertThat(scanValidator.processScan("298010160004876376", emptySet()).isValid).isTrue()
+        assertThat(scanValidator.processScan("298010120004876376", emptySet()).isValid).isFalse()
+        assertThat(scanValidator.processScan("298010199004876376", emptySet()).isValid).isFalse()
+    }
+
+    @Test
     fun impossibleDatesAreRejectedAndLeapDayIsReal() = runBlocking {
         assertThat(scanValidator.processScan("298310226004876376", emptySet()).isValid).isFalse()
         assertThat(scanValidator.processScan("298290224004876376", emptySet()).isValid).isTrue()
