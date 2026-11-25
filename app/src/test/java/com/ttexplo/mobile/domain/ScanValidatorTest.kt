@@ -6,6 +6,7 @@ import com.ttexplo.mobile.domain.model.ProductInfo
 import com.ttexplo.mobile.domain.model.ProductType
 import com.ttexplo.mobile.domain.scanner.ScanValidator
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
+import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
 import com.ttexplo.mobile.ui.common.DummyBarcodeGenerator
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -269,5 +270,45 @@ class ScanValidatorTest {
         val forbiddenAcc = scanValidator.processScan(DummyBarcodeGenerator.sampleForbiddenAccessory(), emptySet(), allowAccessories = false)
         assertThat(forbiddenAcc.isValid).isFalse()
         assertThat(forbiddenAcc.message).contains("Salida de Accesorios")
+    }
+
+    @Test
+    fun reportedCodeWithYear96IsRejectedAndExposesDetectedDate() = runBlocking {
+        val result = scanValidator.processScan("298190896004876376", emptySet())
+        assertThat(result.isValid).isFalse()
+        assertThat(result.invalidDate).isEqualTo("190896")
+        assertThat(result.message).contains("19/08/96")
+    }
+
+    @Test
+    fun impossibleDatesAreRejectedAndLeapDayIsReal() = runBlocking {
+        assertThat(scanValidator.processScan("298310226004876376", emptySet()).isValid).isFalse()
+        assertThat(scanValidator.processScan("298290224004876376", emptySet()).isValid).isTrue()
+        assertThat(scanValidator.processScan("298290225004876376", emptySet()).isValid).isFalse()
+    }
+
+    @Test
+    fun correctBarcodeDateReplacesOnlyDateDigits() {
+        assertThat(correctBarcodeDate("298190896004876376", "190826"))
+            .isEqualTo("298190826004876376")
+        assertThat(correctBarcodeDate("315150826026293026360005323457", "270826"))
+            .isEqualTo("315270826026293026360005323457")
+        assertThat(correctBarcodeDate("0562101024112934", "220826"))
+            .isEqualTo("0562220826112934")
+        assertThat(correctBarcodeDate("298190896004876376", "190996")).isNull()
+        assertThat(correctBarcodeDate("05611110240605501", "220826")).isNull()
+    }
+
+    @Test
+    fun correctedCodeIsAccepted() = runBlocking {
+        val corrected = correctBarcodeDate("298190896004876376", "190826")!!
+        val result = scanValidator.processScan(corrected, emptySet())
+        assertThat(result.isValid).isTrue()
+        assertThat(result.invalidDate).isNull()
+    }
+
+    @Test
+    fun seventeenDigitCartridgeKeepsSkippingDateValidation() = runBlocking {
+        assertThat(scanValidator.processScan("05611110240605501", emptySet()).isValid).isTrue()
     }
 }

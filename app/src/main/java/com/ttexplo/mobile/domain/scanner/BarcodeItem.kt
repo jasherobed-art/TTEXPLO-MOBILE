@@ -31,7 +31,8 @@ data class ScanResult(
     val unknownId: String? = null,
     val message: String,
     val detectedCartridgesPerBox: Int? = null,
-    val calculatedUnitWeightKg: Double? = null
+    val calculatedUnitWeightKg: Double? = null,
+    val invalidDate: String? = null
 )
 
 object DateTimeUtils {

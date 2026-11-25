@@ -2,6 +2,32 @@ package com.ttexplo.mobile.domain.scanner
 
 import com.ttexplo.mobile.data.repository.CatalogRepository
 import com.ttexplo.mobile.domain.model.ProductType
+import java.time.DateTimeException
+import java.time.LocalDate
+
+fun isValidManufacturingDate(dateStr: String): Boolean {
+    if (dateStr.length != 6 || !dateStr.all { it.isDigit() }) return false
+    val day = dateStr.substring(0, 2).toIntOrNull() ?: return false
+    val month = dateStr.substring(2, 4).toIntOrNull() ?: return false
+    val year = 2000 + (dateStr.substring(4, 6).toIntOrNull() ?: return false)
+    if (year !in 2020..2030) return false
+    return try {
+        LocalDate.of(year, month, day)
+        true
+    } catch (_: DateTimeException) {
+        false
+    }
+}
+
+fun correctBarcodeDate(rawBarcode: String, correctedDate: String): String? {
+    if (!isValidManufacturingDate(correctedDate)) return null
+    val offset = when (rawBarcode.length) {
+        18, 30 -> 3
+        16 -> 4
+        else -> return null
+    }
+    return rawBarcode.substring(0, offset) + correctedDate + rawBarcode.substring(offset + 6)
+}
 
 class ScanValidator(
     private val catalogRepository: CatalogRepository
@@ -161,7 +187,7 @@ class ScanValidator(
             TipoEmpaque.PIEZA -> if (trimmed.length == 16) trimmed.substring(4, 10) else null
             else -> null
         }
-        if (fechaStr != null && !isValidPlausibleDate(fechaStr)) {
+        if (fechaStr != null && !isValidManufacturingDate(fechaStr)) {
             return ScanResult(
                 rawBarcode = trimmed,
                 timestamp = timestamp,
@@ -170,7 +196,8 @@ class ScanValidator(
                 isValid = false,
                 empaque = empaque,
                 unknownId = null,
-                message = "Fecha de fabricación inválida en el código ('$fechaStr'). Verifique día y mes."
+                message = "Fecha de fabricación inválida en el código (${formatManufacturingDate(fechaStr)}). Debe ser entre 2020 y 2030 y un día válido.",
+                invalidDate = fechaStr
             )
         }
 
@@ -228,17 +255,7 @@ class ScanValidator(
         )
     }
 
-    private fun isValidPlausibleDate(dateStr: String): Boolean {
-        if (dateStr.length != 6 || !dateStr.all { it.isDigit() }) return false
-        val p1 = dateStr.substring(0, 2).toIntOrNull() ?: return false
-        val p2 = dateStr.substring(2, 4).toIntOrNull() ?: return false
-        val p3 = dateStr.substring(4, 6).toIntOrNull() ?: return false
-
-        // DDMMYY (Día 1..31, Mes 1..12)
-        val isDDMMYY = (p1 in 1..31) && (p2 in 1..12)
-        // YYMMDD (Mes 1..12, Día 1..31)
-        val isYYMMDD = (p2 in 1..12) && (p3 in 1..31)
-
-        return isDDMMYY || isYYMMDD
-    }
 }
+
+private fun formatManufacturingDate(dateStr: String): String =
+    "${dateStr.substring(0, 2)}/${dateStr.substring(2, 4)}/${dateStr.substring(4, 6)}"
