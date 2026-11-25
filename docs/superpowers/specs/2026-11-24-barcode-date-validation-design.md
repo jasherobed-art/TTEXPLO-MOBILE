@@ -29,8 +29,7 @@ reescribir los 18 dígitos.
   `ScanResult`.
 - Las tres pantallas ya tienen un flag `anyDialogOpen` que inhibe el gatillo del lector; el
   diálogo nuevo debe sumarse a ese flag para no apilar lecturas mientras está abierto.
-- Se mantiene la versión `2.6.0 / Build 21` del APK, como en los cambios anteriores del
-  ticket.
+- El APK pasa a `2.6.0 / Build 22` (sube solo `versionCode`, por petición del operador).
 - Idioma del manual: español de México, con `IMPORTANTE:` (no `IMPORTANT`).
 
 ## Enfoques considerados
@@ -96,7 +95,8 @@ pasando como hoy. Se verifica también que la corrección no altera el prefijo n
   fecha, cómo teclear los 6 dígitos y que el código corregido es el que se guarda.
 - Regenerar HTML y PDF con el procedimiento ya usado.
 - Correr las pruebas del validador y la suite, commitear y pushear a `main`, reconstruir el
-  APK versionado e instalarlo en la terminal `b7411c57`.
+  APK como `app2.6.0-ttexplo.apk` con `versionCode = 22` e instalarlo en la terminal
+  `b7411c57`.
 
 ## Lo que queda al implementador
 
