@@ -42,6 +42,7 @@ import com.ttexplo.mobile.ui.screens.entradas.EntradasScanScreen
 import com.ttexplo.mobile.ui.screens.entradas.EntradasViewModel
 import com.ttexplo.mobile.ui.screens.history.ValesHistoryScreen
 import com.ttexplo.mobile.ui.screens.home.HomeScreen
+import com.ttexplo.mobile.ui.screens.inventory.BoxCountScreen
 import com.ttexplo.mobile.ui.screens.inventory.InventoryScreen
 import com.ttexplo.mobile.ui.screens.inventory.InventorySyncScreen
 import com.ttexplo.mobile.ui.screens.license.LicenseScreen
@@ -131,6 +132,7 @@ fun TTExploAppNavigation() {
                 onNavigateToDevolucionAccesorios = { navController.navigate(Screen.DevolucionAccesoriosHeader.route) },
                 onNavigateToDevoluciones = { navController.navigate(Screen.Devoluciones.createRoute()) },
                 onNavigateToInventory = { navController.navigate(Screen.Inventory.route) },
+                onNavigateToBoxCount = { navController.navigate(Screen.BoxCount.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToHistory = { navController.navigate(Screen.ValesHistory.route) },
                 onNavigateToLicense = { navController.navigate(Screen.License.createRoute(canBack = true)) }
@@ -413,6 +415,11 @@ fun TTExploAppNavigation() {
                     backStackEntry.savedStateHandle.remove<String>("inspect_product_id")
                 }
             )
+        }
+
+        // 9. CONTEO DE CAJAS
+        composable(Screen.BoxCount.route) {
+            BoxCountScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         // 8.6 CENTRO DE SINCRONIZACIÓN MULTI-ESCÁNER (QR ZEBRA + JSON)

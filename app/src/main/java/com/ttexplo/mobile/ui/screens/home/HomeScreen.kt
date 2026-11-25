@@ -36,6 +36,7 @@ fun HomeScreen(
     onNavigateToDevoluciones: () -> Unit,
     onNavigateToDevolucionAccesorios: () -> Unit = {},
     onNavigateToInventory: () -> Unit = {},
+    onNavigateToBoxCount: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
     onNavigateToHistory: () -> Unit = {},
     onNavigateToLicense: () -> Unit = {}
@@ -313,6 +314,16 @@ fun HomeScreen(
                 icon = Icons.Default.Settings,
                 isCompact = true,
                 onClick = onNavigateToSettings
+            )
+
+            // 9. Conteo de cajas
+            MenuActionCard(
+                title = "9. Conteo de cajas",
+                subtitle = "Cuenta piezas reales, corrige KP y exporta el TXT",
+                accentColor = MineSuccessGreenLight,
+                icon = Icons.Default.Inventory2,
+                isCompact = true,
+                onClick = { handleGuardedAction(onNavigateToBoxCount) }
             )
 
             Spacer(modifier = Modifier.height(10.dp))

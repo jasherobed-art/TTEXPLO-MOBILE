@@ -108,6 +108,7 @@ sealed class Screen(val route: String) {
     object CatalogManagement : Screen("catalog_management")
     object ValesHistory : Screen("vales_history")
     object Inventory : Screen("inventory")
+    object BoxCount : Screen("box_count")
     object InventorySync : Screen("inventory_sync?tab={tab}") {
         fun createRoute(tab: Int = 0): String = "inventory_sync?tab=$tab"
     }
