@@ -147,8 +147,8 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
         sound.playSuccess()
         flashEvent = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
         draft = parsed
-        kpInput = parsed.kp
-        piecesInput = parsed.pieces.toString()
+        if (kpInput.isEmpty()) kpInput = parsed.kp
+        if (piecesInput.isEmpty()) piecesInput = parsed.pieces.toString()
         message = "Caja ${parsed.code.take(3)} capturada · teclea KP y piezas y toca AGREGAR CÓDIGO."
         messageIsError = false
         isHeaderExpanded = true
