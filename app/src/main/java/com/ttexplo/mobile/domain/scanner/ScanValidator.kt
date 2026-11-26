@@ -79,6 +79,19 @@ class ScanValidator(
             )
         }
 
+        // DataMatrix GS1 grande (texto legible "(90)MX035…" o crudo "90MX035…"): no es formato de conteo.
+        if (Regex("^(\\(90\\)|90)MX0{1,2}35").containsMatchIn(trimmed)) {
+            return ScanResult(
+                rawBarcode = trimmed,
+                timestamp = timestamp,
+                productInfo = catalogRepository.lookupBarcode(trimmed),
+                isDuplicate = false,
+                isValid = false,
+                empaque = TipoEmpaque.DESCONOCIDO,
+                message = "Detectado código GS1 grande. Escanea el código de barras o el DataMatrix pequeño de la etiqueta."
+            )
+        }
+
         // Strict length check for Alto Explosivo / Agente:
         // Cajas: 30 dígitos, Sacos: 18 dígitos, Cartuchos: 16 dígitos (compatible con 16 y 17)
         val empaque = when (trimmed.length) {

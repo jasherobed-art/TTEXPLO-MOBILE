@@ -25,6 +25,7 @@ class ScanValidatorTest {
             override suspend fun lookupBarcode(barcode: String): ProductInfo {
                 return when {
                     barcode.startsWith("X") -> ProductInfo("ACC", "Accesorio", "PZA", "", "PZA", 0.0, ProductType.ACCESORIO, "")
+                    barcode.startsWith("201") -> ProductInfo("201", "SUPER MEXAMON D", "", "SM01-01", "KG", 25.0, ProductType.AGENTE, "0035")
                     barcode.startsWith("298") -> ProductInfo("298", "AUSTINITE 15 CA-1", "SACO", "100091", "KG", 25.0, ProductType.AGENTE, "0035")
                     barcode.startsWith("272") -> ProductInfo("272", "MEXAMON", "SACO 25 KG", "MEX25KG001", "KG", 25.0, ProductType.AGENTE, "0119")
                     barcode.startsWith("337") -> ProductInfo("337", "EMULEX C", "1\" X 39.3\"", "111923", "KG", 25.0, ProductType.ALTO_EXPLOSIVO, "0035")
@@ -318,5 +319,25 @@ class ScanValidatorTest {
     @Test
     fun seventeenDigitCartridgeKeepsSkippingDateValidation() = runBlocking {
         assertThat(scanValidator.processScan("05611110240605501", emptySet()).isValid).isTrue()
+    }
+
+    @Test
+    fun sacoDataMatrixPequenoIsAccepted() = runBlocking {
+        val result = scanValidator.processScan("201121126025310881", emptySet())
+        assertThat(result.isValid).isTrue()
+        assertThat(result.empaque).isEqualTo(TipoEmpaque.SACO)
+    }
+
+    @Test
+    fun gs1LargeDataMatrixIsRejectedWithInstruction() = runBlocking {
+        listOf(
+            "(90)MX0035(250)0035121126E-5201025310881(240)201(11)261112(10)28502(20)00",
+            "(90)MX035(250)0035061026E-4355005398871(240)355(11)06/10/",
+            "90MX0035250003512112"
+        ).forEach { code ->
+            val result = scanValidator.processScan(code, emptySet())
+            assertThat(result.isValid).isFalse()
+            assertThat(result.message).contains("código GS1 grande")
+        }
     }
 }
