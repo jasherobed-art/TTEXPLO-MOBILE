@@ -25,10 +25,12 @@ object BoxCountParser {
 
         val code = parts[0].trim()
         val kp = parts[1].trim()
-        val pieces = parts[2].trim().toIntOrNull() ?: return null
+        val piecesText = parts[2].trim()
+        val pieces = piecesText.toIntOrNull() ?: return null
         val timestamp = parts[3].trim()
         if (code.length != 30 || !code.all { it.isDigit() }) return null
-        if (kp.isEmpty() || pieces !in 1..BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX) return null
+        if (kp.length != 1 || !kp[0].isDigit()) return null
+        if (piecesText.length > 4 || pieces !in 1..BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX) return null
         if (timestamp.isEmpty()) return null
 
         val initial = code.substring(9, 15).toLongOrNull() ?: return null

@@ -120,7 +120,8 @@ fun ValeHistoryCard(
     onEdit: () -> Unit,
     onShare: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showEdit: Boolean = true
 ) {
     val (badgeColor, badgeTextColor, shortTypeLabel) = when (vale.tipo) {
         "DESPACHO" -> Triple(MineHighExplosiveOrange, MineDarkBackground, "DESPACHO")
@@ -128,6 +129,7 @@ fun ValeHistoryCard(
         "ACCESORIOS" -> Triple(MineAccessoryPurple, MineTextPrimary, "ACCESORIOS")
         "DEV. ACCESORIOS" -> Triple(MineAgentCyan, MineDarkBackground, "DEV. ACC.")
         "DEVOLUCION" -> Triple(MineSafetyYellow, MineDarkBackground, "DEVOLUCIÓN")
+        "CONTEO" -> Triple(MineHighExplosiveOrange, MineDarkBackground, "CONTEO")
         else -> Triple(MineTextMuted, MineDarkBackground, vale.tipo)
     }
 
@@ -295,16 +297,18 @@ fun ValeHistoryCard(
                         .testTag("history_print_vale_${vale.id}")
                 )
 
-                ValeCardActionCell(
-                    label = "Editar",
-                    icon = Icons.Default.Edit,
-                    tint = MineSafetyYellow,
-                    enabled = !isAnyPrinting,
-                    onClick = onEdit,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("history_edit_vale_${vale.id}")
-                )
+                if (showEdit) {
+                    ValeCardActionCell(
+                        label = "Editar",
+                        icon = Icons.Default.Edit,
+                        tint = MineSafetyYellow,
+                        enabled = !isAnyPrinting,
+                        onClick = onEdit,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("history_edit_vale_${vale.id}")
+                    )
+                }
 
                 ValeCardActionCell(
                     label = "Enviar",

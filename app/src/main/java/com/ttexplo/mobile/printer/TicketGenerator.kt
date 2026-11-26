@@ -5,6 +5,8 @@ import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.DevolucionRecord
 import com.ttexplo.mobile.domain.model.EntradaRecord
 import com.ttexplo.mobile.domain.model.ScannedCodeRecord
+import com.ttexplo.mobile.domain.inventory.BoxCountItem
+import com.ttexplo.mobile.domain.inventory.BoxCountVale
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import java.io.ByteArrayOutputStream
 
@@ -1579,6 +1581,127 @@ object TicketGenerator {
         for (line in lines) {
             sb.append(line).append("\r\n")
         }
+        sb.append("PRINT\r\n")
+        return sb.toString().toByteArray(CHARSET)
+    }
+
+    // =========================================================================
+    // 6. CONTEO EN CAJA (sin firmas)
+    // =========================================================================
+
+    private fun boxCountDescription(item: BoxCountItem): String =
+        stripAccents(item.descripcion.ifBlank { "Material ID ${item.code.take(3)}" })
+
+    private fun boxCountTotal(m: String, total: Int): String =
+        "$m: $total PZAS"
+
+    fun generateBoxCountEscPos(
+        vale: BoxCountVale,
+        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH
+    ): ByteArray {
+        val out = ByteArrayOutputStream()
+        val w = paperWidth.lineLength
+        val divider = "=".repeat(w)
+        val thin = "-".repeat(w)
+        out.write(ESC_INIT)
+        out.write(ESC_ALIGN_CENTER)
+        out.write(ESC_BOLD_ON)
+        out.write("CONTEO EN CAJA\r\n".toByteArray(CHARSET))
+        out.write("FOLIO: ${vale.folio}\r\n".toByteArray(CHARSET))
+        out.write(ESC_BOLD_OFF)
+        out.write("$divider\r\n".toByteArray(CHARSET))
+        out.write(ESC_ALIGN_LEFT)
+        vale.items.firstOrNull()?.fechaHora?.takeIf { it.isNotBlank() }?.let {
+            out.write("FECHA: $it\r\n".toByteArray(CHARSET))
+        }
+        out.write("CAJAS: ${vale.items.size}\r\n".toByteArray(CHARSET))
+        out.write("$thin\r\n".toByteArray(CHARSET))
+        vale.items.forEachIndexed { idx, item ->
+            val num = String.format("%02d", idx + 1)
+            out.write("[$num] ${item.code}\r\n".toByteArray(CHARSET))
+            out.write("     ${boxCountDescription(item)}\r\n".toByteArray(CHARSET))
+            out.write("     KP ${item.kp} - ${item.piezas} PZAS - ${item.fechaHora}\r\n".toByteArray(CHARSET))
+        }
+        out.write("$thin\r\n".toByteArray(CHARSET))
+        writeEscPosInvertedBlock(out, w, listOf(boxCountTotal("TOTAL DE PIEZAS", vale.totalPiezas)))
+        out.write("$divider\r\n\r\n".toByteArray(CHARSET))
+        out.write(ESC_FEED_6_LINES)
+        writeEscPosBottomMargin(out)
+        out.write("\r\n\r\n\r\n\r\n".toByteArray(CHARSET))
+        return out.toByteArray()
+    }
+
+    fun generateBoxCountPlain(
+        vale: BoxCountVale,
+        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH
+    ): ByteArray {
+        val w = paperWidth.lineLength
+        val sb = StringBuilder()
+        sb.append("CONTEO EN CAJA\r\n").append("FOLIO: ${vale.folio}\r\n")
+        sb.append("=".repeat(w)).append("\r\n")
+        vale.items.firstOrNull()?.fechaHora?.takeIf { it.isNotBlank() }?.let {
+            sb.append("FECHA: $it\r\n")
+        }
+        sb.append("CAJAS: ${vale.items.size}\r\n").append("-".repeat(w)).append("\r\n")
+        vale.items.forEachIndexed { idx, item ->
+            val num = String.format("%02d", idx + 1)
+            sb.append("[$num] ${item.code}\r\n")
+            sb.append("     ${boxCountDescription(item)}\r\n")
+            sb.append("     KP ${item.kp} - ${item.piezas} PZAS - ${item.fechaHora}\r\n")
+        }
+        sb.append("-".repeat(w)).append("\r\n")
+        sb.append(boxCountTotal("TOTAL DE PIEZAS", vale.totalPiezas)).append("\r\n")
+        sb.append("=".repeat(w)).append("\r\n\r\n")
+        appendPlainBottomMargin(sb)
+        return sb.toString().toByteArray(CHARSET)
+    }
+
+    fun generateBoxCountCpcl(
+        vale: BoxCountVale,
+        paperWidth: PaperWidth = PaperWidth.WIDTH_4_INCH
+    ): ByteArray {
+        val pageWidth = paperWidth.cpclDots
+        val lineEnd = pageWidth - 20
+        val lines = mutableListOf<String>()
+        var y = 20
+        lines.add("CENTER")
+        val titleFont = selectCpclFont("CONTEO EN CAJA", lineEnd - 20, preferLarge = false)
+        lines.add("TEXT ${titleFont.fontNumber} ${titleFont.fontSize} 0 $y CONTEO EN CAJA")
+        y += titleFont.lineHeightDots
+        lines.add("TEXT 7 0 10 $y FOLIO: ${vale.folio}")
+        y += 26
+        lines.add("LEFT")
+        lines.add("LINE 10 $y $lineEnd $y 2")
+        y += 16
+        lines.add("TEXT 7 0 10 $y CAJAS: ${vale.items.size}")
+        y += 26
+        lines.add("LINE 10 $y $lineEnd $y 1")
+        y += 16
+        vale.items.forEachIndexed { idx, item ->
+            val num = String.format("%02d", idx + 1)
+            val codeFont = selectCpclFont("[$num] ${item.code}", lineEnd - 20)
+            lines.add("TEXT ${codeFont.fontNumber} ${codeFont.fontSize} 10 $y [$num] ${item.code}")
+            y += codeFont.lineHeightDots
+            val descFont = selectCpclFont(boxCountDescription(item), lineEnd - 40)
+            lines.add("TEXT ${descFont.fontNumber} ${descFont.fontSize} 30 $y ${boxCountDescription(item)}")
+            y += descFont.lineHeightDots
+            val detail = "KP ${item.kp} - ${item.piezas} PZAS - ${item.fechaHora}"
+            val detailFont = selectCpclFont(detail, lineEnd - 40)
+            lines.add("TEXT ${detailFont.fontNumber} ${detailFont.fontSize} 30 $y $detail")
+            y += detailFont.lineHeightDots + 4
+        }
+        lines.add("LINE 10 $y $lineEnd $y 1")
+        y += 14
+        y = addCpclInvertedBlock(
+            lines = lines,
+            startY = y,
+            lineEnd = lineEnd,
+            blockLines = listOf(boxCountTotal("TOTAL DE PIEZAS", vale.totalPiezas) to true)
+        )
+        val sb = StringBuilder()
+        sb.append("! 0 200 200 ${y + 40 + BOTTOM_MARGIN_CPCL_DOTS} 1\r\n")
+        sb.append("PAGE-WIDTH $pageWidth\r\n")
+        lines.forEach { sb.append(it).append("\r\n") }
         sb.append("PRINT\r\n")
         return sb.toString().toByteArray(CHARSET)
     }

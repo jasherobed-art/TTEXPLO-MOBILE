@@ -5,6 +5,7 @@ import com.ttexplo.mobile.data.repository.SettingsRepository
 import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.DevolucionRecord
+import com.ttexplo.mobile.domain.inventory.BoxCountVale
 import com.ttexplo.mobile.domain.model.EntradaRecord
 
 /**
@@ -214,6 +215,22 @@ object ValePrintHelper {
             )
         }
         return transmit(printerManager, mac, label, bytes)
+    }
+
+    suspend fun printBoxCount(
+        context: Context,
+        vale: BoxCountVale,
+        profile: PrinterProfile? = null
+    ): PrintOutcome {
+        val resolved = resolveProfileAndTarget(context, profile)
+            ?: return PrintOutcome(false, "Sin impresora Bluetooth vinculada. Agregue una en Ajustes.")
+        val (mac, label, spec) = resolved
+        val bytes = when (spec.first.uppercase()) {
+            "CPCL" -> TicketGenerator.generateBoxCountCpcl(vale, spec.second)
+            "PLAIN" -> TicketGenerator.generateBoxCountPlain(vale, spec.second)
+            else -> TicketGenerator.generateBoxCountEscPos(vale, spec.second)
+        }
+        return transmit(BluetoothPrinterManager(context), mac, label, bytes)
     }
 
     suspend fun printTestForProfile(

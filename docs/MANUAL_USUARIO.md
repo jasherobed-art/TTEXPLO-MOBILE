@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.6.0 (build 21) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.6.0 (build 27) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -10,7 +10,7 @@ Cada terminal tiene su ID (Device ID). Anótalo bien: la licencia se hace para e
 
 ### Activar la licencia
 
-1. En el inicio, abre **8. Configuración y Personalización**.
+1. En el inicio, abre **9. Configuración y Personalización**.
 2. Copia el **Device ID** con **COPIAR ID**.
 3. En License Master Pro genera la licencia para ese ID.
 4. En la app pega la clave corta `TTEX-...`, el token `TTEX:...`, importa el `.lic` o escanea el QR.
@@ -23,18 +23,19 @@ Si salió bien, verás **AUTORIZADA**. Si dice **PRÓXIMA A VENCER**, renueva an
 
 ## Pantalla de inicio
 
-Arriba verás `v2.6.0`. Debajo están los ocho módulos. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
+Arriba verás `v2.6.0`. Debajo están los nueve módulos. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
 
 | Módulo | Para qué lo usas |
 |---|---|
-| **1. Entradas de Alto y Agente** | Recibir material y darlo de alta. |
-| **2. Salidas de Alto y Agente** | Despachar a barreno e imprimir el vale. |
+| **1. Entradas de Alto y Agente** | Recepción de alto y agente. |
+| **2. Salidas de Alto y Agente** | Despacho de alto y agente. |
 | **3. Salida de Accesorios** | Despachar detonadores, cordón y artificios. |
-| **4. Devolución de Alto y Agente** | Meter de vuelta lo que sobró. |
-| **5. Devolución de Accesorios** | Meter de vuelta accesorios con cantidad negativa. |
-| **6. Inventario en Polvorín (En Vivo)** | Ver saldos, ajustar y consultar Kardex. |
-| **7. Historial de Vales & Consolidado** | Buscar vales y exportarlos. |
-| **8. Configuración y Personalización** | Impresora, mina, catálogo y licencia. |
+| **4. CONTEO EN CAJA** | Conteo de cartuchos. |
+| **5. Devolución de Alto y Agente** | Meter de vuelta lo que sobró. |
+| **6. Devolución de Accesorios** | Devolución de detonantes y accesorios. |
+| **7. Inventario en Polvorín (En Vivo)** | Ver saldos, ajustar y consultar Kardex. |
+| **8. Historial de Vales & Consolidado** | Buscar vales y exportarlos. |
+| **9. Configuración y Personalización** | Impresora, mina, catálogo y licencia. |
 
 El engranaje de arriba abre Configuración. Si la licencia está por vencer, verás un aviso arriba.
 
@@ -124,14 +125,16 @@ También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 ## Contar cajas
 
 1. Abre **4. CONTEO EN CAJA** desde la pantalla de inicio.
-2. Escanea el código de la caja o escríbelo en el campo de captura.
+2. Escanea el código de la caja o escríbelo en el campo de captura. El código debe tener 30 dígitos.
 3. La app muestra el código y cuántas piezas indica el rango. Ese número es solo una referencia.
-4. Cuenta físicamente las piezas de la caja. Escribe la línea o KP y la cantidad contada. Puedes corregir ambos campos.
-5. Toca **CONFIRMAR CONTEO**. Si tu número no coincide con el del rango, la app te pregunta si es correcto antes de agregarlo.
-6. Si lees la misma caja dos veces, verás **CÓDIGO REPETIDO** y la segunda lectura no se agrega.
-7. Toca **EXPORTAR TXT** para guardar el archivo con el código, KP, piezas y fecha y hora de cada caja.
+4. Cuenta físicamente las piezas. Escribe la línea o KP (un solo número) y las piezas contadas (hasta 4 dígitos, entre 1 y 500).
+5. Toca **AGREGAR CÓDIGO**. Si tu número no coincide con el del rango, la app te pregunta si es correcto antes de agregarlo. Lo que tecleaste manda.
+6. En el listado ves el código con su descripción del catálogo. Puedes corregir el KP y las piezas en cada renglón, o borrar el renglón completo; el borrado pide confirmación.
+7. Si lees la misma caja dos veces, verás **CÓDIGO REPETIDO** y la segunda lectura no se agrega.
+8. Toca **CONFIRMAR CONTEO**. El conteo se guarda solo en el historial con un folio `CC-AAAAAMMDD-NNN`.
+9. Toca **IMPRIMIR** para el ticket de conteo. Trae folio, cada código con su descripción, KP, piezas, fecha y hora, y el total de piezas. No lleva firmas.
 
-IMPORTANTE: el peso por pieza se calcula con 25 kg entre las piezas que contaste. Si te equivocas al contar, corrige el número antes de confirmar.
+IMPORTANTE: el peso por pieza se calcula con 25 kg entre las piezas que contaste. Si te equivocas al contar, corrige el número antes de confirmar. Ya no hay botón de TXT: los datos salen en el ticket y en el consolidado del historial.
 
 ## Bóveda de licencias
 
@@ -203,16 +206,16 @@ En **Historial** ves las sesiones y los conflictos. Toca una fila para ver el de
 
 ## Historial de vales
 
-1. Abre **7. Historial de Vales & Consolidado**.
-2. Busca por folio, fecha, empresa o transportista.
-3. Toca un vale para verlo, reimprimirlo o borrarlo.
-4. Para exportar, usa **EXPORTAR CONSOLIDADO** o selecciona varios y usa **EXPORTAR SELECCIONADOS**.
+1. Abre **8. Historial de Vales & Consolidado**.
+2. Filtra por tipo. Los conteos de caja aparecen con el folio `CC-AAAAAMMDD-NNN` y el filtro **Conteos**.
+3. Toca un vale para verlo, reimprimirlo o borrarlo. En los conteos no hay botón de editar: corrige los renglones dentro del conteo antes de confirmarlo.
+4. Para exportar, usa **EXPORTAR CONSOLIDADO** o selecciona varios y usa **EXPORTAR SELECCIONADOS**. Los conteos salen con encabezado `CAJ` y renglones `codigo,KP,piezas,fechaHora`.
 
 Borrar no es de un toque: pide un código de 4 dígitos. Esa molestia es a propósito.
 
 ## Configuración
 
-En **8. Configuración y Personalización** está lo de siempre: mina, catálogo, impresoras y licencia.
+En **9. Configuración y Personalización** está lo de siempre: mina, catálogo, impresoras y licencia.
 
 ### Datos de la mina
 
@@ -619,7 +622,7 @@ Genera otra en License Master Pro para el Device ID actual y actívala desde Lic
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.6.0 (Build 21)`.
+- Versión, por ejemplo `v2.6.0 (Build 27)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.

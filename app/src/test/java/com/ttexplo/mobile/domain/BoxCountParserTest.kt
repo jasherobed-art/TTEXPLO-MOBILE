@@ -31,6 +31,16 @@ class BoxCountParserTest {
     }
 
     @Test
+    fun acceptsFourDigitPiecesButOnlySingleDigitKp() {
+        val record = BoxCountParser.parse("CAJ310071026008799008854005399631,9,0500,2026-11-25 12:41:56")
+        assertThat(record).isNotNull()
+        assertThat(record!!.pieces).isEqualTo(500)
+
+        assertThat(BoxCountParser.parse("CAJ310071026008799008854005399631,22,55,2026-11-25 12:41:56")).isNull()
+        assertThat(BoxCountParser.parse("CAJ310071026008799008854005399631,A,55,2026-11-25 12:41:56")).isNull()
+    }
+
+    @Test
     fun rejectsBlankKpOutOfRangePiecesAndNonDigitCode() {
         assertThat(BoxCountParser.parse("CAJ310071026008799008854005399631,,55,2026-11-25 12:41:56")).isNull()
         assertThat(BoxCountParser.parse("CAJ310071026008799008854005399631,2,0,2026-11-25 12:41:56")).isNull()

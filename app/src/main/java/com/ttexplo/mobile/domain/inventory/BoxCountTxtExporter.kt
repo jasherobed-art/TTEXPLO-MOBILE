@@ -13,5 +13,16 @@ object BoxCountTxtExporter {
         append('\n')
     }
 
+    fun renderItems(items: List<BoxCountItem>): String = buildString {
+        append("CAJ\n")
+        items.forEach { item ->
+            append(item.code).append(',')
+                .append(item.kp).append(',')
+                .append(item.piezas).append(',')
+                .append(item.fechaHora).append('\n')
+        }
+        append('\n')
+    }
+
     fun fileName(date: String): String = "ttexplo$date.txt"
 }

@@ -233,7 +233,7 @@ fun HomeScreen(
             // 1. Entradas de Alto y Agente
             MenuActionCard(
                 title = "1. Entradas de Alto y Agente",
-                subtitle = "Recepción e ingreso de sacos y cajas a polvorín",
+                subtitle = "Recepción de alto y agente",
                 accentColor = MineSafetyYellow,
                 icon = Icons.Default.MoveToInbox,
                 onClick = { handleGuardedAction(onNavigateToEntradas) }
@@ -242,7 +242,7 @@ fun HomeScreen(
             // 2. Salidas / Despacho de Alto y Agente
             MenuActionCard(
                 title = "2. Salidas de Alto y Agente",
-                subtitle = "Despacho a barrenos de mina con vale e impresión",
+                subtitle = "Despacho de alto y agente",
                 accentColor = MineHighExplosiveOrange,
                 icon = Icons.Default.LocalShipping,
                 onClick = { handleGuardedAction(onNavigateToDespacho) }
@@ -260,7 +260,7 @@ fun HomeScreen(
             // 4. Conteo en caja
             MenuActionCard(
                 title = "4. CONTEO EN CAJA",
-                subtitle = "Cuenta piezas reales, corrige KP y exporta el TXT",
+                subtitle = "Conteo de cartuchos",
                 accentColor = MineSuccessGreenLight,
                 icon = Icons.Default.Inventory2,
                 isCompact = true,
@@ -289,7 +289,7 @@ fun HomeScreen(
             // 6. Devolución de Accesorios
             MenuActionCard(
                 title = "6. Devolución de Accesorios",
-                subtitle = "Reintegro de detonadores y accesorios con cantidad negativa (-)",
+                subtitle = "Devolución de detonantes y accesorios",
                 accentColor = MineAgentCyan,
                 icon = Icons.Default.AssignmentReturn,
                 isCompact = true,

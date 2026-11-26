@@ -46,6 +46,8 @@ import com.ttexplo.mobile.TTExploApp
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
 import com.ttexplo.mobile.data.repository.SettingsRepository
 import com.ttexplo.mobile.domain.export.FlatFileFormatter
+import com.ttexplo.mobile.domain.inventory.BoxCountTxtExporter
+import com.ttexplo.mobile.domain.inventory.BoxCountVale
 import com.ttexplo.mobile.domain.inventory.InventoryReferenceType
 import com.ttexplo.mobile.domain.model.*
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
@@ -59,7 +61,7 @@ import java.io.File
 
 data class ValeSummaryItem(
     val id: Long,
-    val tipo: String, // "DESPACHO", "ENTRADA", "ACCESORIOS", "DEV. ACCESORIOS", "DEVOLUCION"
+    val tipo: String, // "DESPACHO", "ENTRADA", "ACCESORIOS", "DEV. ACCESORIOS", "DEVOLUCION", "CONTEO"
     val folio: String,
     val descripcion: String,
     val fecha: String,
@@ -219,6 +221,15 @@ fun ValesHistoryScreen(
                             )
                         }
                     }
+                    "CONTEO" -> {
+                        val rows = db.boxCountDao().getByFolio(vale.folio)
+                        if (rows.isEmpty()) ValePrintHelper.PrintOutcome(false, "Conteo no encontrado")
+                        else ValePrintHelper.printBoxCount(
+                            context,
+                            BoxCountVale(vale.folio, rows.map { it.toDomain() }),
+                            activeProfile
+                        )
+                    }
                     else -> ValePrintHelper.PrintOutcome(false, "Tipo de vale no soportado para impresión")
                 }
                 printingValeKey = null
@@ -358,6 +369,33 @@ fun ValesHistoryScreen(
                         )
                     }
                 }
+                "CONTEO" -> {
+                    val rows = db.boxCountDao().getByFolio(vale.folio)
+                    rows.takeIf { it.isNotEmpty() }?.let {
+                        val codes = it.mapIndexed { idx, row ->
+                            ValeDetailCodeItem(
+                                index = idx + 1,
+                                code = row.codigo,
+                                productTitle = row.descripcion.ifBlank { "Material ID ${row.codigo.take(3)}" },
+                                presentation = "KP ${row.kp}",
+                                timestamp = row.fechaHora,
+                                quantity = row.piezas
+                            )
+                        }
+                        ValeDetailData(
+                            summary = vale,
+                            headerFields = listOf(
+                                "Folio" to vale.folio,
+                                "Cajas" to it.size.toString(),
+                                "Piezas" to it.sumOf { row -> row.piezas }.toString(),
+                                "Fecha" to it.first().fechaHora
+                            ),
+                            groupedSummary = it.groupBy { row -> row.descripcion }
+                                .map { (k, v) -> k to v.sumOf { row -> row.piezas } },
+                            codes = codes
+                        )
+                    }
+                }
                 else -> null
             }
             if (detail != null) {
@@ -441,6 +479,20 @@ fun ValesHistoryScreen(
                 )
             }
 
+            // Conteos en caja (un vale por folio)
+            db.boxCountDao().getAll().groupBy { it.folio }.forEach { (folio, rows) ->
+                list.add(
+                    ValeSummaryItem(
+                        id = rows.first().id,
+                        tipo = "CONTEO",
+                        folio = folio,
+                        descripcion = "${rows.size} cajas • ${rows.sumOf { it.piezas }} piezas",
+                        fecha = rows.first().fechaHora,
+                        totalItems = rows.size
+                    )
+                )
+            }
+
             valesList = list.sortedByDescending { it.fecha }
         }
     }
@@ -518,6 +570,12 @@ fun ValesHistoryScreen(
                             sb.append("\r\n")
                         }
                     }
+                    "CONTEO" -> {
+                        val rows = db.boxCountDao().getByFolio(vale.folio)
+                        if (rows.isNotEmpty()) {
+                            sb.append(BoxCountTxtExporter.renderItems(rows.map { it.toDomain() }))
+                        }
+                    }
                 }
             }
 
@@ -566,6 +624,10 @@ fun ValesHistoryScreen(
                     }
                     FlatFileFormatter.formatDevolucion(DevolucionRecord(dev.empleadoEntrega, dev.empleadoRecibe, items))
                 }
+                "CONTEO" -> {
+                    val rows = db.boxCountDao().getByFolio(vale.folio)
+                    BoxCountTxtExporter.renderItems(rows.map { it.toDomain() })
+                }
                 else -> ""
             }
 
@@ -601,6 +663,10 @@ fun ValesHistoryScreen(
                     "ENTRADA" -> InventoryReferenceType.ENTRADA
                     "ACCESORIOS", "DEV. ACCESORIOS" -> InventoryReferenceType.ACCESORIO_VALE
                     "DEVOLUCION" -> InventoryReferenceType.DEVOLUCION
+                    "CONTEO" -> {
+                        db.boxCountDao().deleteByFolio(vale.folio)
+                        null
+                    }
                     else -> null
                 }
                 if (referenceType != null) {
@@ -652,7 +718,8 @@ fun ValesHistoryScreen(
                     "DEVOLUCION" -> onEditDevolucion(target.id)
                 }
             },
-            onShareClick = { shareVale(currentDetail.summary) }
+            onShareClick = { shareVale(currentDetail.summary) },
+            showEdit = currentDetail.summary.tipo != "CONTEO"
         )
         if (showPrinterSelector) {
             QuickPrinterSelectorDialog(
@@ -699,6 +766,12 @@ fun ValesHistoryScreen(
                 label = "Devoluciones",
                 count = valesList.count { it.tipo == "DEVOLUCION" },
                 accentColor = MineAgentCyan
+            ),
+            HistoryTypeFilterOption(
+                key = "CONTEO",
+                label = "Conteos",
+                count = valesList.count { it.tipo == "CONTEO" },
+                accentColor = MineHighExplosiveOrange
             )
         )
     }
@@ -908,7 +981,8 @@ fun ValesHistoryScreen(
                                 }
                             },
                             onShare = { shareVale(vale) },
-                            onDelete = { promptDelete(listOf(vale)) }
+                            onDelete = { promptDelete(listOf(vale)) },
+                            showEdit = vale.tipo != "CONTEO"
                         )
                     }
                 }

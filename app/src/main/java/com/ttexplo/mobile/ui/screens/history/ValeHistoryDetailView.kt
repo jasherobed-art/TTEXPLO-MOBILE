@@ -57,7 +57,8 @@ fun ValeHistoryDetailView(
     onReprintClick: () -> Unit,
     onChangePrinterClick: () -> Unit,
     onEditClick: () -> Unit,
-    onShareClick: () -> Unit
+    onShareClick: () -> Unit,
+    showEdit: Boolean = true
 ) {
     BackHandler {
         if (!isPrinting) onBack()
@@ -240,20 +241,22 @@ fun ValeHistoryDetailView(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = onEditClick,
-                            enabled = !isPrinting,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(44.dp)
-                                .testTag("history_detail_edit_button"),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, MineBorderGray),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MineTextPrimary)
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = null, tint = MineSafetyYellow, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Editar", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        if (showEdit) {
+                            OutlinedButton(
+                                onClick = onEditClick,
+                                enabled = !isPrinting,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                                    .testTag("history_detail_edit_button"),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, MineBorderGray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MineTextPrimary)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = MineSafetyYellow, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Editar", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                            }
                         }
 
                         OutlinedButton(

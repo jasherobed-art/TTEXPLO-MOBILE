@@ -22,9 +22,10 @@ import com.ttexplo.mobile.data.local.entity.*
         AccesorioItemEntity::class,
         InventoryEventEntity::class,
         InventoryCodeEventEntity::class,
-        SyncSessionEntity::class
+        SyncSessionEntity::class,
+        ConteoCajaEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inventoryCodeEventDao(): InventoryCodeEventDao
     abstract fun syncSessionDao(): SyncSessionDao
     abstract fun valeDeletionDao(): ValeDeletionDao
+    abstract fun boxCountDao(): BoxCountDao
 
     companion object {
         @Volatile
@@ -180,6 +182,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `conteos_caja` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `folio` TEXT NOT NULL,
+                        `codigo` TEXT NOT NULL,
+                        `descripcion` TEXT NOT NULL,
+                        `kp` TEXT NOT NULL,
+                        `piezas` INTEGER NOT NULL,
+                        `fecha_hora` TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -187,7 +207,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "ttexplo_database.db"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                 INSTANCE = instance
                 instance
