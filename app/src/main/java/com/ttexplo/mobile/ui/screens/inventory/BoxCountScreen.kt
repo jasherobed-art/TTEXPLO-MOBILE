@@ -57,6 +57,10 @@ import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.QuickPrinterSelectorDialog
 import com.ttexplo.mobile.ui.common.SavedValeReprintDialog
+import com.ttexplo.mobile.ui.common.ScanFeedbackType
+import com.ttexplo.mobile.ui.common.ScanFlashEvent
+import com.ttexplo.mobile.ui.common.ScanFlashOverlay
+import com.ttexplo.mobile.ui.common.SoundFeedbackManager
 import com.ttexplo.mobile.ui.theme.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -72,6 +76,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     val catalogRepo = remember { CatalogRepositoryImpl(app.database.productoDao()) }
     val settingsRepo = remember { SettingsRepository(context) }
     val printerManager = remember { BluetoothPrinterManager(context) }
+    val sound = remember { SoundFeedbackManager(context.applicationContext) }
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
 
@@ -94,6 +99,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     var activeProfile by remember { mutableStateOf(settingsRepo.getActivePrinterProfile()) }
     var showPrinterSelector by remember { mutableStateOf(false) }
     var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var flashEvent by remember { mutableStateOf<ScanFlashEvent?>(null) }
 
     val totalPieces = records.sumOf { it.piezas }
     val folioDisplay = savedVale?.folio ?: "-"
@@ -126,18 +132,24 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     fun handleScan(raw: String) {
         val parsed = BoxCountParser.parse(raw.trim()) ?: BoxCountParser.parseCodeOnly(raw.trim())
         if (parsed == null) {
+            sound.playError()
+            flashEvent = ScanFlashEvent(type = ScanFeedbackType.ERROR)
             message = "Código de caja inválido (debe tener 30 dígitos)."
             messageIsError = true
             return
         }
         if (records.any { it.code == parsed.code } || draft?.code == parsed.code || pendingMismatch?.code == parsed.code) {
+            sound.playWarning()
+            flashEvent = ScanFlashEvent(type = ScanFeedbackType.WARNING)
             showDuplicate = true
             return
         }
+        sound.playSuccess()
+        flashEvent = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
         draft = parsed
         kpInput = parsed.kp
         piecesInput = parsed.pieces.toString()
-        message = "Caja ${parsed.code.take(3)} capturada · el rango indica ${parsed.rangeCount} piezas."
+        message = "Caja ${parsed.code.take(3)} capturada · teclea KP y piezas y toca AGREGAR CÓDIGO."
         messageIsError = false
         isHeaderExpanded = true
     }
@@ -480,6 +492,10 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                 }
             }
         }
+        ScanFlashOverlay(
+            event = flashEvent,
+            enabled = sound.isVisualFlashEnabled()
+        )
     }
 
     if (showDuplicate) {

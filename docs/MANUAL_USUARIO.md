@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.6.0 (build 27) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.6.0 (build 28) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -125,8 +125,8 @@ También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 ## Contar cajas
 
 1. Abre **4. CONTEO EN CAJA** desde la pantalla de inicio.
-2. Escanea el código de la caja o escríbelo en el campo de captura. El código debe tener 30 dígitos.
-3. La app muestra el código y cuántas piezas indica el rango. Ese número es solo una referencia.
+2. Escanea el código de la caja o escríbelo en el campo de captura. El código debe tener 30 dígitos. Al capturarlo, la app destella y suena o vibra según tu configuración. El KP no viene en ese código: lo tecleas tú.
+3. La app muestra el código capturado y cuántas piezas indica el rango. Ese número es solo una referencia. El código todavía no está en la lista; se agrega hasta que toques **AGREGAR CÓDIGO**.
 4. Cuenta físicamente las piezas. Escribe la línea o KP (un solo número) y las piezas contadas (hasta 4 dígitos, entre 1 y 500).
 5. Toca **AGREGAR CÓDIGO**. Si tu número no coincide con el del rango, la app te pregunta si es correcto antes de agregarlo. Lo que tecleaste manda.
 6. En el listado ves el código con su descripción del catálogo. Puedes corregir el KP y las piezas en cada renglón, o borrar el renglón completo; el borrado pide confirmación.
@@ -622,7 +622,7 @@ Genera otra en License Master Pro para el Device ID actual y actívala desde Lic
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.6.0 (Build 27)`.
+- Versión, por ejemplo `v2.6.0 (Build 28)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.
