@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -35,6 +36,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -45,7 +48,6 @@ import com.ttexplo.mobile.data.repository.SettingsRepository
 import com.ttexplo.mobile.domain.inventory.BoxCountFolio
 import com.ttexplo.mobile.domain.inventory.BoxCountItem
 import com.ttexplo.mobile.domain.inventory.BoxCountParser
-import com.ttexplo.mobile.domain.inventory.BoxCountRecord
 import com.ttexplo.mobile.domain.inventory.BoxCountVale
 import com.ttexplo.mobile.domain.inventory.BoxUnitWeightCalculator
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
@@ -81,16 +83,14 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     val focusRequester = remember { FocusRequester() }
 
     var barcodeInput by remember { mutableStateOf("") }
-    var draft by remember { mutableStateOf<BoxCountRecord?>(null) }
     var kpInput by remember { mutableStateOf("") }
     var piecesInput by remember { mutableStateOf("") }
     var records by remember { mutableStateOf<List<BoxCountItem>>(emptyList()) }
     var savedVale by remember { mutableStateOf<BoxCountVale?>(null) }
-    var message by remember { mutableStateOf("Casilla activa: dispare el lector o escriba el código de la caja") }
+    var message by remember { mutableStateOf("Llena los datos para habilitar escáner y entrada manual.") }
     var messageIsError by remember { mutableStateOf(false) }
     var isHeaderExpanded by remember { mutableStateOf(true) }
     var showDuplicate by remember { mutableStateOf(false) }
-    var pendingMismatch by remember { mutableStateOf<BoxCountItem?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<BoxCountItem?>(null) }
     var showSavedDialog by remember { mutableStateOf(false) }
@@ -103,6 +103,8 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
 
     val totalPieces = records.sumOf { it.piezas }
     val folioDisplay = savedVale?.folio ?: "-"
+    val scanEnabled = kpInput.length == 1 && kpInput[0].isDigit() &&
+        piecesInput.toIntOrNull() in 1..BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX
 
     val btPrintLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -127,18 +129,29 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
         } else action()
     }
 
-    fun isBusy() = showDuplicate || pendingMismatch != null || showExitConfirm || itemToDelete != null || showSavedDialog
+    fun isBusy() = showDuplicate || showExitConfirm || itemToDelete != null || showSavedDialog
+
+    fun addItem(item: BoxCountItem) {
+        records = listOf(item) + records
+        piecesInput = ""
+        savedVale = null
+        message = "Conteo agregado automáticamente: ${item.piezas} piezas · KP ${item.kp}."
+        messageIsError = false
+        isHeaderExpanded = true
+    }
 
     fun handleScan(raw: String) {
+        val kp = kpInput.trim()
+        val pieces = piecesInput.trim().toIntOrNull()
         val parsed = BoxCountParser.parse(raw.trim()) ?: BoxCountParser.parseCodeOnly(raw.trim())
-        if (parsed == null) {
+        if (parsed == null || kp.length != 1 || !kp[0].isDigit() || pieces == null || pieces !in 1..BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX) {
             sound.playError()
             flashEvent = ScanFlashEvent(type = ScanFeedbackType.ERROR)
-            message = "Código de caja inválido (debe tener 30 dígitos)."
+            message = "Código de caja inválido o datos incompletos (KP de 1 dígito y piezas 1-${BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX})."
             messageIsError = true
             return
         }
-        if (records.any { it.code == parsed.code } || draft?.code == parsed.code || pendingMismatch?.code == parsed.code) {
+        if (records.any { it.code == parsed.code }) {
             sound.playWarning()
             flashEvent = ScanFlashEvent(type = ScanFeedbackType.WARNING)
             showDuplicate = true
@@ -146,73 +159,36 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
         }
         sound.playSuccess()
         flashEvent = ScanFlashEvent(type = ScanFeedbackType.SUCCESS)
-        draft = parsed
-        if (kpInput.isEmpty()) kpInput = parsed.kp
-        if (piecesInput.isEmpty()) piecesInput = parsed.pieces.toString()
-        message = "Caja ${parsed.code.take(3)} capturada · teclea KP y piezas y toca AGREGAR CÓDIGO."
-        messageIsError = false
-        isHeaderExpanded = true
+        scope.launch {
+            val product = catalogRepo.lookupBarcode(parsed.code)
+            val description = listOf(product.name, product.presentation)
+                .filter { it.isNotBlank() }
+                .joinToString(" · ")
+            addItem(
+                BoxCountItem(
+                    code = parsed.code,
+                    descripcion = description,
+                    kp = kp,
+                    piezas = pieces,
+                    fechaHora = DateTimeUtils.currentTimestamp()
+                )
+            )
+        }
     }
 
-    DisposableEffect(context) {
+    DisposableEffect(context, scanEnabled) {
         val receiver = ZebraScannerReceiver { scanned ->
-            if (!isBusy()) handleScan(scanned)
+            if (scanEnabled && !isBusy()) handleScan(scanned)
         }
         ZebraScannerReceiver.register(context, receiver)
         onDispose { ZebraScannerReceiver.unregister(context, receiver) }
     }
 
     fun exit() {
-        if (records.isNotEmpty() || draft != null) showExitConfirm = true else onNavigateBack()
+        if (records.isNotEmpty()) showExitConfirm = true else onNavigateBack()
     }
 
     BackHandler { exit() }
-
-    fun addItem(item: BoxCountItem) {
-        records = listOf(item) + records
-        draft = null
-        kpInput = ""
-        piecesInput = ""
-        savedVale = null
-        message = "Conteo agregado: ${item.piezas} piezas · KP ${item.kp}."
-        messageIsError = false
-    }
-
-    fun confirmDraft() {
-        val current = draft ?: return
-        val kp = kpInput.trim()
-        val pieces = piecesInput.trim().toIntOrNull()
-        if (kp.length != 1 || !kp[0].isDigit()) {
-            message = "La línea o KP debe ser un solo número."
-            messageIsError = true
-            return
-        }
-        if (pieces == null || pieces !in 1..BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX) {
-            message = "Las piezas deben estar entre 1 y ${BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX}."
-            messageIsError = true
-            return
-        }
-        scope.launch {
-            val product = catalogRepo.lookupBarcode(current.code)
-            val description = listOf(product.name, product.presentation)
-                .filter { it.isNotBlank() }
-                .joinToString(" · ")
-            val item = BoxCountItem(
-                code = current.code,
-                descripcion = description,
-                kp = kp,
-                piezas = pieces,
-                fechaHora = DateTimeUtils.currentTimestamp()
-            )
-            if (records.any { it.code == item.code }) {
-                showDuplicate = true
-            } else if (pieces != current.rangeCount) {
-                pendingMismatch = item
-            } else {
-                addItem(item)
-            }
-        }
-    }
 
     fun saveCount() {
         if (records.isEmpty()) return
@@ -326,18 +302,8 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(
-                                text = draft?.code?.let { "Caja ${it.take(3)}" } ?: "Datos de la caja",
-                                color = MineTextSecondary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 12.sp
-                            )
-                            Text(
-                                text = if (draft == null) "Listo para contar" else "Capturada",
-                                color = if (draft == null) MineSuccessGreenLight else MineSafetyYellow,
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 11.sp
-                            )
+                            Text("Datos de la caja", color = MineTextSecondary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                            Text("Listo para contar", color = MineSuccessGreenLight, fontWeight = FontWeight.Medium, fontSize = 11.sp)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedTextField(
@@ -345,6 +311,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                                 onValueChange = { v -> kpInput = v.filter { it.isDigit() }.take(1) },
                                 label = { Text("Línea / KP") },
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
@@ -352,14 +319,8 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                                 onValueChange = { v -> piecesInput = v.filter { it.isDigit() }.take(4) },
                                 label = { Text("Piezas contadas") },
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                                 modifier = Modifier.weight(1f)
-                            )
-                        }
-                        draft?.let { current ->
-                            Text(
-                                text = "Referencia del código: ${current.rangeCount} piezas · PU ${BoxUnitWeightCalculator.formatUnitWeight3(current.unitWeightKg)} kg",
-                                color = MineTextSecondary,
-                                fontSize = 11.sp
                             )
                         }
                     }
@@ -370,12 +331,13 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                 value = barcodeInput,
                 onValueChange = { barcodeInput = it },
                 onSubmitBarcode = {
-                    if (!isBusy()) handleScan(it)
+                    if (scanEnabled && !isBusy()) handleScan(it)
                 },
                 accentColor = MineHighExplosiveOrange,
-                placeholderText = "Escanear o escribir código + ENTER...",
+                placeholderText = if (scanEnabled) "Escanear o escribir código + ENTER..." else "Llena los datos para habilitar escáner y entrada manual",
                 focusRequester = focusRequester,
                 testTagName = "box_count_input",
+                enabled = scanEnabled,
                 onActivityDetected = { isHeaderExpanded = true }
             )
 
@@ -475,14 +437,14 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                     AutoShrinkText("IMPRIMIR", fontWeight = FontWeight.Bold, targetTextSize = 12.sp, minTextSize = 9.sp, color = MineSafetyYellow, maxLines = 1)
                 }
                 Button(
-                    onClick = { if (draft != null) confirmDraft() else if (savedVale == null) saveCount() },
+                    onClick = { saveCount() },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(8.dp),
-                    enabled = draft != null || (records.isNotEmpty() && savedVale == null),
+                    enabled = records.isNotEmpty() && savedVale == null,
                     colors = ButtonDefaults.buttonColors(containerColor = MineSuccessGreen)
                 ) {
                     AutoShrinkText(
-                        text = if (draft != null) "AGREGAR CÓDIGO" else "CONFIRMAR CONTEO",
+                        text = "CONFIRMAR CONTEO",
                         fontWeight = FontWeight.Bold,
                         targetTextSize = 12.sp,
                         minTextSize = 9.sp,
@@ -504,21 +466,6 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
             title = { Text("CÓDIGO REPETIDO") },
             text = { Text("Esa caja ya está en la lista. No se agregó otra vez.") },
             confirmButton = { TextButton(onClick = { showDuplicate = false }) { Text("Entendido") } }
-        )
-    }
-
-    pendingMismatch?.let { item ->
-        AlertDialog(
-            onDismissRequest = { pendingMismatch = null },
-            title = { Text("REVISA EL CONTEO") },
-            text = { Text("Tecleaste ${item.piezas} piezas pero el código indica ${draft?.rangeCount ?: item.piezas}. ¿Es correcto?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingMismatch = null
-                    addItem(item)
-                }) { Text("Sí, son ${item.piezas}") }
-            },
-            dismissButton = { TextButton(onClick = { pendingMismatch = null }) { Text("Corregir") } }
         )
     }
 

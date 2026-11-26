@@ -331,6 +331,7 @@ fun AlwaysActiveBarcodeField(
     placeholderText: String = "Escanear o escribir código + ENTER...",
     focusRequester: FocusRequester,
     testTagName: String,
+    enabled: Boolean = true,
     onActivityDetected: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -340,6 +341,7 @@ fun AlwaysActiveBarcodeField(
     var liveText by remember { mutableStateOf(value) }
 
     fun submitCurrent(raw: String) {
+        if (!enabled) return
         val clean = raw.replace("\r", "").replace("\n", "").trim()
         if (clean.isNotEmpty()) {
             onActivityDetected()
@@ -354,7 +356,9 @@ fun AlwaysActiveBarcodeField(
 
     OutlinedTextField(
         value = value,
+        enabled = enabled,
         onValueChange = { incoming ->
+            if (!enabled) return@OutlinedTextField
             liveText = incoming
             if (incoming.contains('\n') || incoming.contains('\r')) {
                 val segments = incoming.split('\n', '\r')
@@ -424,7 +428,7 @@ fun AlwaysActiveBarcodeField(
                 }
                 IconButton(
                     onClick = { submitLatest() },
-                    enabled = liveText.isNotBlank(),
+                    enabled = enabled && liveText.isNotBlank(),
                     modifier = Modifier
                         .size(44.dp)
                         .testTag("${testTagName}_submit")
@@ -460,6 +464,7 @@ fun AlwaysActiveBarcodeField(
             .focusRequester(focusRequester)
             .onFocusChanged { state -> isFocused = state.isFocused }
             .onPreviewKeyEvent { keyEvent ->
+                if (!enabled) return@onPreviewKeyEvent false
                 if (
                     (keyEvent.key == Key.Enter || keyEvent.key == Key.NumPadEnter) &&
                     (keyEvent.type == KeyEventType.KeyDown || keyEvent.type == KeyEventType.KeyUp)
