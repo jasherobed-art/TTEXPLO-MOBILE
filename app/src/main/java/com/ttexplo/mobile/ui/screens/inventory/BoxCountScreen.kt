@@ -105,6 +105,10 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
     val folioDisplay = savedVale?.folio ?: "-"
     val scanEnabled = kpInput.length == 1 && kpInput[0].isDigit() &&
         piecesInput.toIntOrNull() in 1..BoxUnitWeightCalculator.MAX_CARTRIDGES_PER_BOX
+    val displayedIsError = messageIsError && !scanEnabled
+    val displayedMessage = if (scanEnabled && !messageIsError)
+        "Escáner y entrada manual listos: dispare el lector o escriba código + ENTER."
+    else message
 
     val btPrintLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -308,7 +312,10 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             OutlinedTextField(
                                 value = kpInput,
-                                onValueChange = { v -> kpInput = v.filter { it.isDigit() }.take(1) },
+                                onValueChange = { v ->
+                                    kpInput = v.filter { it.isDigit() }.take(1)
+                                    if (messageIsError) { messageIsError = false; message = "Llena los datos para habilitar escáner y entrada manual." }
+                                },
                                 label = { Text("Línea / KP") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
@@ -316,7 +323,10 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                             )
                             OutlinedTextField(
                                 value = piecesInput,
-                                onValueChange = { v -> piecesInput = v.filter { it.isDigit() }.take(4) },
+                                onValueChange = { v ->
+                                    piecesInput = v.filter { it.isDigit() }.take(4)
+                                    if (messageIsError) { messageIsError = false; message = "Llena los datos para habilitar escáner y entrada manual." }
+                                },
                                 label = { Text("Piezas contadas") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
@@ -345,19 +355,19 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(6.dp))
-                    .background(if (messageIsError) MineErrorRed.copy(alpha = 0.24f) else MineSuccessGreen.copy(alpha = 0.2f))
-                    .border(1.dp, if (messageIsError) MineErrorRed else MineSuccessGreen, RoundedCornerShape(6.dp))
+                    .background(if (displayedIsError) MineErrorRed.copy(alpha = 0.24f) else MineSuccessGreen.copy(alpha = 0.2f))
+                    .border(1.dp, if (displayedIsError) MineErrorRed else MineSuccessGreen, RoundedCornerShape(6.dp))
                     .padding(horizontal = 8.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
-                    imageVector = if (messageIsError) Icons.Default.Warning else Icons.Default.CheckCircle,
+                    imageVector = if (displayedIsError) Icons.Default.Warning else Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = if (messageIsError) MineErrorRedLight else MineSuccessGreenLight,
+                    tint = if (displayedIsError) MineErrorRedLight else MineSuccessGreenLight,
                     modifier = Modifier.size(15.dp)
                 )
-                Text(message, color = MineTextPrimary, fontSize = 11.sp, maxLines = 2)
+                Text(displayedMessage, color = MineTextPrimary, fontSize = 11.sp, maxLines = 2)
             }
 
             Text(

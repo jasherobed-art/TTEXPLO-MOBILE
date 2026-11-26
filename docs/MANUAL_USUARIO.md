@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.6.0 (build 30) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.6.0 (build 31) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -126,7 +126,7 @@ También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 
 1. Abre **4. CONTEO EN CAJA** desde la pantalla de inicio.
 2. Cuenta físicamente las piezas de la caja. Escribe la línea o KP (un solo número) y las piezas contadas. El teclado es numérico: KP de un solo dígito y piezas de hasta 4 dígitos, entre 1 y 500. Mientras tanto, el escáner y la entrada manual están deshabilitados.
-3. Al llenar KP y piezas, se habilitan el escáner y la entrada manual: dispare el lector o escriba el código de 30 dígitos y pulse ENTER. El código debe tener 30 dígitos. Al capturarlo, la app destella y suena o vibra según tu configuración.
+3. Al llenar KP y piezas, se habilitan el escáner y la entrada manual: dispare el lector o escriba el código de 30 dígitos y pulse ENTER. La casilla de código también usa solo teclado numérico. El código debe tener 30 dígitos. Al capturarlo, la app destella y suena o vibra según tu configuración. El catálogo de productos viene incluido desde la instalación; no tienes que importarlo.
 4. El código se agrega solo a la lista, con la descripción del catálogo, tu KP y tus piezas. Ya no hay botón **AGREGAR CÓDIGO** ni aviso de discrepancia: aunque tus piezas no coincidan con el rango del código, lo que tecleaste manda. En el renglón puedes corregir el KP y las piezas, o borrar la caja completa; el borrado pide confirmación.
 5. Si lees la misma caja dos veces, verás **CÓDIGO REPETIDO** y la segunda lectura no se agrega.
 6. Después de agregar una caja, el KP se conserva y las piezas se limpian. Teclea la cantidad de la siguiente caja para volver a habilitar escáner y entrada manual.
@@ -621,7 +621,7 @@ Genera otra en License Master Pro para el Device ID actual y actívala desde Lic
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.6.0 (Build 30)`.
+- Versión, por ejemplo `v2.6.0 (Build 31)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.

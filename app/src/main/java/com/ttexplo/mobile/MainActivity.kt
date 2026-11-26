@@ -81,17 +81,18 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Seed initial bundled catalog if database is empty
+        // Seed the bundled catalog on clean install and refresh it once on upgrade
         lifecycleScope.launch(Dispatchers.IO) {
-            val db = (application as TTExploApp).database
-            val repo = CatalogRepositoryImpl(db.productoDao())
-            if (repo.countProducts() == 0) {
-                try {
-                    val csv = assets.open("catalogo_productos.csv").bufferedReader().use { it.readText() }
-                    repo.importCsv(csv)
-                } catch (e: Exception) {
-                    // Ignore asset loading error
-                }
+            val prefs = getSharedPreferences("ttexplo_catalog_seed", MODE_PRIVATE)
+            if (prefs.getInt("bundled_catalog_version", 0) >= 1) return@launch
+            try {
+                val db = (application as TTExploApp).database
+                val repo = CatalogRepositoryImpl(db.productoDao())
+                val csv = assets.open("catalogo_productos.csv").bufferedReader().use { it.readText() }
+                repo.importCsv(csv)
+                prefs.edit().putInt("bundled_catalog_version", 1).apply()
+            } catch (e: Exception) {
+                // Keep the previous catalog if the bundled asset cannot be read
             }
         }
 
