@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -189,6 +190,10 @@ fun SettingsScreen(
     var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
     var previewFlashEvent by remember { mutableStateOf<ScanFlashEvent?>(null) }
+    var expandedSections by remember { mutableStateOf(setOf("license")) }
+    fun toggleSection(key: String) {
+        expandedSections = if (key in expandedSections) expandedSections - key else expandedSections + key
+    }
 
     val previewSoundManager = remember(context) { SoundFeedbackManager(context.applicationContext) }
     DisposableEffect(previewSoundManager) {
@@ -309,39 +314,44 @@ fun SettingsScreen(
             // ==========================================
             // SECCIÓN 0: AUDIO, VIBRACIÓN Y ALERTAS VISUALES
             // ==========================================
-            AudioSettingsCard(
-                settingsRepo = viewModel.settingsRepo,
-                soundManager = previewSoundManager,
-                onPreviewFlash = { type ->
-                    previewFlashEvent = ScanFlashEvent(type = type)
-                }
-            )
+            CollapsibleSettingsSection("AUDIO, VIBRACIÓN Y ALERTAS VISUALES", "audio" in expandedSections, { toggleSection("audio") }) {
+                AudioSettingsCard(
+                    settingsRepo = viewModel.settingsRepo,
+                    soundManager = previewSoundManager,
+                    onPreviewFlash = { type ->
+                        previewFlashEvent = ScanFlashEvent(type = type)
+                    }
+                )
+            }
 
             // ==========================================
             // SECCIÓN 1: MÚLTIPLES IMPRESORAS TÉRMICAS & FORMATO
             // ==========================================
-            PrinterProfilesSettingsCard(
-                settingsRepo = viewModel.settingsRepo,
-                printerManager = viewModel.printerManager,
-                onRequestBluetoothPermission = { onGranted ->
-                    val hasPerm = viewModel.printerManager.hasBluetoothPermission()
-                    if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        pendingBtAction = onGranted
-                        btPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.BLUETOOTH_CONNECT,
-                                Manifest.permission.BLUETOOTH_SCAN
+            CollapsibleSettingsSection("MÚLTIPLES IMPRESORAS TÉRMICAS & FORMATO", "printer" in expandedSections, { toggleSection("printer") }) {
+                PrinterProfilesSettingsCard(
+                    settingsRepo = viewModel.settingsRepo,
+                    printerManager = viewModel.printerManager,
+                    onRequestBluetoothPermission = { onGranted ->
+                        val hasPerm = viewModel.printerManager.hasBluetoothPermission()
+                        if (!hasPerm && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            pendingBtAction = onGranted
+                            btPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.BLUETOOTH_CONNECT,
+                                    Manifest.permission.BLUETOOTH_SCAN
+                                )
                             )
-                        )
-                    } else {
-                        onGranted()
+                        } else {
+                            onGranted()
+                        }
                     }
-                }
-            )
+                )
+            }
 
             // ==========================================
             // SECCIÓN 2: DATOS DE MINA Y ENCABEZADOS
             // ==========================================
+            CollapsibleSettingsSection("DATOS DE MINA Y ENCABEZADOS", "mine" in expandedSections, { toggleSection("mine") }) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
@@ -414,10 +424,12 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
 
             // ==========================================
             // SECCIÓN 3: CATÁLOGO DE EXPLOSIVOS
             // ==========================================
+            CollapsibleSettingsSection("CATÁLOGO DE PRODUCTOS", "catalog" in expandedSections, { toggleSection("catalog") }) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
@@ -507,10 +519,12 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
 
             // ==========================================
             // SECCIÓN 4: EXPORTACIÓN & ARCHIVO PLANO
             // ==========================================
+            CollapsibleSettingsSection("EXPORTACIÓN Y ARCHIVO PLANO", "export" in expandedSections, { toggleSection("export") }) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
@@ -573,6 +587,7 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
 
             // ==========================================
             // SECCIÓN 5: LICENCIA Y DISPOSITIVO (HARDWARE ID)
@@ -585,6 +600,7 @@ fun SettingsScreen(
                 else -> MineErrorRed
             }
 
+            CollapsibleSettingsSection("LICENCIA Y HARDWARE ID", "license" in expandedSections, { toggleSection("license") }) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
@@ -733,10 +749,12 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
 
             // ==========================================
             // SECCIÓN 6: INFORMACIÓN DEL SISTEMA
             // ==========================================
+            CollapsibleSettingsSection("INFORMACIÓN DEL SISTEMA", "system" in expandedSections, { toggleSection("system") }) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
@@ -794,11 +812,51 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
         }
     }
     ScanFlashOverlay(
         event = previewFlashEvent,
         enabled = true
     )
+    }
+}
+
+@Composable
+private fun CollapsibleSettingsSection(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(MineDarkSurface)
+                .border(1.dp, MineBorderGray, RoundedCornerShape(10.dp))
+                .clickable(onClick = onToggle)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = title,
+                color = MineSafetyYellow,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "Colapsar $title" else "Expandir $title",
+                tint = MineSafetyYellow
+            )
+        }
+        if (expanded) {
+            Spacer(Modifier.height(6.dp))
+            content()
+        }
     }
 }

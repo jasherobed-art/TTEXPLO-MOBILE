@@ -10,7 +10,7 @@ class VersionMetadataTest {
     @Test
     fun appVersionIs260() {
         assertThat(BuildConfig.VERSION_NAME).isEqualTo("2.6.0")
-        assertThat(BuildConfig.VERSION_CODE).isEqualTo(31)
+        assertThat(BuildConfig.VERSION_CODE).isEqualTo(32)
     }
 
     @Test

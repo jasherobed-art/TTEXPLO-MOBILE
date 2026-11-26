@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.6.0 (build 31) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.6.0 (build 32) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -214,7 +214,7 @@ Borrar no es de un toque: pide un código de 4 dígitos. Esa molestia es a prop�
 
 ## Configuración
 
-En **9. Configuración y Personalización** está lo de siempre: mina, catálogo, impresoras y licencia.
+En **9. Configuración y Personalización** está lo de siempre: mina, catálogo, impresoras y licencia. Cada bloque se abre o cierra tocando su título. Al entrar, solo queda abierto **Licencia y Hardware ID**.
 
 ### Datos de la mina
 
@@ -621,7 +621,7 @@ Genera otra en License Master Pro para el Device ID actual y actívala desde Lic
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.6.0 (Build 31)`.
+- Versión, por ejemplo `v2.6.0 (Build 32)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.
