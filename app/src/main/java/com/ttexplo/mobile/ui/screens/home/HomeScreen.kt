@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.BuildConfig
 import com.ttexplo.mobile.license.LicenseManager
+import com.ttexplo.mobile.license.LicenseModules
 import com.ttexplo.mobile.license.LicenseStatus
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.theme.*
@@ -60,13 +61,11 @@ fun HomeScreen(
 
     val isOperationAllowed = licenseCheck.status == LicenseStatus.VALID || licenseCheck.status == LicenseStatus.EXPIRING_SOON
 
-    fun handleGuardedAction(action: () -> Unit) {
-        if (isOperationAllowed) {
-            action()
-        } else {
-            onNavigateToLicense()
-        }
-    }
+    fun isAllowed(module: String) = LicenseModules.isAllowed(licenseCheck, module)
+    val operacionesVisibles = listOf(
+        LicenseModules.ENTRADAS, LicenseModules.SALIDAS, LicenseModules.ACCESORIOS, LicenseModules.CONTEO_EN_CAJA
+    ).any { isAllowed(it) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -223,12 +222,14 @@ fun HomeScreen(
                 }
             }
 
-            Text(
-                text = "OPERACIONES PRINCIPALES",
-                style = MaterialTheme.typography.labelLarge,
-                color = MineTextMuted,
-                fontWeight = FontWeight.Bold
-            )
+            if (operacionesVisibles) {
+                Text(
+                    text = "OPERACIONES PRINCIPALES",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MineTextMuted,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
             // 1. Entradas de Alto y Agente
             MenuActionCard(
@@ -236,7 +237,8 @@ fun HomeScreen(
                 subtitle = "Recepción de alto y agente",
                 accentColor = MineSafetyYellow,
                 icon = Icons.Default.MoveToInbox,
-                onClick = { handleGuardedAction(onNavigateToEntradas) }
+                visible = isAllowed(LicenseModules.ENTRADAS),
+                onClick = onNavigateToEntradas
             )
 
             // 2. Salidas / Despacho de Alto y Agente
@@ -245,7 +247,8 @@ fun HomeScreen(
                 subtitle = "Despacho de alto y agente",
                 accentColor = MineHighExplosiveOrange,
                 icon = Icons.Default.LocalShipping,
-                onClick = { handleGuardedAction(onNavigateToDespacho) }
+                visible = isAllowed(LicenseModules.SALIDAS),
+                onClick = onNavigateToDespacho
             )
 
             // 3. Salida de Accesorios
@@ -254,7 +257,8 @@ fun HomeScreen(
                 subtitle = "Detonadores, cordón detonante y artificios",
                 accentColor = MineAccessoryPurple,
                 icon = Icons.Default.ElectricBolt,
-                onClick = { handleGuardedAction(onNavigateToAccesorios) }
+                visible = isAllowed(LicenseModules.ACCESORIOS),
+                onClick = onNavigateToAccesorios
             )
 
             // 4. Conteo en caja
@@ -264,10 +268,13 @@ fun HomeScreen(
                 accentColor = MineSuccessGreenLight,
                 icon = Icons.Default.Inventory2,
                 isCompact = true,
-                onClick = { handleGuardedAction(onNavigateToBoxCount) }
+                visible = isAllowed(LicenseModules.CONTEO_EN_CAJA),
+                onClick = onNavigateToBoxCount
             )
 
-            HorizontalDivider(color = MineBorderGray, thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
+            if (operacionesVisibles) {
+                HorizontalDivider(color = MineBorderGray, thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
+            }
 
             Text(
                 text = "GESTIÓN Y REPORTES",
@@ -283,7 +290,8 @@ fun HomeScreen(
                 accentColor = MineAgentBlue,
                 icon = Icons.Default.AssignmentReturn,
                 isCompact = true,
-                onClick = { handleGuardedAction(onNavigateToDevoluciones) }
+                visible = isAllowed(LicenseModules.DEVOLUCIONES),
+                onClick = onNavigateToDevoluciones
             )
 
             // 6. Devolución de Accesorios
@@ -293,7 +301,8 @@ fun HomeScreen(
                 accentColor = MineAgentCyan,
                 icon = Icons.Default.AssignmentReturn,
                 isCompact = true,
-                onClick = { handleGuardedAction(onNavigateToDevolucionAccesorios) }
+                visible = isAllowed(LicenseModules.DEVOLUCIONES_ACCESORIOS),
+                onClick = onNavigateToDevolucionAccesorios
             )
 
             // 7. Inventario en Polvorín (En Vivo)
@@ -303,7 +312,8 @@ fun HomeScreen(
                 accentColor = MineSuccessGreenLight,
                 icon = Icons.Default.Inventory2,
                 isCompact = false,
-                onClick = { handleGuardedAction(onNavigateToInventory) }
+                visible = isAllowed(LicenseModules.INVENTARIO_POLVORIN),
+                onClick = onNavigateToInventory
             )
 
             // 8. Historial de Vales
@@ -313,6 +323,7 @@ fun HomeScreen(
                 accentColor = MineSafetyYellow,
                 icon = Icons.Default.History,
                 isCompact = true,
+                visible = isAllowed(LicenseModules.HISTORIAL),
                 onClick = onNavigateToHistory
             )
 
@@ -355,8 +366,10 @@ fun MenuActionCard(
     accentColor: Color,
     icon: ImageVector,
     isCompact: Boolean = false,
+    visible: Boolean = true,
     onClick: () -> Unit
 ) {
+    if (!visible) return
     Row(
         modifier = Modifier
             .fillMaxWidth()

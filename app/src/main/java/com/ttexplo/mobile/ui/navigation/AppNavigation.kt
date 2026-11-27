@@ -1,5 +1,6 @@
 package com.ttexplo.mobile.ui.navigation
 
+import com.ttexplo.mobile.license.LicenseModules
 import java.net.URLDecoder
 import java.util.Base64
 
@@ -116,4 +117,16 @@ sealed class Screen(val route: String) {
         fun createRoute(canBack: Boolean = false): String = "license?canBack=$canBack"
     }
     object LicenseVault : Screen("license_vault")
+}
+
+fun requiredLicenseModule(route: String?): String? = when (route) {
+    Screen.EntradasHeader.route, Screen.EntradasScan.route -> LicenseModules.ENTRADAS
+    Screen.DespachoHeader.route, Screen.DespachoScan.route -> LicenseModules.SALIDAS
+    Screen.AccesoriosHeader.route, Screen.AccesoriosScan.route -> LicenseModules.ACCESORIOS
+    Screen.Devoluciones.route -> LicenseModules.DEVOLUCIONES
+    Screen.DevolucionAccesoriosHeader.route, Screen.DevolucionAccesoriosScan.route -> LicenseModules.DEVOLUCIONES_ACCESORIOS
+    Screen.BoxCount.route -> LicenseModules.CONTEO_EN_CAJA
+    Screen.Inventory.route, Screen.InventorySync.route -> LicenseModules.INVENTARIO_POLVORIN
+    Screen.ValesHistory.route -> LicenseModules.HISTORIAL
+    else -> null
 }

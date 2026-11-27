@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.6.0 (build 33) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.7.0 (build 35) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -19,11 +19,19 @@ Cada terminal tiene su ID (Device ID). Anótalo bien: la licencia se hace para e
 Si salió bien, verás **AUTORIZADA**. Si dice **PRÓXIMA A VENCER**, renueva antes de la fecha que marca.
 
 > [!IMPORTANTE]
-> La APK viene con una licencia temporal de 1 día. Activa la licencia definitiva antes de operar de verdad.
+> La APK no incluye licencia. Activa la tuya antes de operar.
+
+### Módulos según tu licencia
+
+Tu licencia define qué módulos puedes usar. Tu administrador elige el perfil: **Básico**, **Operativo** o **Completo**. **9. Configuración** siempre está disponible, sin importar el perfil.
+
+- Con la clave corta `TTEX-...` se activan todos los módulos.
+- Un perfil restringido se activa con el token `TTEX:...`, el archivo `.lic` o el QR.
+- Si la licencia vence, al volver a la app solo quedan disponibles Configuración y Licencias.
 
 ## Pantalla de inicio
 
-Arriba verás `v2.6.0`. Debajo están los nueve módulos. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
+Arriba verás `v2.7.0`. Debajo están los módulos que incluye tu licencia. Los que no cubre no aparecen. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
 
 | Módulo | Para qué lo usas |
 |---|---|
@@ -34,10 +42,12 @@ Arriba verás `v2.6.0`. Debajo están los nueve módulos. Tocas y entras. La app
 | **5. Devolución de Alto y Agente** | Meter de vuelta lo que sobró. |
 | **6. Devolución de Accesorios** | Devolución de detonantes y accesorios. |
 | **7. Inventario en Polvorín (En Vivo)** | Ver saldos, ajustar y consultar Kardex. |
-| **8. Historial de Vales & Consolidado** | Buscar vales y exportarlos. |
+| **8. Historial de Vales & Consolidado** | Buscar vales, exportarlos y compartirlos. |
 | **9. Configuración y Personalización** | Impresora, mina, catálogo y licencia. |
 
 El engranaje de arriba abre Configuración. Si la licencia está por vencer, verás un aviso arriba.
+
+Si tu licencia no incluye un módulo, no aparece en la pantalla de inicio. Solo ves los módulos que tu licencia cubre. Si necesitas otro módulo, pide a soporte un perfil que lo incluya y activa el nuevo token.
 
 ## Registrar una entrada
 
@@ -116,12 +126,6 @@ El botón **CARGA RÁPIDA / AJUSTE** va fijo abajo. Ya no tapa la lista.
 
 También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 
-### Abrir la bóveda de licencias
-
-1. En Inventario, toca los tres puntos de arriba.
-2. Elige **Licencias**.
-3. Verás el Device ID de esta terminal y las licencias guardadas.
-
 ## Contar cajas
 
 1. Abre **4. CONTEO EN CAJA** desde la pantalla de inicio.
@@ -134,41 +138,6 @@ También puedes abrirlo desde la tarjeta del producto, con **Ajustar**.
 8. Toca **IMPRIMIR** para el ticket de conteo. Trae folio, cada código con su descripción, KP, piezas, fecha y hora, y el total de piezas. No lleva firmas.
 
 IMPORTANTE: el peso por pieza se calcula con 25 kg entre las piezas que contaste. Si te equivocas al contar, corrige el número en el renglón antes de confirmar. Ya no hay botón de TXT: los datos salen en el ticket y en el consolidado del historial.
-
-## Bóveda de licencias
-
-Aquí guardas las licencias que generaste en License Master Pro. La app no fabrica licencias.
-
-### Agregar una licencia
-
-1. En **Licencias guardadas**, toca **Agregar**.
-2. Pon un alias que te recuerde dónde va, por ejemplo `Polvorín Norte`.
-3. Pega el token `TTEX:...` o la clave corta `TTEX-...`.
-4. Toca **Guardar**. La app revisa la firma antes de guardarla.
-5. Si es para otra terminal, la tarjeta dice **OTRA TERMINAL**. Ahí no la instales.
-
-### Instalar una licencia guardada
-
-1. Revisa que la tarjeta diga **VIGENTE** y que el destino sea esta terminal.
-2. Toca **Instalar**.
-3. Si el ID no coincide, la app avisa que el dispositivo no está autorizado. Estás en la terminal equivocada.
-
-### Copiar, compartir y borrar
-
-- Copiar: manda el token al portapapeles.
-- Compartir: abre el menú de compartir de Android.
-- Eliminar: saca la licencia de la bóveda. No toca la licencia ya instalada.
-
-### Exportar e importar la bóveda
-
-Para llevar licencias a otra terminal:
-
-1. Toca **Exportar** y elige dónde guardar. Sale un JSON con tus licencias.
-2. En la otra terminal, abre **Licencias guardadas** y toca **Importar**.
-3. Selecciona el JSON.
-4. Revisa las tarjetas antes de instalar.
-
-Ojo: importar reemplaza la bóveda actual. Si quieres conservar la tuya, exporta primero.
 
 ## Sincronización entre terminales
 
@@ -209,6 +178,9 @@ En **Historial** ves las sesiones y los conflictos. Toca una fila para ver el de
 2. Filtra por tipo. Los conteos de caja aparecen con el folio `CC-AAAAAMMDD-NNN` y el filtro **Conteos**.
 3. Toca un vale para verlo, reimprimirlo o borrarlo. En los conteos no hay botón de editar: corrige los renglones dentro del conteo antes de confirmarlo.
 4. Para exportar, usa **EXPORTAR CONSOLIDADO** o selecciona varios y usa **EXPORTAR SELECCIONADOS**. Los conteos salen con encabezado `CAJ` y renglones `codigo,KP,piezas,fechaHora`.
+5. Para compartir, selecciona los vales y toca **COMPARTIR**. Se abre el menú de Android con el mismo archivo `.txt` del consolidado. El botón aparece solo cuando hay vales seleccionados.
+
+Solo ves los vales de los módulos que incluye tu licencia.
 
 Borrar no es de un toque: pide un código de 4 dígitos. Esa molestia es a propósito.
 
@@ -321,7 +293,7 @@ Se abre desde el botón fijo de abajo o desde **Ajustar** en una tarjeta. Pides 
 
 ### Menú de Inventario
 
-Los tres puntos de arriba abren el menú. Ahí está **Licencias**, que lleva a la bóveda. El botón de flechas abre el Centro de Sincronización.
+Los tres puntos de arriba abren el menú. Ahí está **Licencias**. El botón de flechas abre el Centro de Sincronización.
 
 ### Licencias guardadas
 
@@ -514,10 +486,9 @@ Autorizar la terminal con una licencia hecha fuera de la app.
 1. Copiar el Device ID.
 2. Generar en License Master Pro.
 3. Activar con clave, token o QR.
-4. Guardar en la bóveda con un alias.
-5. Instalar en la terminal correcta.
+4. Instalar en la terminal correcta.
 
-En corto: Device ID → Generación → Activación → Bóveda → Instalación.
+En corto: Device ID → Generación → Activación → Instalación.
 
 ### Qué es cada control importante
 
@@ -533,7 +504,7 @@ Si no sabes para qué sirve un botón, mira aquí.
 | Códigos | Tarjeta de producto | Series escaneadas de ese producto. |
 | QR V4 | Sincronización | Eventos firmados con HMAC-SHA256. |
 | Perfil de impresora | Configuración | Protocolo, ancho de papel y MAC Bluetooth. |
-| Bóveda de licencias | Menú de Inventario | Guarda, instala, exporta e importa licencias. |
+| Licencias | Menú de Inventario | Muestra el Device ID y las tarjetas de licencia instaladas. |
 | Informe de fusión | Sincronización | Cuántos eventos entraron y qué conflictos hay. |
 
 ## Estructura del programa
@@ -553,7 +524,7 @@ La app es nativa en Kotlin con Jetpack Compose. Todo se guarda en el celular con
 - `ui/screens/home`: menú principal de ocho módulos.
 - `ui/screens/entradas`, `despacho`, `accesorios`, `devolucion`: captura de vales. Cada uno tiene pantalla de encabezado, pantalla de escaneo y su ViewModel.
 - `ui/screens/inventory`: inventario, Kardex, carga rápida y sincronización.
-- `ui/screens/license`: activación de licencia y bóveda.
+- `ui/screens/license`: activación de licencia.
 - `ui/screens/history`: consulta y exportación de vales.
 - `ui/screens/settings`: mina, catálogo, impresoras, audio y versión.
 - `ui/common`: piezas reutilizables: textos que se ajustan, tarjetas de escaneo, diálogos, sonido y destello.
@@ -594,7 +565,6 @@ En corto: Pantalla → ViewModel → Repositorio → Room. De ahí sale a Impres
 
 - Cierra el vale antes de irte. No dejes cosas en borrador.
 - Revisa el Device ID antes de pedir otra licencia.
-- Exporta la bóveda si vas a cambiar de terminal.
 - Mira los conflictos antes de borrar vales.
 - Si imprimes, revisa que haya papel y batería.
 
@@ -614,14 +584,18 @@ Pega la cadena completa, sin espacios ni saltos. Si viene de una terminal vieja,
 
 ### La licencia aparece vencida
 
-Genera otra en License Master Pro para el Device ID actual y actívala desde Licencias o desde la bóveda.
+Genera otra en License Master Pro para el Device ID actual y actívala desde Licencias.
+
+### Un módulo no aparece en el inicio
+
+Tu licencia no incluye ese módulo. Solo se muestran los módulos cubiertos por tu licencia. Pide a soporte un perfil que lo incluya y activa el nuevo token. Mientras tanto, Configuración sigue disponible.
 
 ## Soporte
 
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.6.0 (Build 33)`.
+- Versión, por ejemplo `v2.7.0 (Build 35)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.

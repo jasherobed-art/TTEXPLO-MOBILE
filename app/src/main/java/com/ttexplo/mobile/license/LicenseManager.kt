@@ -3,6 +3,7 @@ package com.ttexplo.mobile.license
 import android.content.Context
 import android.provider.Settings
 import android.util.Base64
+import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
 import java.time.LocalDate
@@ -17,8 +18,8 @@ object LicenseManager {
     const val MASTER_SECRET = "TTEXPLO_2026_MASTER_SECRET_KEY_MINING_AUTHORIZATION_98124"
     private const val PREFS_NAME = "ttexplo_license_prefs"
     private const val KEY_TOKEN = "active_license_token"
-    private const val KEY_TEMP_1DAY_PROVISIONED = "temp_1day_trial_provisioned"
     private const val KEY_REAL_LICENSE_INSTALLED = "real_license_installed"
+    private const val KEY_ACTIVATION_LOG = "activation_log"
 
     private val SHORT_KEY_REGEX = Regex(
         "^TTEX-(PERP|[DAT]\\d{6})-([A-Z0-9]{3,4})-([0-9A-F]{8})$"
@@ -339,7 +340,7 @@ object LicenseManager {
             tier = tier,
             issuedDate = LocalDate.now().toString(),
             expiresDate = expiresStr,
-            modules = listOf("ENTRADAS", "SALIDAS", "ACCESORIOS", "DEVOLUCIONES"),
+            modules = LicenseModules.ALL,
             rawToken = normalizedShortKey
         )
         return Result.success(info)
@@ -480,7 +481,7 @@ object LicenseManager {
             tier = tier,
             issuedDate = issued,
             expiresDate = expires,
-            modules = modsList,
+            modules = LicenseModules.fromToken(modsList, json.optInt("mv", 0)),
             rawToken = cleanToken
         )
         return Result.success(info)
@@ -492,14 +493,27 @@ object LicenseManager {
     fun saveLicense(context: Context, tokenString: String): Result<LicenseInfo> {
         val verification = verifyToken(context, tokenString)
         if (verification.isSuccess) {
-            val cleanNormalizedToken = verification.getOrThrow().rawToken
+            val info = verification.getOrThrow()
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit()
-                .putString(KEY_TOKEN, cleanNormalizedToken)
+                .putString(KEY_TOKEN, info.rawToken)
                 .putBoolean(KEY_REAL_LICENSE_INSTALLED, true)
+                .putString(KEY_ACTIVATION_LOG, appendActivationLog(prefs.getString(KEY_ACTIVATION_LOG, null), info, getFormattedDeviceId(context)))
                 .apply()
         }
         return verification
+    }
+
+    private fun appendActivationLog(previous: String?, info: LicenseInfo, terminal: String): String {
+        val log = runCatching { JSONArray(previous ?: "[]") }.getOrElse { JSONArray() }
+        log.put(
+            JSONObject()
+                .put("fecha", Instant.now().toString())
+                .put("tier", info.tier)
+                .put("terminal", terminal)
+                .put("modulos", JSONArray(info.modules))
+        )
+        return log.toString()
     }
 
     /**
@@ -517,31 +531,6 @@ object LicenseManager {
     fun isDemoModeAllowed(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return !prefs.getBoolean(KEY_REAL_LICENSE_INSTALLED, false)
-    }
-
-    /**
-     * Aprovisiona por única vez en instalación limpia una licencia temporal oficial de 1 día
-     * firmada criptográficamente con HMAC-SHA256 (`TTEX-T<YYMMDD>-ALL-<HMAC8>`).
-     *
-     * No sobreescribe licencias existentes ni se auto-renueva si vence o se borra manualmente.
-     */
-    fun ensureOneDayTemporaryLicenseIfNeeded(context: Context): String? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val existingToken = prefs.getString(KEY_TOKEN, null)
-        if (!existingToken.isNullOrBlank()) return null
-        if (prefs.getBoolean(KEY_TEMP_1DAY_PROVISIONED, false)) return null
-
-        val expiresTomorrow = LocalDate.now().plusDays(1).toString()
-        val tempKey = generateShortKey(
-            tier = "TEMPORAL",
-            expiresIsoOrPerpetual = expiresTomorrow,
-            deviceId = "*"
-        )
-        prefs.edit()
-            .putString(KEY_TOKEN, tempKey)
-            .putBoolean(KEY_TEMP_1DAY_PROVISIONED, true)
-            .apply()
-        return tempKey
     }
 
     /**

@@ -4,7 +4,19 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.5.0] — Build 20 (Actual)
+## [v2.7.0] — Build 35 (Actual)
+### Mejorado
+- **Menús según licencia:** la pantalla de inicio muestra solo los módulos incluidos en la licencia. Los módulos no cubiertos ya no aparecen bloqueados ni con candado. Si una sección se queda sin tarjetas, tampoco se muestra su título.
+- **Sincronización generador-app:** el generador emite tokens con `mv: 2` y los perfiles Básico, Operativo y Completo incluyen Historial de vales. Prueba permanente de paridad con tokens reales del generador.
+- **Sin licencia de prueba:** se quitó la licencia temporal de 1 día que venía en la APK.
+
+### Técnico
+- `HomeScreen` filtra las tarjetas con `LicenseModules.isAllowed`. La guarda de ruta en `MainActivity` sigue como respaldo.
+- Nueva prueba `HomeScreenLicenseVisibilityTest` (3 casos) y `LicenseGeneratorParityTest` (4 casos).
+
+---
+
+## [v2.5.0] — Build 20
 ### Mejorado (Optimización en campo para Munbyn AceScan AS01)
 - **Teclado Gboard sin bloqueo de campos (`imePadding` + `navigationBarsPadding`):**
   - Todos los formularios de encabezados (**Despacho**, **Entradas**, **Accesorios**), pantallas de escaneo (**Devoluciones** incluida), **Configuración**, **Licencia** y diálogos de captura ahora desplazan su contenido libremente arriba del teclado Gboard sin ocultar campos ni botones de guardado.

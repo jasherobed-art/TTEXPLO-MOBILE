@@ -95,13 +95,4 @@ class LicenseVaultTest {
             assertWithMessage(rel).that(content).contains("isDemoModeAllowed")
         }
     }
-
-    @Test
-    fun factoryTemporaryLicenseKeepsDemoVisible() {
-        val temp = LicenseManager.ensureOneDayTemporaryLicenseIfNeeded(context)
-        assertThat(temp).isNotNull()
-        assertThat(LicenseManager.checkLicense(context).status)
-            .isIn(listOf(LicenseStatus.VALID, LicenseStatus.EXPIRING_SOON))
-        assertThat(LicenseManager.isDemoModeAllowed(context)).isTrue()
-    }
 }

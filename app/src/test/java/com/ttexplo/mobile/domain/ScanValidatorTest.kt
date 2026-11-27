@@ -337,7 +337,7 @@ class ScanValidatorTest {
         ).forEach { code ->
             val result = scanValidator.processScan(code, emptySet())
             assertThat(result.isValid).isFalse()
-            assertThat(result.message).contains("código GS1 grande")
+            assertThat(result.message).contains("DETECTADO GS1 (QR) GRANDE")
         }
     }
 }

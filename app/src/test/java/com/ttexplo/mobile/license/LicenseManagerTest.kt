@@ -16,7 +16,7 @@ class LicenseManagerTest {
         dev: String = "*",
         tier: String = "ANUAL",
         expires: String = Instant.now().plus(365, ChronoUnit.DAYS).toString(),
-        client: String = "Minera San Julián S.A. de C.V.",
+        client: String = "T&T Explo",
         mine: String = "Mina Subterránea - Polvorín Principal"
     ): String {
         val payload = JSONObject().apply {
@@ -24,7 +24,7 @@ class LicenseManagerTest {
             put("id", "LCN-20261122-AB12")
             put("client", client)
             put("mine", mine)
-            put("supervisor", "Ing. Roberto Almonte (Jefe de Voladuras)")
+            put("supervisor", "Supervisor de Polvorín")
             put("dev", dev)
             put("tier", tier)
             put("issued", Instant.now().toString())
@@ -51,7 +51,7 @@ class LicenseManagerTest {
         val result = LicenseManager.verifyTokenForDevice(token, "f020f600e29c76d6")
         assertThat(result.isSuccess).isTrue()
         val info = result.getOrThrow()
-        assertThat(info.client).isEqualTo("Minera San Julián S.A. de C.V.")
+        assertThat(info.client).isEqualTo("T&T Explo")
         assertThat(info.mine).isEqualTo("Mina Subterránea - Polvorín Principal")
         assertThat(info.tier).isEqualTo("ANUAL")
     }
@@ -66,7 +66,7 @@ class LicenseManagerTest {
             put("supervisor", "Supervisor")
             put("dev", "*")
             put("tier", "ANUAL")
-            put("appVersion", "2.6.0")
+            put("appVersion", "2.7.0")
             put("issued", Instant.now().toString())
             put("expires", Instant.now().plus(365, ChronoUnit.DAYS).toString())
             put("mods", JSONArray(listOf("ENTRADAS", "SALIDAS", "ACCESORIOS", "DEVOLUCIONES")))
@@ -85,7 +85,7 @@ class LicenseManagerTest {
         val licJson = JSONObject().apply {
             put("licenseKey", "TTEX-AN26-ALL-MI01-9B3C")
             put("activationToken", token)
-            put("details", JSONObject().put("client", "Minera San Julián S.A. de C.V."))
+            put("details", JSONObject().put("client", "T&T Explo"))
         }.toString(2)
 
         val result = LicenseManager.verifyTokenForDevice(licJson, "1122334455667788")

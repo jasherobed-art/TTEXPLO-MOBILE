@@ -12087,7 +12087,7 @@ class LicenseManagerTest {
             put("id", "LCN-TEST-001")
             put("client", "Minera San JuliÃ¡n")
             put("mine", "PolvorÃ­n Central")
-            put("supervisor", "Ing. Roberto Almonte")
+            put("supervisor", "Supervisor de Polvorín")
             put("dev", dev)
             put("tier", tier)
             put("issued", "2026-11-17T00:00:00.000Z")
@@ -12184,7 +12184,7 @@ class TicketGeneratorTest {
         assertThat(bytes[1]).isEqualTo(0x40.toByte())
 
         val text = String(bytes, charset)
-        assertThat(text).contains("MINA SAN JULIAN")
+        assertThat(text).contains("MINA T&T EXPLO")
         assertThat(text).contains("PERMISO GENERAL: SEDENA-PG-9988")
         assertThat(text).contains("POLVORIN SUR")
         assertThat(text).contains("VALE DE DESPACHO")

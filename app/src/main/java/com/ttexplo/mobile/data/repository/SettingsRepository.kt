@@ -45,7 +45,7 @@ class SettingsRepository internal constructor(
     }
 
     // =========================================================================
-    // GESTIÓN DE MÚLTIPLES IMPRESORAS BLUETOOTH (v2.6.0)
+    // GESTIÓN DE MÚLTIPLES IMPRESORAS BLUETOOTH (v2.7.0)
     // =========================================================================
 
     fun getPrinterProfiles(): List<PrinterProfile> {

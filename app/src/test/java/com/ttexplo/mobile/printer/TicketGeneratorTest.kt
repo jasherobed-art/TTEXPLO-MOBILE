@@ -128,7 +128,7 @@ class TicketGeneratorTest {
         val bytes = TicketGenerator.generateDespachoEscPos(
             record = despacho,
             paperWidth = PaperWidth.WIDTH_3_INCH,
-            mineName = "MINA SAN JULIÁN",
+            mineName = "MINA T&T EXPLÓ",
             permitNumber = "SEDENA-PG-9988",
             headerNote = "POLVORÍN SUR"
         )
@@ -139,7 +139,7 @@ class TicketGeneratorTest {
         assertThat(bytes[1]).isEqualTo(0x40.toByte())
 
         val text = String(bytes, charset)
-        assertThat(text).contains("MINA SAN JULIAN")
+        assertThat(text).contains("MINA T&T EXPLO")
         assertThat(text).contains("PERMISO GENERAL: SEDENA-PG-9988")
         assertThat(text).contains("POLVORIN SUR")
         assertThat(text).contains("VALE DE DESPACHO")

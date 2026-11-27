@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -13,22 +14,33 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
 import com.ttexplo.mobile.license.LicenseManager
+import com.ttexplo.mobile.license.LicenseModules
 import com.ttexplo.mobile.license.LicenseStatus
 import com.ttexplo.mobile.ui.navigation.RouteParamCodec
 import com.ttexplo.mobile.ui.navigation.Screen
+import com.ttexplo.mobile.ui.navigation.requiredLicenseModule
 import com.ttexplo.mobile.ui.screens.accesorios.AccesoriosHeaderScreen
 import com.ttexplo.mobile.ui.screens.accesorios.AccesoriosScanScreen
 import com.ttexplo.mobile.ui.screens.accesorios.AccesoriosViewModel
@@ -96,9 +108,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Provision a one-time 1-day HMAC-SHA256 temporary license on clean install
-        LicenseManager.ensureOneDayTemporaryLicenseIfNeeded(this)
-
         setContent {
             TTExploTheme {
                 Surface(
@@ -119,6 +128,24 @@ fun TTExploAppNavigation() {
     val initialLicense = remember { LicenseManager.checkLicense(context) }
     val isLicensed = initialLicense.status == LicenseStatus.VALID || initialLicense.status == LicenseStatus.EXPIRING_SOON
     val startDest = if (isLicensed) Screen.Home.route else Screen.License.createRoute(canBack = false)
+
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    var licenseRevision by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) licenseRevision++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(backStackEntry, licenseRevision) {
+        val module = requiredLicenseModule(backStackEntry?.destination?.route) ?: return@LaunchedEffect
+        if (!LicenseModules.isAllowed(LicenseManager.checkLicense(context), module)) {
+            Toast.makeText(context, LicenseModules.BLOCKED_MESSAGE, Toast.LENGTH_LONG).show()
+            navController.popBackStack()
+        }
+    }
 
     NavHost(
         navController = navController,

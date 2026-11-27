@@ -88,7 +88,7 @@ class ScanValidator(
                 isDuplicate = false,
                 isValid = false,
                 empaque = TipoEmpaque.DESCONOCIDO,
-                message = "Detectado código GS1 grande. Escanea el código de barras o el DataMatrix pequeño de la etiqueta."
+                message = "DETECTADO GS1 (QR) GRANDE. ESCANEA EL CÓDIGO DE BARRAS O EL QR PEQUEÑO DE LA ETIQUETA."
             )
         }
 

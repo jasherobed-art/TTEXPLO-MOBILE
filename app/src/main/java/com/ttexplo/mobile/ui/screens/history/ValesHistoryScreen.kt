@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.ttexplo.mobile.TTExploApp
+import com.ttexplo.mobile.license.LicenseManager
+import com.ttexplo.mobile.license.LicenseModules
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
 import com.ttexplo.mobile.data.repository.SettingsRepository
 import com.ttexplo.mobile.domain.export.FlatFileFormatter
@@ -493,7 +495,10 @@ fun ValesHistoryScreen(
                 )
             }
 
-            valesList = list.sortedByDescending { it.fecha }
+            val license = LicenseManager.checkLicense(context)
+            valesList = list
+                .filter { LicenseModules.isAllowed(license, LicenseModules.moduleForVale(it.tipo)) }
+                .sortedByDescending { it.fecha }
         }
     }
 
@@ -517,69 +522,73 @@ fun ValesHistoryScreen(
         }
     }
 
-    fun exportConsolidated() {
-        scope.launch {
-            val sb = StringBuilder()
-            val toExport = if (selectedIds.isEmpty()) valesList else valesList.filter { selectedIds.contains(it.tipo to it.id) }
+    suspend fun buildConsolidatedText(vales: List<ValeSummaryItem>): String {
+        val sb = StringBuilder()
 
-            for (vale in toExport) {
-                when (vale.tipo) {
-                    "DESPACHO" -> {
-                        val d = db.despachoDao().getAllDespachos().find { it.id == vale.id }
-                        if (d != null) {
-                            val items = db.despachoDao().getItemsForDespacho(d.id).map {
-                                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
-                            }
-                            val rec = DespachoRecord(d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura, items)
-                            sb.append(FlatFileFormatter.formatDespacho(rec))
-                            sb.append("\r\n")
+        for (vale in vales) {
+            when (vale.tipo) {
+                "DESPACHO" -> {
+                    val d = db.despachoDao().getAllDespachos().find { it.id == vale.id }
+                    if (d != null) {
+                        val items = db.despachoDao().getItemsForDespacho(d.id).map {
+                            ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
                         }
+                        val rec = DespachoRecord(d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura, items)
+                        sb.append(FlatFileFormatter.formatDespacho(rec))
+                        sb.append("\r\n")
                     }
-                    "ENTRADA" -> {
-                        val e = db.entradaDao().getAllEntradas().find { it.id == vale.id }
-                        if (e != null) {
-                            val items = db.entradaDao().getItemsForEntrada(e.id).map {
-                                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
-                            }
-                            val rec = EntradaRecord(e.proveedor, e.polvorin, e.factura, items)
-                            sb.append(FlatFileFormatter.formatEntrada(rec))
-                            sb.append("\r\n")
+                }
+                "ENTRADA" -> {
+                    val e = db.entradaDao().getAllEntradas().find { it.id == vale.id }
+                    if (e != null) {
+                        val items = db.entradaDao().getItemsForEntrada(e.id).map {
+                            ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
                         }
+                        val rec = EntradaRecord(e.proveedor, e.polvorin, e.factura, items)
+                        sb.append(FlatFileFormatter.formatEntrada(rec))
+                        sb.append("\r\n")
                     }
-                    "ACCESORIOS", "DEV. ACCESORIOS" -> {
-                        val a = db.accesorioDao().getAllVales().find { it.id == vale.id }
-                        if (a != null) {
-                            val items = db.accesorioDao().getItemsForVale(a.id).map {
-                                AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
-                            }
-                            val isDev = a.empresa.startsWith("DEV:") || items.any { it.quantity < 0 }
-                            val cleanEmpresa = if (a.empresa.startsWith("DEV:")) a.empresa.removePrefix("DEV: ") else a.empresa
-                            val rec = AccesoriosRecord(a.vale, cleanEmpresa, a.lugar, a.transportista, a.turno, a.recibio, a.entrego, a.voladura, items)
-                            sb.append(FlatFileFormatter.formatAccesorios(rec))
-                            sb.append("\r\n")
+                }
+                "ACCESORIOS", "DEV. ACCESORIOS" -> {
+                    val a = db.accesorioDao().getAllVales().find { it.id == vale.id }
+                    if (a != null) {
+                        val items = db.accesorioDao().getItemsForVale(a.id).map {
+                            AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
                         }
+                        val isDev = a.empresa.startsWith("DEV:") || items.any { it.quantity < 0 }
+                        val cleanEmpresa = if (a.empresa.startsWith("DEV:")) a.empresa.removePrefix("DEV: ") else a.empresa
+                        val rec = AccesoriosRecord(a.vale, cleanEmpresa, a.lugar, a.transportista, a.turno, a.recibio, a.entrego, a.voladura, items)
+                        sb.append(FlatFileFormatter.formatAccesorios(rec))
+                        sb.append("\r\n")
                     }
-                    "DEVOLUCION" -> {
-                        val dev = db.devolucionDao().getAllDevoluciones().find { it.id == vale.id }
-                        if (dev != null) {
-                            val items = db.devolucionDao().getItemsForDevolucion(dev.id).map {
-                                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
-                            }
-                            val rec = DevolucionRecord(dev.empleadoEntrega, dev.empleadoRecibe, items)
-                            sb.append(FlatFileFormatter.formatDevolucion(rec))
-                            sb.append("\r\n")
+                }
+                "DEVOLUCION" -> {
+                    val dev = db.devolucionDao().getAllDevoluciones().find { it.id == vale.id }
+                    if (dev != null) {
+                        val items = db.devolucionDao().getItemsForDevolucion(dev.id).map {
+                            ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
                         }
+                        val rec = DevolucionRecord(dev.empleadoEntrega, dev.empleadoRecibe, items)
+                        sb.append(FlatFileFormatter.formatDevolucion(rec))
+                        sb.append("\r\n")
                     }
-                    "CONTEO" -> {
-                        val rows = db.boxCountDao().getByFolio(vale.folio)
-                        if (rows.isNotEmpty()) {
-                            sb.append(BoxCountTxtExporter.renderItems(rows.map { it.toDomain() }))
-                        }
+                }
+                "CONTEO" -> {
+                    val rows = db.boxCountDao().getByFolio(vale.folio)
+                    if (rows.isNotEmpty()) {
+                        sb.append(BoxCountTxtExporter.renderItems(rows.map { it.toDomain() }))
                     }
                 }
             }
+        }
 
-            val text = sb.toString().trim()
+        return sb.toString().trim()
+    }
+
+    fun exportConsolidated() {
+        scope.launch {
+            val toExport = if (selectedIds.isEmpty()) valesList else valesList.filter { selectedIds.contains(it.tipo to it.id) }
+            val text = buildConsolidatedText(toExport)
             if (text.isEmpty()) {
                 Toast.makeText(context, "No hay vales para exportar", Toast.LENGTH_SHORT).show()
                 return@launch
@@ -588,6 +597,32 @@ fun ValesHistoryScreen(
             pendingExportText = text
             val timestamp = DateTimeUtils.currentTimestamp().replace(":", "-").replace(" ", "_")
             createFileLauncher.launch("TTEXPLO_CONSOLIDADO_$timestamp.txt")
+        }
+    }
+
+    fun shareConsolidated() {
+        scope.launch {
+            val selected = valesList.filter { selectedIds.contains(it.tipo to it.id) }
+            val text = buildConsolidatedText(selected)
+            if (text.isEmpty()) {
+                Toast.makeText(context, "No hay vales para compartir", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            try {
+                val timestamp = DateTimeUtils.currentTimestamp().replace(":", "-").replace(" ", "_")
+                val file = File(context.cacheDir, "TTEXPLO_CONSOLIDADO_$timestamp.txt")
+                file.writeText(text, Charsets.UTF_8)
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "Compartir consolidado"))
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error al compartir: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -861,34 +896,55 @@ fun ValesHistoryScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
             ) {
-                Button(
-                    onClick = { exportConsolidated() },
-                    enabled = valesList.isNotEmpty(),
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                        .height(48.dp)
-                        .testTag("history_export_consolidated_button"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MineSafetyYellow,
-                        contentColor = MineDarkBackground
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    AutoShrinkText(
-                        text = if (selectedIds.isEmpty()) {
-                            "EXPORTAR CONSOLIDADO (${valesList.size} VALES)"
-                        } else {
-                            "EXPORTAR SELECCIONADOS (${selectedIds.size})"
-                        },
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MineDarkBackground,
-                        targetTextSize = 13.sp,
-                        minTextSize = 10.sp,
-                        maxLines = 1
-                    )
+                    Button(
+                        onClick = { exportConsolidated() },
+                        enabled = valesList.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("history_export_consolidated_button"),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MineSafetyYellow,
+                            contentColor = MineDarkBackground
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        AutoShrinkText(
+                            text = if (selectedIds.isEmpty()) {
+                                "EXPORTAR CONSOLIDADO (${valesList.size} VALES)"
+                            } else {
+                                "EXPORTAR SELECCIONADOS (${selectedIds.size})"
+                            },
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MineDarkBackground,
+                            targetTextSize = 13.sp,
+                            minTextSize = 10.sp,
+                            maxLines = 1
+                        )
+                    }
+                    if (selectedIds.isNotEmpty()) {
+                        OutlinedButton(
+                            onClick = { shareConsolidated() },
+                            modifier = Modifier
+                                .height(48.dp)
+                                .testTag("history_share_consolidated_button"),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MineSafetyYellow),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = MineSafetyYellow)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("COMPARTIR", color = MineSafetyYellow, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
+                        }
+                    }
                 }
             }
         }
