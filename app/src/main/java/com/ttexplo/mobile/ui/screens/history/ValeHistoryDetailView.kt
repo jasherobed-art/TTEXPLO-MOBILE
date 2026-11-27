@@ -145,7 +145,7 @@ fun ValeHistoryDetailView(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkSurface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MineDarkBackground)
             )
         },
         bottomBar = {

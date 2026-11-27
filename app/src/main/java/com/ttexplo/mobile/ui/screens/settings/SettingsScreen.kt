@@ -588,7 +588,7 @@ fun SettingsScreen(
                         Text(
                             text = "EXPORTACIÓN Y ARCHIVO PLANO (.TXT)",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MineSuccessGreen,
+                            color = MineSuccessText,
                             fontWeight = FontWeight.Bold
                         )
                     }

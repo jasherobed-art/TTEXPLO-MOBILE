@@ -4,7 +4,15 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.7.1] — Build 36 (Actual)
+## [v2.7.2] — Build 37 (Actual)
+### Mejorado (UI, revisión del campo)
+- **Piso de legibilidad:** `AutoShrinkText` ya no reduce texto por debajo de 12 sp, para que códigos y etiquetas se lean con poca luz y EPI.
+- **Colores de estado:** los mensajes de licencia y exportación usan tokens de texto (`MineErrorText` / `MineSuccessText`) en lugar de colores de relleno, con mejor contraste.
+- **Barra superior consistente:** Historial y detalle de vale usan el mismo color que Inicio y Ajustes; ya no hay salto de tono al navegar.
+
+---
+
+## [v2.7.1] — Build 36
 ### Mejorado
 - **Orientación de pantalla controlable:** la app mantiene la pantalla en vertical por defecto para evitar que gire sola durante el trabajo. Un interruptor en Configuración permite desactivar el bloqueo y ver en horizontal cuando se necesite. El cambio se aplica al instante, sin reiniciar.
 

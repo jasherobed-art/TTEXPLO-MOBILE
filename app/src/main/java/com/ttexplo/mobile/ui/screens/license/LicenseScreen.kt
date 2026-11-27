@@ -489,7 +489,7 @@ fun LicenseScreen(
                                 Icon(Icons.Default.Error, contentDescription = null, tint = MineErrorRed)
                                 Text(
                                     text = errorMessage ?: "",
-                                    color = MineErrorRed,
+                                    color = MineErrorText,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -510,7 +510,7 @@ fun LicenseScreen(
                                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MineSuccessGreen)
                                 Text(
                                     text = successMessage ?: "",
-                                    color = MineSuccessGreen,
+                                    color = MineSuccessText,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium
                                 )

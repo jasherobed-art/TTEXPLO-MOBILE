@@ -24,7 +24,7 @@ fun AutoShrinkText(
     color: Color = MineTextPrimary,
     maxLines: Int = 1,
     softWrap: Boolean = true,
-    minTextSize: TextUnit = 8.sp,
+    minTextSize: TextUnit = 12.sp,
     initialTextSize: TextUnit = 13.sp,
     targetTextSize: TextUnit = initialTextSize,
     fontWeight: FontWeight = FontWeight.Bold,

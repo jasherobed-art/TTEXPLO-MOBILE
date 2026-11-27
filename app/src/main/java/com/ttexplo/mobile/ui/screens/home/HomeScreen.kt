@@ -200,7 +200,7 @@ fun HomeScreen(
                             Text(
                                 text = "TERMINAL BLOQUEADA POR LICENCIA",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MineErrorRed,
+                                color = MineErrorText,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(

@@ -882,7 +882,7 @@ fun ValesHistoryScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MineDarkSurface,
+                    containerColor = MineDarkBackground,
                     titleContentColor = MineTextPrimary,
                     navigationIconContentColor = MineTextPrimary
                 )
