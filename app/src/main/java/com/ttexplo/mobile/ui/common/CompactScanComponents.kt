@@ -329,7 +329,7 @@ fun AlwaysActiveBarcodeField(
     onValueChange: (String) -> Unit,
     onSubmitBarcode: (String) -> Unit,
     accentColor: Color,
-    placeholderText: String = "Escanear o escribir código + ENTER...",
+    placeholderText: String = "Listo para escanear",
     focusRequester: FocusRequester,
     testTagName: String,
     enabled: Boolean = true,

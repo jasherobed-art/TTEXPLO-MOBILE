@@ -58,6 +58,8 @@ import com.ttexplo.mobile.ui.common.DuplicateBadgeChip
 import com.ttexplo.mobile.ui.common.DummyExplosivesScannerBar
 import com.ttexplo.mobile.ui.common.ExitScanConfirmDialog
 import com.ttexplo.mobile.ui.common.HorizontalProductFilterRow
+import com.ttexplo.mobile.ui.common.ScanTactileHud
+import com.ttexplo.mobile.domain.inventory.WeightFormat
 import com.ttexplo.mobile.ui.common.ProductEditDialog
 import com.ttexplo.mobile.ui.common.QuickPrinterSelectorDialog
 import com.ttexplo.mobile.ui.common.SavedValeReprintDialog
@@ -100,6 +102,8 @@ fun EntradasScanScreen(
     var itemToDelete by remember { mutableStateOf<BarcodeItem?>(null) }
     var showExitConfirm by remember { mutableStateOf(false) }
     var selectedFilterKey by remember { mutableStateOf<String?>(null) }
+    var selectedPackaging by remember { mutableStateOf<TipoEmpaque?>(null) }
+    var isManualVisible by remember { mutableStateOf(true) }
     var lastHandledDuplicateEventId by remember { mutableStateOf<Long?>(null) }
     var dateCorrectionTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
 
@@ -232,6 +236,29 @@ fun EntradasScanScreen(
     val totalCajas = uiState.scannedItems.count { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }
     val totalSacos = uiState.scannedItems.count { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }
     val totalCartuchos = uiState.scannedItems.count { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }
+    // Las 4 casillas se calculan sobre el producto activo (o todo el vale en Global).
+    val hudItems = remember(uiState.scannedItems, selectedFilterKey) {
+        uiState.scannedItems.filter {
+            selectedFilterKey == null || ScanFilterKeys.matchesBarcodeItem(it, selectedFilterKey, useIdKey = true)
+        }
+    }
+    val hudCajas = hudItems.count { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }
+    val hudSacos = hudItems.count { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }
+    val hudCartuchos = hudItems.count { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }
+    val cajasKg = hudItems.filter { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }.sumOf { WeightFormat.itemWeightKg(it) }
+    val sacosKg = hudItems.filter { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }.sumOf { WeightFormat.itemWeightKg(it) }
+    val cartuchosKg = hudItems.filter { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }.sumOf { WeightFormat.itemWeightKg(it) }
+    val totalKg = cajasKg + sacosKg + cartuchosKg
+
+    // Si el empaque filtrado se queda sin lecturas, regresa a Global.
+    LaunchedEffect(hudCajas, hudSacos, hudCartuchos) {
+        when (selectedPackaging) {
+            TipoEmpaque.CAJA -> if (hudCajas == 0) selectedPackaging = null
+            TipoEmpaque.SACO -> if (hudSacos == 0) selectedPackaging = null
+            TipoEmpaque.PIEZA -> if (hudCartuchos == 0) selectedPackaging = null
+            else -> Unit
+        }
+    }
 
     val filterChips = remember(uiState.scannedItems) {
         buildExplosiveFilterChips(
@@ -241,9 +268,16 @@ fun EntradasScanScreen(
         )
     }
 
-    val filteredItems = remember(uiState.scannedItems, uiState.duplicateReads, selectedFilterKey) {
+    val filteredItems = remember(uiState.scannedItems, uiState.duplicateReads, selectedFilterKey, selectedPackaging) {
         (uiState.duplicateReads + uiState.scannedItems).filter { item ->
-            ScanFilterKeys.matchesBarcodeItem(item, selectedFilterKey, useIdKey = true)
+            val matchesProduct = ScanFilterKeys.matchesBarcodeItem(item, selectedFilterKey, useIdKey = true)
+            val matchesPackaging = when (selectedPackaging) {
+                TipoEmpaque.CAJA -> item.empaque == TipoEmpaque.CAJA || item.code.length == 30
+                TipoEmpaque.SACO -> item.empaque == TipoEmpaque.SACO || item.code.length == 18
+                TipoEmpaque.PIEZA -> item.empaque == TipoEmpaque.PIEZA || item.code.length in 16..17
+                else -> true
+            }
+            matchesProduct && matchesPackaging
         }
     }
 
@@ -339,15 +373,27 @@ fun EntradasScanScreen(
                     }
                 }
 
-                // 1. CINTA COMPACTA SUPERIOR
-                CompactScanMetricsRibbon(
-                    totalCount = uiState.scannedItems.size,
-                    cajasCount = totalCajas,
-                    sacosCount = totalSacos,
-                    cartuchosCount = totalCartuchos,
+                // 1. HUD TÁCTIL DE 4 CASILLAS (conteo + peso a 3 decimales)
+                ScanTactileHud(
+                    totalCount = hudItems.size,
+                    totalKg = totalKg,
+                    cajasCount = hudCajas,
+                    cajasKg = cajasKg,
+                    sacosCount = hudSacos,
+                    sacosKg = sacosKg,
+                    cartuchosCount = hudCartuchos,
+                    cartuchosKg = cartuchosKg,
                     accentColor = MineSafetyYellow,
+                    activeProductLabel = filterChips.firstOrNull { it.key == selectedFilterKey }?.let {
+                        it.title + if (it.empaqueShort.isNotBlank()) " · " + it.empaqueShort else ""
+                    },
+                    isManualVisible = true,
+                    onToggleManual = { runCatching { barcodeFocusRequester.requestFocus() } },
                     isPanelExpanded = isHeaderExpanded,
-                    onTogglePanel = { isHeaderExpanded = !isHeaderExpanded }
+                    onTogglePanel = { isHeaderExpanded = !isHeaderExpanded },
+                    selectedPackaging = selectedPackaging,
+                    onSelectPackaging = { selectedPackaging = it },
+                    onResetFilters = { selectedFilterKey = null; selectedPackaging = null }
                 )
 
                 // 2. ENCABEZADO COLAPSABLE AUTOMÁTICAMENTE AL DETECTAR ACTIVIDAD
@@ -422,7 +468,7 @@ fun EntradasScanScreen(
                         if (dateCorrectionTarget == null) viewModel.onBarcodeScanned(code)
                     },
                     accentColor = MineSafetyYellow,
-                    placeholderText = "Escanear o escribir código + ENTER...",
+                    placeholderText = "Listo para escanear",
                     focusRequester = barcodeFocusRequester,
                     testTagName = "entradas_manual_barcode_input",
                     onActivityDetected = {
