@@ -1,8 +1,10 @@
 package com.ttexplo.mobile.ui.screens.settings
 
 import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
@@ -186,6 +188,7 @@ fun SettingsScreen(
     var mineName by remember { mutableStateOf(viewModel.settingsRepo.getMineName()) }
     var permitNumber by remember { mutableStateOf(viewModel.settingsRepo.getPermitNumber()) }
     var ticketHeader by remember { mutableStateOf(viewModel.settingsRepo.getTicketHeader()) }
+    var lockPortrait by remember { mutableStateOf(viewModel.settingsRepo.getLockPortrait()) }
 
     var pendingBtAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
@@ -307,6 +310,48 @@ fun SettingsScreen(
                         modifier = Modifier.padding(12.dp),
                         color = MineSafetyYellow,
                         style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            // ==========================================
+            // SECCIÓN 0: PANTALLA
+            // ==========================================
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MineBorderGray),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "MANTENER PANTALLA EN VERTICAL",
+                            color = MineTextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = "Evita que la pantalla gire sola. Desactívalo si necesitas ver en horizontal.",
+                            color = MineTextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Switch(
+                        checked = lockPortrait,
+                        onCheckedChange = { enabled ->
+                            lockPortrait = enabled
+                            viewModel.settingsRepo.setLockPortrait(enabled)
+                            (context as? Activity)?.requestedOrientation = if (enabled) {
+                                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                            } else {
+                                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                            }
+                        }
                     )
                 }
             }

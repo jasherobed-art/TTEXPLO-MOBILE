@@ -173,6 +173,10 @@ class SettingsRepository internal constructor(
 
     // =========================================================================
 
+    // Orientación de pantalla: true = vertical fijo, false = el usuario puede girar
+    fun getLockPortrait(): Boolean = prefs.getBoolean("lock_portrait", true)
+    fun setLockPortrait(enabled: Boolean) = prefs.edit().putBoolean("lock_portrait", enabled).apply()
+
     fun getPrintSignatures(): Boolean = prefs.getBoolean("print_signatures", true)
     fun setPrintSignatures(enabled: Boolean) = prefs.edit().putBoolean("print_signatures", enabled).apply()
 

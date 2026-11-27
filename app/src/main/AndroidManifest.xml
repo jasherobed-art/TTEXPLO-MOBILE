@@ -28,7 +28,6 @@
         <activity
             android:name="com.ttexplo.mobile.MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.TTExploMobile">
             <intent-filter>

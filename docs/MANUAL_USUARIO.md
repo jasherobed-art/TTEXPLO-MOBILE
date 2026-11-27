@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.7.0 (build 35) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.7.1 (build 36) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -31,7 +31,7 @@ Tu licencia define qué módulos puedes usar. Tu administrador elige el perfil: 
 
 ## Pantalla de inicio
 
-Arriba verás `v2.7.0`. Debajo están los módulos que incluye tu licencia. Los que no cubre no aparecen. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
+Arriba verás `v2.7.1`. Debajo están los módulos que incluye tu licencia. Los que no cubre no aparecen. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
 
 | Módulo | Para qué lo usas |
 |---|---|
@@ -309,7 +309,7 @@ Lista de vales con folio, fecha y empresa. Abajo está **EXPORTAR CONSOLIDADO**.
 
 ### Configuración general
 
-Trae el dispositivo, la licencia, datos de la mina, catálogo, impresoras y versión. Los interruptores de sonido, vibración y destello están arriba.
+Trae el dispositivo, la licencia, datos de la mina, catálogo, impresoras y versión. Arriba está el interruptor **MANTENER PANTALLA EN VERTICAL**: viene activado para que la pantalla no gire sola mientras trabajas. Si en algún momento necesitas ver en horizontal, desactívalo y la pantalla podrá girar. Los interruptores de sonido, vibración y destello están justo debajo.
 
 ### Impresoras
 
@@ -595,7 +595,7 @@ Tu licencia no incluye ese módulo. Solo se muestran los módulos cubiertos por 
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.7.0 (Build 35)`.
+- Versión, por ejemplo `v2.7.1 (Build 36)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.

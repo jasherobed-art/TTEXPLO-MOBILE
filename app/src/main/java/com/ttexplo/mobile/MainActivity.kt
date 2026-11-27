@@ -1,6 +1,7 @@
 package com.ttexplo.mobile
 
 import android.Manifest
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.os.Build
@@ -35,6 +36,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
+import com.ttexplo.mobile.data.repository.SettingsRepository
 import com.ttexplo.mobile.license.LicenseManager
 import com.ttexplo.mobile.license.LicenseModules
 import com.ttexplo.mobile.license.LicenseStatus
@@ -108,6 +110,13 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Orientación según preferencia del usuario (vertical por defecto)
+        requestedOrientation = if (SettingsRepository(this).getLockPortrait()) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+
         setContent {
             TTExploTheme {
                 Surface(
@@ -134,7 +143,15 @@ fun TTExploAppNavigation() {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) licenseRevision++
+            if (event == Lifecycle.Event.ON_RESUME) {
+                licenseRevision++
+                (context as? android.app.Activity)?.requestedOrientation =
+                    if (SettingsRepository(context).getLockPortrait()) {
+                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    } else {
+                        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }

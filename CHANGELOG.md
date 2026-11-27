@@ -4,7 +4,13 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.7.0] — Build 35 (Actual)
+## [v2.7.1] — Build 36 (Actual)
+### Mejorado
+- **Orientación de pantalla controlable:** la app mantiene la pantalla en vertical por defecto para evitar que gire sola durante el trabajo. Un interruptor en Configuración permite desactivar el bloqueo y ver en horizontal cuando se necesite. El cambio se aplica al instante, sin reiniciar.
+
+---
+
+## [v2.7.0] — Build 35
 ### Mejorado
 - **Menús según licencia:** la pantalla de inicio muestra solo los módulos incluidos en la licencia. Los módulos no cubiertos ya no aparecen bloqueados ni con candado. Si una sección se queda sin tarjetas, tampoco se muestra su título.
 - **Sincronización generador-app:** el generador emite tokens con `mv: 2` y los perfiles Básico, Operativo y Completo incluyen Historial de vales. Prueba permanente de paridad con tokens reales del generador.
