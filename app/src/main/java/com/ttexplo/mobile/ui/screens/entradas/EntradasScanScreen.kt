@@ -392,8 +392,8 @@ fun EntradasScanScreen(
                     isPanelExpanded = isHeaderExpanded,
                     onTogglePanel = { isHeaderExpanded = !isHeaderExpanded },
                     selectedPackaging = selectedPackaging,
-                    onSelectPackaging = { selectedPackaging = it },
-                    onResetFilters = { selectedFilterKey = null; selectedPackaging = null }
+                    onSelectPackaging = { selectedPackaging = it; runCatching { barcodeFocusRequester.requestFocus() } },
+                    onResetFilters = { selectedFilterKey = null; selectedPackaging = null; runCatching { barcodeFocusRequester.requestFocus() } }
                 )
 
                 // 2. ENCABEZADO COLAPSABLE AUTOMÁTICAMENTE AL DETECTAR ACTIVIDAD
@@ -541,7 +541,7 @@ fun EntradasScanScreen(
                     chips = filterChips,
                     selectedKey = selectedFilterKey,
                     accentColor = MineSafetyYellow,
-                    onSelectKey = { selectedFilterKey = it }
+                    onSelectKey = { selectedFilterKey = it; runCatching { barcodeFocusRequester.requestFocus() } }
                 )
 
                 // Encabezado del listado

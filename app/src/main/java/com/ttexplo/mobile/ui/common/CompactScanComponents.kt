@@ -1,5 +1,6 @@
 package com.ttexplo.mobile.ui.common
 
+import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -43,6 +45,7 @@ import com.ttexplo.mobile.domain.model.ProductType
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.ui.theme.*
+import kotlinx.coroutines.delay
 
 data class ProductFilterChipData(
     val key: String,
@@ -336,10 +339,15 @@ fun AlwaysActiveBarcodeField(
     onActivityDetected: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
     var isFocused by remember { mutableStateOf(false) }
     // El gatillo HID envía el código y ENTER en el mismo instante; la recomposición de `value`
     // puede llegar tarde, así que este estado se actualiza dentro de onValueChange.
     var liveText by remember { mutableStateOf(value) }
+    // Auto-Enter para lectores que NO envían sufijo Enter: se detecta una ráfaga de tecleo
+    // (scanner) y se cierra la lectura tras una pausa corta.
+    var lastInputAt by remember { mutableStateOf(0L) }
+    var scannerBurst by remember { mutableStateOf(false) }
 
     fun submitCurrent(raw: String) {
         if (!enabled) return
@@ -350,16 +358,32 @@ fun AlwaysActiveBarcodeField(
             liveText = ""
             onValueChange("")
         }
+        scannerBurst = false
+        lastInputAt = 0L
         runCatching { focusRequester.requestFocus() }
+        keyboardController?.hide()
     }
 
     fun submitLatest() = submitCurrent(liveText)
+
+    LaunchedEffect(liveText, lastInputAt, scannerBurst) {
+        val knownLength = liveText.length == 30 || liveText.length in 16..18
+        if (liveText.length < 4 || (!scannerBurst && !knownLength)) return@LaunchedEffect
+        delay(90)
+        if ((scannerBurst || knownLength) &&
+            SystemClock.elapsedRealtime() - lastInputAt >= 90) {
+            submitLatest()
+        }
+    }
 
     OutlinedTextField(
         value = value,
         enabled = enabled,
         onValueChange = { incoming ->
             if (!enabled) return@OutlinedTextField
+            val now = SystemClock.elapsedRealtime()
+            if (lastInputAt > 0L && now - lastInputAt <= 35L) scannerBurst = true
+            lastInputAt = now
             liveText = incoming
             if (incoming.contains('\n') || incoming.contains('\r')) {
                 val segments = incoming.split('\n', '\r')
@@ -445,7 +469,11 @@ fun AlwaysActiveBarcodeField(
         },
         singleLine = true,
         shape = RoundedCornerShape(10.dp),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Send),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+            imeAction = ImeAction.Send,
+            showKeyboardOnFocus = false
+        ),
         keyboardActions = KeyboardActions(
             onSend = { submitLatest() },
             onDone = { submitLatest() }
@@ -463,7 +491,10 @@ fun AlwaysActiveBarcodeField(
             .fillMaxWidth()
             .heightIn(min = 50.dp)
             .focusRequester(focusRequester)
-            .onFocusChanged { state -> isFocused = state.isFocused }
+            .onFocusChanged { state ->
+                isFocused = state.isFocused
+                if (state.isFocused) keyboardController?.hide()
+            }
             .onPreviewKeyEvent { keyEvent ->
                 if (!enabled) return@onPreviewKeyEvent false
                 if (

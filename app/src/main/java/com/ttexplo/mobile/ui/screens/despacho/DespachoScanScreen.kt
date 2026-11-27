@@ -505,7 +505,7 @@ fun DespachoScanScreen(
                     chips = filterChips,
                     selectedKey = selectedFilterKey,
                     accentColor = MineHighExplosiveOrange,
-                    onSelectKey = { selectedFilterKey = it }
+                    onSelectKey = { selectedFilterKey = it; runCatching { barcodeFocusRequester.requestFocus() } }
                 )
 
                 // Encabezado compacto del listado

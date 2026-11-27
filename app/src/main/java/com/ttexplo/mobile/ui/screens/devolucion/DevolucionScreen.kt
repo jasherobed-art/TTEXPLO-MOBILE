@@ -741,7 +741,7 @@ fun DevolucionScreen(
                     chips = filterChips,
                     selectedKey = selectedFilterKey,
                     accentColor = MineAgentCyan,
-                    onSelectKey = { selectedFilterKey = it }
+                    onSelectKey = { selectedFilterKey = it; runCatching { barcodeFocusRequester.requestFocus() } }
                 )
 
                 Row(

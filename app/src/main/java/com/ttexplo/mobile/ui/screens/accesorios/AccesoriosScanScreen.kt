@@ -540,7 +540,7 @@ fun AccesoriosScanScreen(
                     chips = filterChips,
                     selectedKey = selectedCodeFilter,
                     accentColor = accentColor,
-                    onSelectKey = { selectedCodeFilter = it }
+                    onSelectKey = { selectedCodeFilter = it; runCatching { barcodeFocusRequester.requestFocus() } }
                 )
 
                 Row(
