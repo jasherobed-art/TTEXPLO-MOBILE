@@ -546,7 +546,6 @@ class DownloadData(
                     OverlayCode(it.codigoAccesorio, it.fechaEscaneo, kotlin.math.abs(it.cantidad))
                 }
                 val total = codes.sumOf { it.cantidad }
-                val header = a.voladura.toIntOrNull()
                 detailJson("ACCESORIOS", "Accesorios", a.vale, listOf(
                     Triple("empresa", "Empresa", a.empresa),
                     Triple("lugar", "Lugar", a.lugar),
@@ -556,8 +555,7 @@ class DownloadData(
                     Triple("fecha", "Fecha", a.fechaCreacion)
                 ), items, codes,
                     mapOf("piezas" to total, "cajas" to 0, "sacos" to 0, "cartuchos" to 0, "accesorios" to total),
-                    listOf("Entregó: ${a.entrego}", "Recibió: ${a.recibio}"),
-                    alerta = header != null && header != total)
+                    listOf("Entregó: ${a.entrego}", "Recibió: ${a.recibio}"))
             }
             "CONTEO" -> {
                 val rows = db.boxCountDao().getByFolio(raw)
