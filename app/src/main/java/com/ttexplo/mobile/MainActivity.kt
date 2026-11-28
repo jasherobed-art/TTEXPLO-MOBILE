@@ -96,16 +96,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Seed the bundled catalog on clean install and refresh it once on upgrade
+        // Seed the bundled catalog on clean install and refresh it on upgrade (v2 adds accessories)
         lifecycleScope.launch(Dispatchers.IO) {
             val prefs = getSharedPreferences("ttexplo_catalog_seed", MODE_PRIVATE)
-            if (prefs.getInt("bundled_catalog_version", 0) >= 1) return@launch
+            if (prefs.getInt("bundled_catalog_version", 0) >= 2) return@launch
             try {
                 val db = (application as TTExploApp).database
                 val repo = CatalogRepositoryImpl(db.productoDao())
                 val csv = assets.open("catalogo_productos.csv").bufferedReader().use { it.readText() }
                 repo.importCsv(csv)
-                prefs.edit().putInt("bundled_catalog_version", 1).apply()
+                prefs.edit().putInt("bundled_catalog_version", 2).apply()
             } catch (e: Exception) {
                 // Keep the previous catalog if the bundled asset cannot be read
             }

@@ -119,8 +119,12 @@ class CatalogRepositoryImpl(
         val trimmed = barcode.trim()
         if (trimmed.startsWith("X", ignoreCase = true)) {
             val normalizedCode = trimmed.uppercase()
+            val productKey = normalizedCode
+                .takeIf { it.length > 7 && it.take(7).matches(Regex("^X\\d{6}$")) }
+                ?.take(7)
             val registered = productoDao.getById(normalizedCode)
                 ?: productoDao.getByCodBarras(normalizedCode)
+                ?: productKey?.let { productoDao.getById(it) ?: productoDao.getByCodBarras(it) }
                 ?: productoDao.getById(trimmed)
                 ?: productoDao.getByCodBarras(trimmed)
             if (registered != null) {

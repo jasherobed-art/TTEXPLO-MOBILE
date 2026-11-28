@@ -14,8 +14,10 @@ class CatalogImportPuTest {
     private class FakeDao : ProductoDao {
         var inserted: List<ProductoEntity> = emptyList()
         var existing: List<ProductoEntity> = emptyList()
-        override suspend fun getById(id: String): ProductoEntity? = null
-        override suspend fun getByCodBarras(codBarras: String): ProductoEntity? = null
+        override suspend fun getById(id: String): ProductoEntity? =
+            (inserted + existing).firstOrNull { it.idProducto == id }
+        override suspend fun getByCodBarras(codBarras: String): ProductoEntity? =
+            (inserted + existing).firstOrNull { it.codBarras == codBarras }
         override fun getAllFlow(): Flow<List<ProductoEntity>> = emptyFlow()
         override suspend fun getAll(): List<ProductoEntity> = existing
         override suspend fun count(): Int = inserted.size
@@ -70,5 +72,25 @@ class CatalogImportPuTest {
         CatalogRepositoryImpl(dao).importCsv(csv)
 
         assertThat(dao.inserted.first().pesoUnitarioKg).isWithin(1e-9).of(0.5)
+    }
+
+    @Test
+    fun accessoryBarcodeResolvesByXPlusProductId() = runBlocking {
+        val dao = FakeDao()
+        val csv = """
+            "IdProducto","Producto","Presentacion","noSAP","Unidad","Cantidad","CodBarras","peso","PG","PU","Tipo"
+            "100121","FULMINANTE # 6","Pieza","","PIEZA",1,"X100121",0,"",0,"ACCESORIO"
+        """.trimIndent()
+
+        val repo = CatalogRepositoryImpl(dao)
+        repo.importCsv(csv)
+
+        val byFull = repo.lookupBarcode("X100121000000001")
+        val byShort = repo.lookupBarcode("X100121")
+
+        assertThat(byFull.id).isEqualTo("100121")
+        assertThat(byFull.name).isEqualTo("FULMINANTE # 6")
+        assertThat(byFull.type.name).isEqualTo("ACCESORIO")
+        assertThat(byShort.id).isEqualTo("100121")
     }
 }
