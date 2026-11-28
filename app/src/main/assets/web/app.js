@@ -412,14 +412,20 @@
       codigos.push({ codigo: d.codigos[j].codigo, hora: hora, cantidad: d.codigos[j].cantidad || 1 });
     }
     var seen = {};
+    var avisoDuplicado = '';
     for (var i = 0; i < codigos.length; i++) {
       var c = String(codigos[i].codigo || '').trim().toUpperCase();
       if (!c) { toast('Hay un código vacío'); return; }
-      if (seen[c]) { toast('Código ' + c + ' repetido en este vale'); return; }
+      if (seen[c] && !avisoDuplicado) {
+        avisoDuplicado = 'Código ' + c + ' repetido en este vale';
+      }
       seen[c] = true;
       var other = codeInOtherVale(c, state.abierto);
-      if (other) { toast('Código ' + c + ' repetido en ' + (other.tipoLabel || other.tipo) + ' ' + (other.folio || other.key)); return; }
+      if (other && !avisoDuplicado) {
+        avisoDuplicado = 'Código ' + c + ' repetido en ' + (other.tipoLabel || other.tipo) + ' ' + (other.folio || other.key);
+      }
     }
+    if (avisoDuplicado && !confirm(avisoDuplicado + '.\n\n¿Guardar de todos modos?')) return;
     state.edits[state.abierto] = { datos: datos, codigos: codigos };
     var prev = {};
     (state.detalle.campos || []).forEach(function (c) { prev[c.field] = c.value; });
