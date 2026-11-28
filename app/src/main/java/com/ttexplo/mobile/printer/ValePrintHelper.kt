@@ -2,6 +2,7 @@ package com.ttexplo.mobile.printer
 
 import android.content.Context
 import com.ttexplo.mobile.data.repository.SettingsRepository
+import com.ttexplo.mobile.license.LicenseManager
 import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.DevolucionRecord
@@ -35,6 +36,8 @@ object ValePrintHelper {
         return Triple(target.first, target.second, protocol to width)
     }
 
+    private fun terminal(context: Context): String = LicenseManager.getFormattedDeviceId(context)
+
     suspend fun printDespacho(
         context: Context,
         record: DespachoRecord,
@@ -49,6 +52,7 @@ object ValePrintHelper {
         val (protocol, paperWidth) = spec
         val bytes = when (protocol.uppercase()) {
             "CPCL" -> TicketGenerator.generateDespachoCpcl(
+                terminalId = terminal(context),
                 despacho = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -59,6 +63,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             "PLAIN" -> TicketGenerator.generateDespachoPlain(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -69,6 +74,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             else -> TicketGenerator.generateDespachoEscPos(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -96,6 +102,7 @@ object ValePrintHelper {
         val (protocol, paperWidth) = spec
         val bytes = when (protocol.uppercase()) {
             "CPCL" -> TicketGenerator.generateAccesoriosCpcl(
+                terminalId = terminal(context),
                 accesorios = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -104,6 +111,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             "PLAIN" -> TicketGenerator.generateAccesoriosPlain(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -112,6 +120,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             else -> TicketGenerator.generateAccesoriosEscPos(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -137,6 +146,7 @@ object ValePrintHelper {
         val (protocol, paperWidth) = spec
         val bytes = when (protocol.uppercase()) {
             "CPCL" -> TicketGenerator.generateEntradaCpcl(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -147,6 +157,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             "PLAIN" -> TicketGenerator.generateEntradaPlain(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -157,6 +168,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             else -> TicketGenerator.generateEntradaEscPos(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -184,6 +196,7 @@ object ValePrintHelper {
         val (protocol, paperWidth) = spec
         val bytes = when (protocol.uppercase()) {
             "CPCL" -> TicketGenerator.generateDevolucionCpcl(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -194,6 +207,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             "PLAIN" -> TicketGenerator.generateDevolucionPlain(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -204,6 +218,7 @@ object ValePrintHelper {
                 includeCodeDetails = settingsRepo.getPrintCodeDetails()
             )
             else -> TicketGenerator.generateDevolucionEscPos(
+                terminalId = terminal(context),
                 record = record,
                 paperWidth = paperWidth,
                 mineName = settingsRepo.getMineName(),
@@ -226,9 +241,9 @@ object ValePrintHelper {
             ?: return PrintOutcome(false, "Sin impresora Bluetooth vinculada. Agregue una en Ajustes.")
         val (mac, label, spec) = resolved
         val bytes = when (spec.first.uppercase()) {
-            "CPCL" -> TicketGenerator.generateBoxCountCpcl(vale, spec.second)
-            "PLAIN" -> TicketGenerator.generateBoxCountPlain(vale, spec.second)
-            else -> TicketGenerator.generateBoxCountEscPos(vale, spec.second)
+            "CPCL" -> TicketGenerator.generateBoxCountCpcl(vale, spec.second, terminalId = terminal(context))
+            "PLAIN" -> TicketGenerator.generateBoxCountPlain(vale, spec.second, terminalId = terminal(context))
+            else -> TicketGenerator.generateBoxCountEscPos(vale, spec.second, terminalId = terminal(context))
         }
         return transmit(BluetoothPrinterManager(context), mac, label, bytes)
     }
@@ -269,6 +284,7 @@ object ValePrintHelper {
     fun previewDespacho(context: Context, record: DespachoRecord, profile: PrinterProfile? = null): String {
         val s = SettingsRepository(context)
         return TicketGenerator.generateDespachoPlain(
+            terminalId = terminal(context),
             record = record,
             paperWidth = previewWidth(context, profile),
             mineName = s.getMineName(),
@@ -283,6 +299,7 @@ object ValePrintHelper {
     fun previewEntrada(context: Context, record: EntradaRecord, profile: PrinterProfile? = null): String {
         val s = SettingsRepository(context)
         return TicketGenerator.generateEntradaPlain(
+            terminalId = terminal(context),
             record = record,
             paperWidth = previewWidth(context, profile),
             mineName = s.getMineName(),
@@ -297,6 +314,7 @@ object ValePrintHelper {
     fun previewAccesorios(context: Context, record: AccesoriosRecord, profile: PrinterProfile? = null): String {
         val s = SettingsRepository(context)
         return TicketGenerator.generateAccesoriosPlain(
+            terminalId = terminal(context),
             record = record,
             paperWidth = previewWidth(context, profile),
             mineName = s.getMineName(),
@@ -309,6 +327,7 @@ object ValePrintHelper {
     fun previewDevolucion(context: Context, record: DevolucionRecord, profile: PrinterProfile? = null): String {
         val s = SettingsRepository(context)
         return TicketGenerator.generateDevolucionPlain(
+            terminalId = terminal(context),
             record = record,
             paperWidth = previewWidth(context, profile),
             mineName = s.getMineName(),
@@ -321,7 +340,7 @@ object ValePrintHelper {
     }
 
     fun previewBoxCount(context: Context, vale: BoxCountVale, profile: PrinterProfile? = null): String =
-        TicketGenerator.generateBoxCountPlain(vale, previewWidth(context, profile)).toString(Charsets.UTF_8)
+        TicketGenerator.generateBoxCountPlain(vale, previewWidth(context, profile), terminalId = terminal(context)).toString(Charsets.UTF_8)
 
     private suspend fun transmit(
         printerManager: BluetoothPrinterManager,
