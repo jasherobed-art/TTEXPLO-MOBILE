@@ -5,7 +5,7 @@
   var state = {
     vales: [], tipo: 'TODOS', q: '', sel: new Set(),
     abierto: null, detalle: null, draft: null, editando: false, foco: null,
-    edits: {}, delKeys: []
+    edits: {}, delKeys: [], sort: { key: 'fecha', dir: 'desc' }
   };
   var TIPOS = [
     ['TODOS', 'Todos'], ['ENTRADA', 'Entradas'], ['DESPACHO', 'Salidas'],
@@ -62,11 +62,53 @@
     toast._t = setTimeout(function () { t.hidden = true; }, 3200);
   }
 
+  function comparar(a, b) {
+    var dir = state.sort.dir === 'asc' ? 1 : -1;
+    var va, vb;
+    if (state.sort.key === 'piezas') {
+      va = a.piezas || 0;
+      vb = b.piezas || 0;
+      if (va !== vb) return (va - vb) * dir;
+    } else if (state.sort.key === 'tipo') {
+      va = TIPOS.findIndex(function (t) { return t[0] === a.tipo; });
+      vb = TIPOS.findIndex(function (t) { return t[0] === b.tipo; });
+      if (va !== vb) return (va - vb) * dir;
+    } else if (state.sort.key === 'folio') {
+      va = String(a.folio || '');
+      vb = String(b.folio || '');
+      var f = va.localeCompare(vb, 'es', { numeric: true, sensitivity: 'base' });
+      if (f !== 0) return f * dir;
+    } else {
+      va = String(a.fecha || '');
+      vb = String(b.fecha || '');
+      if (va !== vb) return va.localeCompare(vb) * dir;
+    }
+    return String(b.fecha || '').localeCompare(String(a.fecha || ''));
+  }
+
   function visibles() {
     var q = norm(state.q);
     return state.vales.filter(function (v) {
       return (state.tipo === 'TODOS' || v.tipo === state.tipo) && (!q || v._hay.indexOf(q) >= 0);
+    }).sort(comparar);
+  }
+
+  function pintarOrden() {
+    Array.prototype.forEach.call(document.querySelectorAll('.th'), function (b) {
+      if (b.dataset.sort === state.sort.key) b.dataset.dir = state.sort.dir;
+      else b.removeAttribute('data-dir');
     });
+    var sel = $('#orden');
+    if (sel) sel.value = state.sort.key + '-' + state.sort.dir;
+  }
+
+  function ordenarPor(key) {
+    var s = state.sort;
+    if (s.key === key) s.dir = s.dir === 'asc' ? 'desc' : 'asc';
+    else s.dir = (key === 'fecha' || key === 'piezas') ? 'desc' : 'asc';
+    s.key = key;
+    pintarOrden();
+    render();
   }
 
   function renderChips() {
@@ -847,6 +889,19 @@
   }
 
   function bind() {
+    document.querySelector('.thead').addEventListener('click', function (e) {
+      var b = e.target.closest('.th');
+      if (b) ordenarPor(b.dataset.sort);
+    });
+
+    $('#orden').addEventListener('change', function () {
+      var partes = this.value.split('-');
+      state.sort.key = partes[0];
+      state.sort.dir = partes[1];
+      pintarOrden();
+      render();
+    });
+
     $('#chips').addEventListener('click', function (e) {
       var b = e.target.closest('.chip');
       if (!b) return;
@@ -959,6 +1014,7 @@
 
   async function init() {
     bind();
+    pintarOrden();
     try {
       var list = await api('/api/vales');
       state.vales = list.map(function (v) {

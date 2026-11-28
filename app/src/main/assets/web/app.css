@@ -62,7 +62,13 @@ main{max-width:1440px;margin:0 auto;padding:16px 20px 96px}
 .check-all{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt3);cursor:pointer}
 .check-all input{width:17px;height:17px;accent-color:var(--amber)}
 .thead{display:grid;grid-template-columns:96px minmax(0,1fr) 104px 84px;gap:0 10px;padding:6px 14px 6px 47px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);border-bottom:1px solid var(--line)}
-.thead span:nth-child(n+3){text-align:right}
+.th{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;text-align:left}
+.th:hover{color:var(--txt2)}
+.th:nth-child(n+3){justify-content:flex-end}
+.th[data-dir]::after{content:"↑";font-size:10px;color:var(--amber)}
+.th[data-dir="desc"]::after{content:"↓"}
+.orden-wrap{display:none;align-items:center;gap:6px;font-size:11px;color:var(--txt3)}
+.orden{background:var(--s1);border:1px solid var(--line);border-radius:4px;color:var(--txt);font:12px var(--ui);height:30px;padding:0 6px}
 .list{display:flex;flex-direction:column}
 .empty{color:var(--txt3);font-size:13px;padding:20px 14px;text-align:center}
 
@@ -254,6 +260,7 @@ main{max-width:1440px;margin:0 auto;padding:16px 20px 96px}
   #selCount{display:none}
   .search{order:2}
   .thead{display:none}
+  .orden-wrap{display:flex;margin-left:auto}
   .vale__main{grid-template-columns:1fr auto;grid-template-areas:"tipo pz" "main main" "fecha fecha";row-gap:4px;padding:8px 12px 8px 0}
   .vale__main .tipo{grid-area:tipo}
   .vale__main .vmain{grid-area:main}

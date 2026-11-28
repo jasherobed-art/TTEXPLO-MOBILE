@@ -25,6 +25,18 @@
       <label class="sr-only" for="q">Buscar vales por folio, empresa, fecha o código</label>
       <input class="search" id="q" type="search" autocomplete="off" placeholder="Buscar folio, empresa, fecha o código…">
       <span class="count" id="regs" role="status" aria-live="polite"></span>
+      <label class="orden-wrap" for="orden">Orden
+        <select id="orden" class="orden">
+          <option value="fecha-desc">Fecha · reciente</option>
+          <option value="fecha-asc">Fecha · antigua</option>
+          <option value="tipo-asc">Tipo · A-Z</option>
+          <option value="tipo-desc">Tipo · Z-A</option>
+          <option value="folio-asc">Folio · A-Z</option>
+          <option value="folio-desc">Folio · Z-A</option>
+          <option value="piezas-desc">Piezas · mayor</option>
+          <option value="piezas-asc">Piezas · menor</option>
+        </select>
+      </label>
     </div>
 
     <section class="card" aria-labelledby="listH">
@@ -34,8 +46,11 @@
         <span class="sp"></span>
         <span class="count" id="selCount" role="status" aria-live="polite">0 marcados</span>
       </div>
-      <div class="thead" aria-hidden="true">
-        <span>Tipo</span><span>Folio / detalle</span><span>Fecha</span><span>Piezas</span>
+      <div class="thead">
+        <button type="button" class="th" data-sort="tipo" aria-label="Ordenar por tipo">Tipo</button>
+        <button type="button" class="th" data-sort="folio" aria-label="Ordenar por folio">Folio / detalle</button>
+        <button type="button" class="th" data-sort="fecha" aria-label="Ordenar por fecha">Fecha</button>
+        <button type="button" class="th" data-sort="piezas" aria-label="Ordenar por piezas">Piezas</button>
       </div>
       <div id="list" class="list"></div>
     </section>
