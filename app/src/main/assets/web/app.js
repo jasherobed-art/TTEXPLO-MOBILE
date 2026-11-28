@@ -619,7 +619,10 @@
           : '<div class="empty">' + (term ? 'Sin resultados para «' + esc(term) + '»' : 'El catálogo está vacío') + '</div>';
       })
       .catch(function (e) {
-        destino.innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+        var msg = e && e.message === 'Failed to fetch'
+          ? 'No se pudo conectar con la terminal'
+          : (e && e.message) || 'No se pudo consultar el catálogo';
+        destino.innerHTML = '<div class="empty">' + esc(msg) + '</div>';
         $(cfg.n).textContent = '';
       });
   }
@@ -736,16 +739,37 @@
     }
     if (!datos.producto) { toast('El nombre no puede quedar vacío'); return; }
     if (prodEditando.crear) datos.crear = true;
-    var r = await fetch('/api/catalogo/producto', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datos)
-    });
+
+    async function enviar(carga) {
+      try {
+        return await fetch('/api/catalogo/producto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(carga)
+        });
+      } catch (e) {
+        toast('No se pudo conectar con la terminal');
+        return null;
+      }
+    }
+
+    var r = await enviar(datos);
+    if (!r) return;
+    if (r.status === 401) { location.href = '/login'; return; }
+    if (r.status === 404) {
+      if (!confirm('Ese producto ya no existe en la terminal. ¿Darlo de alta?')) {
+        toast('Producto no encontrado');
+        return;
+      }
+      datos.crear = true;
+      r = await enviar(datos);
+      if (!r) return;
+    }
     if (r.status === 401) { location.href = '/login'; return; }
     if (r.status === 409) { toast('Ya existe un producto con ese ID'); return; }
-    if (!r.ok) { toast('No se pudo guardar el producto'); return; }
+    if (!r.ok) { toast('No se pudo guardar el producto (' + r.status + ')'); return; }
     $('#dlgProd').close();
-    toast(prodEditando.crear ? 'Producto agregado' : 'Producto actualizado');
+    toast(datos.crear ? 'Producto agregado' : 'Producto actualizado');
     cargarCatalogo(prodEditando.cual);
   }
 
