@@ -809,11 +809,14 @@ private fun CompactMetric(
             .padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
+        AutoShrinkText(
             text = "$count",
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+            modifier = Modifier.fillMaxWidth(),
             color = countColor,
-            fontWeight = FontWeight.ExtraBold
+            initialTextSize = 18.sp,
+            minTextSize = 10.sp,
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center
         )
         Text(
             text = label,

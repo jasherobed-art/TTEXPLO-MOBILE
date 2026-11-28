@@ -16,11 +16,11 @@ android {
     applicationId = "com.aistudio.ttexplo.uiobza"
     minSdk = 26
     targetSdk = 36
-    versionCode = 47
-    versionName = "2.13.1"
+    versionCode = 48
+    versionName = "2.13.2"
 
     // El plugin `secrets` inyecta SYNC_HMAC_KEY desde .env/.env.example como BuildConfig.SYNC_HMAC_KEY.
-    // Declararlo aquÃ­ lo hace explÃ­cito; el plugin sobrescribe el valor con el de .env en tiempo de build.
+    // Declararlo aquÃƒÂ­ lo hace explÃƒÂ­cito; el plugin sobrescribe el valor con el de .env en tiempo de build.
     buildConfigField(
         "String",
         "SYNC_HMAC_KEY",
@@ -60,6 +60,13 @@ android {
     debug {
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
+      signingConfig = signingConfigs.getByName("debugConfig")
+    }
+    // Variante de pruebas: se instala al lado de la app real, con base de datos propia.
+    create("qa") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".qa"
+      versionNameSuffix = "-qa"
       signingConfig = signingConfigs.getByName("debugConfig")
     }
   }

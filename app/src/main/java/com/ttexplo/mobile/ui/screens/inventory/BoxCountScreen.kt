@@ -556,7 +556,15 @@ private fun BoxCountMetric(
     valueColor: Color
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value.toString(), color = valueColor, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        AutoShrinkText(
+            text = value.toString(),
+            modifier = Modifier.fillMaxWidth(),
+            color = valueColor,
+            initialTextSize = 18.sp,
+            minTextSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
         Text(label, color = labelColor, fontSize = 10.sp)
     }
 }

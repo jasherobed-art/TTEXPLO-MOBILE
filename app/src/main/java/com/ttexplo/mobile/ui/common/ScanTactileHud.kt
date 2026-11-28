@@ -193,21 +193,25 @@ private fun HudCell(
                 Icon(Icons.Default.Check, contentDescription = null, tint = color, modifier = Modifier.size(12.dp))
             }
         }
-        Text(
+        AutoShrinkText(
             text = count.toString(),
+            modifier = Modifier.fillMaxWidth(),
             color = MineTextPrimary,
-            fontFamily = FontFamily.Monospace,
+            initialTextSize = 18.sp,
+            minTextSize = 9.sp,
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            maxLines = 1
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
         )
-        Text(
+        AutoShrinkText(
             text = WeightFormat.kg3(kg) + " kg",
+            modifier = Modifier.fillMaxWidth(),
             color = MineSuccessText,
-            fontFamily = FontFamily.Monospace,
+            initialTextSize = 12.sp,
+            minTextSize = 8.sp,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 12.sp,
-            maxLines = 1
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
         )
     }
 }

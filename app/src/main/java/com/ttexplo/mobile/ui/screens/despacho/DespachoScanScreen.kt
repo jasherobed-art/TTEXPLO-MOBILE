@@ -55,6 +55,7 @@ import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
+import androidx.compose.ui.text.style.TextAlign
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.CompactScanMetricsRibbon
 import com.ttexplo.mobile.ui.common.DateCorrectionDialog
@@ -777,11 +778,14 @@ fun CompactDespachoMetric(
             .padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
+        AutoShrinkText(
             text = "$count",
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+            modifier = Modifier.fillMaxWidth(),
             color = countColor,
-            fontWeight = FontWeight.ExtraBold
+            initialTextSize = 18.sp,
+            minTextSize = 10.sp,
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center
         )
         Text(
             text = label,

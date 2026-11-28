@@ -128,6 +128,7 @@
     var f = String(v.fecha || '').split(' ');
     var editado = state.edits[v.key] ? ' <span class="badge">Editado</span>' : '';
     var pz = v.piezas || 0;
+    var pzCls = String(pz).length > 4 ? 'pz pz--sm' : 'pz';
     var unidad = v.tipo === 'ACCESORIOS' ? 'leídas' : (pz === 1 ? 'pza' : 'pzas');
     var aria = [v.tipoLabel || v.tipo, 'folio ' + v.folio, v.resumen, f[0] || '', pz + ' ' + unidad].join(', ');
     return '<div class="vale ' + cls + (on ? ' sel' : '') + '" data-key="' + esc(v.key) + '">' +
@@ -140,7 +141,7 @@
         '<span class="vmain"><span class="f">' + esc(v.folio) + editado + '</span>' +
           '<span class="r">' + esc(v.resumen) + '</span></span>' +
         '<span class="d"><b>' + esc(f[0] || '') + '</b>' + (f[1] ? '<span>' + esc(f[1]) + '</span>' : '') + '</span>' +
-        '<span class="pz">' + pz + '<small>' + unidad + '</small></span>' +
+        '<span class="' + pzCls + '">' + pz + '<small>' + unidad + '</small></span>' +
       '</button></div>';
   }
 
@@ -203,9 +204,10 @@
       : d.tipo === 'CONTEO' ? [['Cajas', t.cajas]]
       : [['Cajas', t.cajas], ['Sacos', t.sacos], ['Cartuchos', t.cartuchos]];
     return '<div class="resumen' + (d.alerta ? ' alert' : '') + '">' +
-      '<div class="big"><b>' + total + '</b><span>' + label + '</span></div>' +
+      '<div class="big' + (String(total).length > 4 ? ' big--sm' : '') + '"><b>' + total + '</b><span>' + label + '</span></div>' +
       '<div class="packs">' + packs.map(function (p) {
-        return '<div><span>' + p[0] + '</span><b>' + (p[1] || 0) + '</b></div>';
+        var n = p[1] || 0;
+        return '<div><span>' + p[0] + '</span><b' + (String(n).length > 4 ? ' class="num--sm"' : '') + '>' + n + '</b></div>';
       }).join('') + '</div>' +
       '<div class="estado">' + (d.alerta
         ? '&#33;&#160; Revisar: las piezas no coinciden con lo esperado'
