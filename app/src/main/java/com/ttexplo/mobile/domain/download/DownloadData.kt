@@ -572,27 +572,11 @@ class DownloadData(
         return root.toString()
     }
 
-    private data class PrintRow(
-        val nombre: String,
-        val presentacion: String,
-        val empaque: String,
-        var cantidad: Int = 0,
-        var pesoKg: Double = 0.0,
-        var pesoConocido: Boolean = true
-    )
-
     private fun unitLabel(unit: String): String = when (unit.uppercase()) {
         "MTS" -> "Metros"
         "PZA" -> "Piezas"
         "KG" -> "KG"
         else -> unit
-    }
-
-    private fun shortUnit(unit: String): String = when (unit.uppercase()) {
-        "MTS" -> "MTS"
-        "PZA" -> "PZA"
-        "KG" -> "KG"
-        else -> unit.uppercase()
     }
 
     private fun measureText(product: ProductoEntity?, empaque: String): String {
@@ -636,7 +620,7 @@ class DownloadData(
         }
 
         val esAccesorio = tipo == "ACCESORIOS"
-        val filas = LinkedHashMap<String, PrintRow>()
+        val filas = LinkedHashMap<String, JSONObject>()
         val printCodigos = JSONArray()
         var piezas = 0
         var cajas = 0
@@ -671,7 +655,7 @@ class DownloadData(
                 val unit = accessoryUnit(product, code)
                 nombre = product?.producto?.trim()?.ifBlank { code } ?: code
                 presentacion = unitLabel(unit)
-                empaque = shortUnit(unit)
+                empaque = unit.uppercase()
                 key = "$nombre|$presentacion|$empaque"
             } else {
                 val prefix = ProductClassifier.extractPrefix(code).uppercase()
@@ -685,15 +669,21 @@ class DownloadData(
             }
 
             val row = filas.getOrPut(key) {
-                PrintRow(nombre, presentacion, empaque)
+                JSONObject()
+                    .put("nombre", nombre)
+                    .put("presentacion", presentacion)
+                    .put("empaque", empaque)
+                    .put("cantidad", 0)
+                    .put("peso", 0.0)
+                    .put("pesoConocido", !esAccesorio)
             }
-            row.cantidad += cantidad
+            row.put("cantidad", row.optInt("cantidad") + cantidad)
             val peso = PrintMaterialWeight.totalKg(product?.toDomain(), empaque, cantidad)
             if (peso == null) {
-                row.pesoConocido = false
+                row.put("pesoConocido", false)
                 if (!esAccesorio) pesoParcial = true
             } else {
-                row.pesoKg += peso
+                row.put("peso", row.optDouble("peso") + peso)
                 pesoTotal += peso
             }
 
@@ -721,17 +711,7 @@ class DownloadData(
         }
 
         val printItems = JSONArray()
-        filas.values.forEach { r ->
-            printItems.put(
-                JSONObject()
-                    .put("nombre", r.nombre)
-                    .put("presentacion", r.presentacion)
-                    .put("empaque", r.empaque)
-                    .put("cantidad", r.cantidad)
-                    .put("peso", r.pesoKg)
-                    .put("pesoConocido", r.pesoConocido && !esAccesorio)
-            )
-        }
+        filas.values.forEach { printItems.put(it) }
 
         val printTotales = JSONObject()
             .put("piezas", piezas)

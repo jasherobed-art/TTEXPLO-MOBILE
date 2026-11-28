@@ -625,8 +625,7 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
         val totales = root.optJSONObject("printTotales") ?: root.optJSONObject("totales") ?: JSONObject()
         val firmas = root.optJSONArray("firmas")
         val esAccesorio = tipoRaw == "ACCESORIOS"
-        val esConteo = tipoRaw == "CONTEO"
-        val showWeight = !esAccesorio && !esConteo
+        val showWeight = !esAccesorio && tipoRaw != "CONTEO"
         val terminal = runCatching {
             com.ttexplo.mobile.license.LicenseManager.getFormattedDeviceId(appContext)
         }.getOrDefault("")
@@ -710,12 +709,10 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
 """.trimIndent()
         }
 
-        val rowsPerPage = 38
-        val pages = if (nCodes == 0) 0 else (nCodes + rowsPerPage - 1) / rowsPerPage
         val pagesLabel = when {
             nCodes == 0 -> "sin códigos"
-            pages == 1 -> "1 página"
-            else -> "~$pages páginas"
+            nCodes <= 38 -> "1 página"
+            else -> "~${(nCodes + 37) / 38} páginas"
         }
 
         val firmasHtml = StringBuilder()
