@@ -205,13 +205,13 @@ main{max-width:1440px;margin:0 auto;padding:16px 20px 96px}
 .edit-input:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .codes li{flex-wrap:nowrap}
 .codes li .edit-input{flex:1 1 auto;min-width:0;height:34px;font:12px var(--mono)}
-.codes li .time-in{flex:0 0 172px;font:12px var(--ui)}
+.codes li .time-in{flex:0 0 190px;font:12px var(--ui)}
 .codes li .qty-in{flex:0 0 64px;font:12px var(--ui)}
 .del{background:transparent;border:1px solid var(--line);color:var(--alert);border-radius:4px;width:30px;height:30px;cursor:pointer;font-size:15px;line-height:1;flex:0 0 auto}
 .del:hover{border-color:var(--alert);background:var(--alert-bg)}
 .add{display:flex;gap:6px;margin-top:10px;flex-wrap:nowrap;max-width:560px}
 .add .edit-input{flex:1 1 auto;min-width:0;font:12px var(--mono)}
-.add .time-in{flex:0 0 172px;font:12px var(--ui)}
+.add .time-in{flex:0 0 190px;font:12px var(--ui)}
 .add .qty-in{flex:0 0 64px;font:12px var(--ui)}
 .add .btn{margin-left:auto}
 .dlg{background:var(--s2);color:var(--txt);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;width:min(400px,92vw)}
@@ -241,7 +241,7 @@ main{max-width:1440px;margin:0 auto;padding:16px 20px 96px}
 .codes--edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(470px,1fr));gap:0 20px}
 .codes--edit li{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line)}
 .codes--edit li .edit-input{flex:1 1 auto;min-width:110px}
-.codes--edit li .time-in{flex:0 0 164px}
+.codes--edit li .time-in{flex:0 0 190px}
 .codes--edit li .qty-in{flex:0 0 60px}
 .codes--read{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:0 24px}
 .codes--read li{padding:6px 0;border-bottom:1px solid var(--line)}

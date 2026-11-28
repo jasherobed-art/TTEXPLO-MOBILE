@@ -245,8 +245,10 @@
     if (state.editando) {
       left += '<h4>Datos del vale</h4><div class="grid">';
       (d.campos || []).forEach(function (c) {
+        var tipo = c.field === 'fecha' ? ' type="datetime-local" step="1"' : '';
+        var valor = c.field === 'fecha' ? esc(c.value).replace(' ', 'T') : esc(c.value);
         left += '<div><label><span>' + esc(c.label) + '</span>' +
-          '<input class="edit-input" data-field="' + esc(c.field) + '" value="' + esc(c.value) + '"></label></div>';
+          '<input class="edit-input"' + tipo + ' data-field="' + esc(c.field) + '" value="' + valor + '"></label></div>';
       });
       left += '</div>';
     } else if (d.datos && d.datos.length) {
@@ -264,12 +266,12 @@
         '<button type="button" class="btn btn--ghost btn--mini" id="valeDate">Cambiar fecha del vale</button></div><ul class="codes codes--edit">';
       (d.codigos || []).forEach(function (c, i) {
         right += '<li><input class="edit-input" data-code="' + i + '" aria-label="Código ' + (i + 1) + '" value="' + esc(c.codigo) + '">' +
-          '<input class="edit-input time-in" data-time="' + i + '" aria-label="Fecha y hora del código ' + (i + 1) + '" value="' + esc(c.hora) + '">' +
+          '<input class="edit-input time-in" type="datetime-local" step="1" data-time="' + i + '" aria-label="Fecha y hora del código ' + (i + 1) + '" value="' + esc(c.hora).replace(' ', 'T') + '">' +
           (d.tipo === 'ACCESORIOS' ? '<input class="edit-input qty-in" data-qty="' + i + '" aria-label="Cantidad del código ' + (i + 1) + '" value="' + (c.cantidad || 1) + '">' : '') +
           '<button type="button" class="del" data-del="' + i + '" aria-label="Eliminar código">×</button></li>';
       });
       right += '</ul><div class="add"><input id="newCode" class="edit-input" aria-label="Código nuevo" placeholder="Código">' +
-        '<input id="newTime" class="edit-input time-in" aria-label="Fecha y hora del código nuevo" placeholder="YYYY-MM-DD HH:MM:SS">' +
+        '<input id="newTime" class="edit-input time-in" type="datetime-local" step="1" aria-label="Fecha y hora del código nuevo">' +
         (d.tipo === 'ACCESORIOS' ? '<input id="newQty" class="edit-input qty-in" aria-label="Cantidad del código nuevo" value="1">' : '') +
         '<button type="button" class="btn" id="addCode">Agregar</button></div>' +
         '<p class="note note--aviso">No se guardan en la terminal; el .txt sí las incluye.</p>';
@@ -388,7 +390,7 @@
     var d = state.draft;
     Array.prototype.forEach.call(document.querySelectorAll('[data-field]'), function (i) {
       var c = d.campos.find(function (x) { return x.field === i.dataset.field; });
-      if (c) c.value = i.value;
+      if (c) c.value = i.dataset.field === 'fecha' ? i.value.replace('T', ' ') : i.value;
     });
     Array.prototype.forEach.call(document.querySelectorAll('[data-code]'), function (i) {
       var c = d.codigos[parseInt(i.dataset.code, 10)];
