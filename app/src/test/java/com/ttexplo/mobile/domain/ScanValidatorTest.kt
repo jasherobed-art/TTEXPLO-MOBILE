@@ -88,14 +88,13 @@ class ScanValidatorTest {
     }
 
     @Test
-    fun testProcessScan_valid17DigitCartucho() = runBlocking {
-        val code = "05611110240605501" // 17 digits
+    fun testProcessScan_rejects17DigitCartucho() = runBlocking {
+        val code = "05611110240605501" // 17 dígitos: inválido, el cartucho es de 16
         assertThat(code.length).isEqualTo(17)
 
         val result = scanValidator.processScan(code, emptySet())
 
-        assertThat(result.isValid).isTrue()
-        assertThat(result.empaque).isEqualTo(TipoEmpaque.PIEZA)
+        assertThat(result.isValid).isFalse()
     }
 
     @Test
@@ -317,8 +316,8 @@ class ScanValidatorTest {
     }
 
     @Test
-    fun seventeenDigitCartridgeKeepsSkippingDateValidation() = runBlocking {
-        assertThat(scanValidator.processScan("05611110240605501", emptySet()).isValid).isTrue()
+    fun seventeenDigitCartridgeIsRejected() = runBlocking {
+        assertThat(scanValidator.processScan("05611110240605501", emptySet()).isValid).isFalse()
     }
 
     @Test

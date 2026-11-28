@@ -1132,7 +1132,7 @@ class InventoryRepository(
                     else -> when (item.code.trim().length) {
                         30 -> TipoEmpaque.CAJA
                         18 -> TipoEmpaque.SACO
-                        16, 17 -> TipoEmpaque.PIEZA
+                        16 -> TipoEmpaque.PIEZA
                         else -> TipoEmpaque.DESCONOCIDO
                     }
                 }
@@ -1457,7 +1457,7 @@ class InventoryRepository(
                 when (barcode.trim().length) {
                     30 -> TipoEmpaque.CAJA
                     18 -> TipoEmpaque.SACO
-                    16, 17 -> TipoEmpaque.PIEZA
+                    16 -> TipoEmpaque.PIEZA
                     else -> TipoEmpaque.DESCONOCIDO
                 }
             }

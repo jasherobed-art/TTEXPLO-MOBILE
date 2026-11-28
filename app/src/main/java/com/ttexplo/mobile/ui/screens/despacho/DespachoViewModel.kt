@@ -101,7 +101,7 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
                         empaque = when (entity.codigoBarras.length) {
                             30 -> TipoEmpaque.CAJA
                             18 -> TipoEmpaque.SACO
-                            16, 17 -> TipoEmpaque.PIEZA
+                            16 -> TipoEmpaque.PIEZA
                             else -> TipoEmpaque.DESCONOCIDO
                         }
                     )
@@ -147,7 +147,7 @@ class DespachoViewModel(application: Application) : AndroidViewModel(application
                         empaque = when (entity.codigoBarras.length) {
                             30 -> TipoEmpaque.CAJA
                             18 -> TipoEmpaque.SACO
-                            16, 17 -> TipoEmpaque.PIEZA
+                            16 -> TipoEmpaque.PIEZA
                             else -> TipoEmpaque.DESCONOCIDO
                         }
                     )

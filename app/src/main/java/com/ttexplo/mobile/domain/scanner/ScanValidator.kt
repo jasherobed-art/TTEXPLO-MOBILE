@@ -93,11 +93,11 @@ class ScanValidator(
         }
 
         // Strict length check for Alto Explosivo / Agente:
-        // Cajas: 30 dígitos, Sacos: 18 dígitos, Cartuchos: 16 dígitos (compatible con 16 y 17)
+        // Cajas: 30 dígitos, Sacos: 18 dígitos, Cartuchos: 16 dígitos (17 es inválido)
         val empaque = when (trimmed.length) {
             30 -> TipoEmpaque.CAJA
             18 -> TipoEmpaque.SACO
-            16, 17 -> TipoEmpaque.PIEZA
+            16 -> TipoEmpaque.PIEZA
             else -> null
         }
 
@@ -131,7 +131,7 @@ class ScanValidator(
         }
 
         // CANDADO DE COHERENCIA DE EMPAQUE:
-        // Alto Explosivo solo existe en Cajas (30 dígitos) o Cartuchos (16/17 dígitos), NUNCA en Sacos (18 dígitos).
+        // Alto Explosivo solo existe en Cajas (30 dígitos) o Cartuchos (16 dígitos), NUNCA en Sacos (18 dígitos).
         if (productInfo.type == ProductType.ALTO_EXPLOSIVO && empaque == TipoEmpaque.SACO) {
             return ScanResult(
                 rawBarcode = trimmed,

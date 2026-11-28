@@ -152,7 +152,7 @@ class DevolucionViewModel(application: Application) : AndroidViewModel(applicati
                     val emp = when (entity.codigoBarras.length) {
                         30 -> TipoEmpaque.CAJA
                         18 -> TipoEmpaque.SACO
-                        16, 17 -> TipoEmpaque.PIEZA
+                        16 -> TipoEmpaque.PIEZA
                         else -> if (entity.codigoBarras.startsWith("X", ignoreCase = true)) TipoEmpaque.ACCESORIO else TipoEmpaque.DESCONOCIDO
                     }
                     BarcodeItem(entity.codigoBarras, entity.fechaEscaneo, prod, emp)
