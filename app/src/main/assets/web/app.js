@@ -236,56 +236,58 @@
     $('#pTag').className = 't ' + (CLASE[d.tipo] || '');
     $('#pFolio').textContent = d.folio;
     $('#panel').classList.toggle('editando', state.editando);
-    var h = '';
+    var band = state.editando
+      ? '<div class="band"><b>Editando</b><span>Correcciones solo en esta sesión</span></div>'
+      : '';
+    var left = '';
+    var right = '';
 
     if (state.editando) {
-      h += '<div class="band"><b>Editando</b><span>Correcciones solo en esta sesión</span></div>';
-    }
-
-    h += resumenHtml(d);
-
-    if (state.editando) {
-      h += '<h4>Datos del vale</h4><div class="grid">';
+      left += '<h4>Datos del vale</h4><div class="grid">';
       (d.campos || []).forEach(function (c) {
-        h += '<div><label><span>' + esc(c.label) + '</span>' +
+        left += '<div><label><span>' + esc(c.label) + '</span>' +
           '<input class="edit-input" data-field="' + esc(c.field) + '" value="' + esc(c.value) + '"></label></div>';
       });
-      h += '</div>';
+      left += '</div>';
     } else if (d.datos && d.datos.length) {
-      h += '<h4>Datos del vale</h4><div class="grid">' + d.datos.map(function (x) {
+      left += '<h4>Datos del vale</h4><div class="grid">' + d.datos.map(function (x) {
         return '<div><span>' + esc(x.label) + '</span><b>' + esc(x.value) + '</b></div>';
       }).join('') + '</div>';
     }
 
-    h += '<h4>Materiales</h4><ul class="items">' + (d.items || []).map(function (x) {
+    left += '<h4>Materiales</h4><ul class="items">' + (d.items || []).map(function (x) {
       return '<li><span>' + esc(x.nombre) + ' <span class="pk">' + esc(x.empaque) + '</span></span><b>' + x.cantidad + '</b></li>';
     }).join('') + '</ul>';
 
     if (state.editando) {
-      h += '<div class="codes-hd"><h4>Códigos</h4><span class="count">' + (d.codigos || []).length + '</span>' +
+      right += '<div class="codes-hd"><h4>Códigos</h4><span class="count">' + (d.codigos || []).length + '</span>' +
         '<button type="button" class="btn btn--ghost btn--mini" id="valeDate">Cambiar fecha del vale</button></div><ul class="codes">';
       (d.codigos || []).forEach(function (c, i) {
-        h += '<li><input class="edit-input" data-code="' + i + '" aria-label="Código ' + (i + 1) + '" value="' + esc(c.codigo) + '">' +
+        right += '<li><input class="edit-input" data-code="' + i + '" aria-label="Código ' + (i + 1) + '" value="' + esc(c.codigo) + '">' +
           '<input class="edit-input time-in" data-time="' + i + '" aria-label="Fecha y hora del código ' + (i + 1) + '" value="' + esc(c.hora) + '">' +
           (d.tipo === 'ACCESORIOS' ? '<input class="edit-input qty-in" data-qty="' + i + '" aria-label="Cantidad del código ' + (i + 1) + '" value="' + (c.cantidad || 1) + '">' : '') +
           '<button type="button" class="del" data-del="' + i + '" aria-label="Eliminar código">×</button></li>';
       });
-      h += '</ul><div class="add"><input id="newCode" class="edit-input" aria-label="Código nuevo" placeholder="Código">' +
+      right += '</ul><div class="add"><input id="newCode" class="edit-input" aria-label="Código nuevo" placeholder="Código">' +
         '<input id="newTime" class="edit-input time-in" aria-label="Fecha y hora del código nuevo" placeholder="YYYY-MM-DD HH:MM:SS">' +
         (d.tipo === 'ACCESORIOS' ? '<input id="newQty" class="edit-input qty-in" aria-label="Cantidad del código nuevo" value="1">' : '') +
         '<button type="button" class="btn" id="addCode">Agregar</button></div>' +
         '<p class="note note--aviso">No se guardan en la terminal; el .txt sí las incluye.</p>';
     } else if (d.codigos && d.codigos.length) {
-      h += '<h4>Códigos</h4><ul class="codes">' + d.codigos.map(function (c) {
+      right += '<h4>Códigos</h4><ul class="codes">' + d.codigos.map(function (c) {
         return '<li><span>' + esc(c.codigo) + '</span><span>' + esc(c.hora) + '</span></li>';
       }).join('') + '</ul>';
     }
 
     if (d.firmas && d.firmas.length) {
-      h += '<h4>Firmas</h4><div class="firmas">' + d.firmas.map(function (f) {
+      right += '<h4>Firmas</h4><div class="firmas">' + d.firmas.map(function (f) {
         return '<div>' + esc(f) + '</div>';
       }).join('') + '</div>';
     }
+
+    var h = band + resumenHtml(d) +
+      '<div class="detail-cols"><div class="col-left">' + left + '</div>' +
+      '<div class="col-right">' + right + '</div></div>';
 
     $('#pBody').innerHTML = h;
     $('#pEdit').hidden = state.editando || d.tipo === 'CONTEO';
