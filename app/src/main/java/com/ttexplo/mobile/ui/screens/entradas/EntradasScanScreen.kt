@@ -48,7 +48,10 @@ import com.example.R
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
+import com.ttexplo.mobile.domain.model.EntradaRecord
+import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
@@ -679,6 +682,23 @@ fun EntradasScanScreen(
         )
     }
 
+    val ticketPreview = remember(uiState.scannedItems, activeProfile) {
+        runCatching {
+            ValePrintHelper.previewEntrada(
+                context,
+                EntradaRecord(
+                    proveedor = effProv,
+                    polvorin = effPolv,
+                    factura = effFact,
+                    items = uiState.scannedItems.map {
+                        ScannedCodeRecord(it.code, it.timestamp, it.productInfo.name, it.productInfo.presentation)
+                    }
+                ),
+                activeProfile
+            )
+        }.getOrDefault("")
+    }
+
     if (showSavedReprintDialog) {
         SavedValeReprintDialog(
             valeTypeTitle = "Vale de Entrada",
@@ -689,6 +709,7 @@ fun EntradasScanScreen(
             copiesPrinted = copiesPrinted,
             isPrinting = uiState.isPrinting,
             printStatusMessage = uiState.printStatusMessage,
+            ticketPreview = ticketPreview,
             accentColor = MineSafetyYellow,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {

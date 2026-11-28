@@ -951,6 +951,22 @@ fun DevolucionScreen(
         )
     }
 
+    val ticketPreview = remember(items, activeProfile) {
+        runCatching {
+            ValePrintHelper.previewDevolucion(
+                context,
+                DevolucionRecord(
+                    empleadoEntrega = empleadoEntrega.ifBlank { "SIN ESPECIFICAR" },
+                    empleadoRecibe = empleadoRecibe.ifBlank { "POLVORIN" },
+                    items = items.map {
+                        ScannedCodeRecord(it.code, it.timestamp, it.productInfo.name, it.productInfo.presentation)
+                    }
+                ),
+                activeProfile
+            )
+        }.getOrDefault("")
+    }
+
     if (showSavedReprintDialog) {
         val folio = if (empleadoEntrega.startsWith("DEV", ignoreCase = true)) empleadoEntrega else "DEV$empleadoEntrega"
         SavedValeReprintDialog(
@@ -962,6 +978,7 @@ fun DevolucionScreen(
             copiesPrinted = copiesPrinted,
             isPrinting = isPrinting,
             printStatusMessage = printStatusMessage,
+            ticketPreview = ticketPreview,
             accentColor = MineAgentCyan,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {

@@ -6,6 +6,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -333,6 +335,7 @@ fun SavedValeReprintDialog(
     copiesPrinted: Int,
     isPrinting: Boolean,
     printStatusMessage: String?,
+    ticketPreview: String? = null,
     accentColor: Color = MineSafetyYellow,
     onPrintClick: () -> Unit,
     onChangePrinterClick: () -> Unit,
@@ -413,6 +416,45 @@ fun SavedValeReprintDialog(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
+                }
+
+                // Previsualización del ticket térmico antes de imprimir.
+                Text(
+                    text = "PREVISUALIZACIÓN DEL TICKET",
+                    color = MineSafetyYellow,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.White)
+                        .border(1.dp, MineBorderGray, RoundedCornerShape(6.dp))
+                        .padding(8.dp)
+                ) {
+                    if (!ticketPreview.isNullOrBlank()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            Text(
+                                text = ticketPreview,
+                                color = Color.Black,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 10.sp,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Vista previa no disponible para esta impresora.",
+                            color = Color(0xFF555555),
+                            fontSize = 11.sp
+                        )
+                    }
                 }
 
                 Button(

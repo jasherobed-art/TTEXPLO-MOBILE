@@ -259,6 +259,70 @@ object ValePrintHelper {
         return transmit(printerManager, profile.macAddress, profile.displayTitle(), bytes)
     }
 
+    // --- Previsualización (texto PLAIN del ticket, sin enviar a la impresora) ---
+
+    private fun previewWidth(context: Context, profile: PrinterProfile?): PaperWidth {
+        val s = SettingsRepository(context)
+        return (profile ?: s.getActivePrinterProfile())?.paperWidth ?: s.getPaperWidth()
+    }
+
+    fun previewDespacho(context: Context, record: DespachoRecord, profile: PrinterProfile? = null): String {
+        val s = SettingsRepository(context)
+        return TicketGenerator.generateDespachoPlain(
+            record = record,
+            paperWidth = previewWidth(context, profile),
+            mineName = s.getMineName(),
+            permitNumber = s.getPermitNumber(),
+            headerNote = s.getTicketHeader(),
+            includeSignatures = s.getPrintSignatures(),
+            includeBreakdown = s.getPrintBreakdown(),
+            includeCodeDetails = s.getPrintCodeDetails()
+        ).toString(Charsets.UTF_8)
+    }
+
+    fun previewEntrada(context: Context, record: EntradaRecord, profile: PrinterProfile? = null): String {
+        val s = SettingsRepository(context)
+        return TicketGenerator.generateEntradaPlain(
+            record = record,
+            paperWidth = previewWidth(context, profile),
+            mineName = s.getMineName(),
+            permitNumber = s.getPermitNumber(),
+            headerNote = s.getTicketHeader(),
+            includeSignatures = s.getPrintSignatures(),
+            includeBreakdown = s.getPrintBreakdown(),
+            includeCodeDetails = s.getPrintCodeDetails()
+        ).toString(Charsets.UTF_8)
+    }
+
+    fun previewAccesorios(context: Context, record: AccesoriosRecord, profile: PrinterProfile? = null): String {
+        val s = SettingsRepository(context)
+        return TicketGenerator.generateAccesoriosPlain(
+            record = record,
+            paperWidth = previewWidth(context, profile),
+            mineName = s.getMineName(),
+            permitNumber = s.getPermitNumber(),
+            includeSignatures = s.getPrintSignatures(),
+            includeCodeDetails = s.getPrintCodeDetails()
+        ).toString(Charsets.UTF_8)
+    }
+
+    fun previewDevolucion(context: Context, record: DevolucionRecord, profile: PrinterProfile? = null): String {
+        val s = SettingsRepository(context)
+        return TicketGenerator.generateDevolucionPlain(
+            record = record,
+            paperWidth = previewWidth(context, profile),
+            mineName = s.getMineName(),
+            permitNumber = s.getPermitNumber(),
+            headerNote = s.getTicketHeader(),
+            includeSignatures = s.getPrintSignatures(),
+            includeBreakdown = s.getPrintBreakdown(),
+            includeCodeDetails = s.getPrintCodeDetails()
+        ).toString(Charsets.UTF_8)
+    }
+
+    fun previewBoxCount(context: Context, vale: BoxCountVale, profile: PrinterProfile? = null): String =
+        TicketGenerator.generateBoxCountPlain(vale, previewWidth(context, profile)).toString(Charsets.UTF_8)
+
     private suspend fun transmit(
         printerManager: BluetoothPrinterManager,
         macAddress: String,

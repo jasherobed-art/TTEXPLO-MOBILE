@@ -50,7 +50,9 @@ import com.example.R
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import com.ttexplo.mobile.domain.model.InventoryCategory
 import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
@@ -688,6 +690,26 @@ fun AccesoriosScanScreen(
         )
     }
 
+    val ticketPreview = remember(uiState.items, activeProfile) {
+        runCatching {
+            ValePrintHelper.previewAccesorios(
+                context,
+                AccesoriosRecord(
+                    vale = uiState.vale,
+                    empresa = uiState.empresa,
+                    lugar = uiState.lugar,
+                    transportista = uiState.transportista,
+                    turno = uiState.turno,
+                    recibio = uiState.recibio,
+                    entrego = uiState.entrego,
+                    voladura = uiState.voladura,
+                    items = uiState.items
+                ),
+                activeProfile
+            )
+        }.getOrDefault("")
+    }
+
     if (showSavedReprintDialog) {
         SavedValeReprintDialog(
             valeTypeTitle = if (isDevolucion) "Devolución de Accesorios" else "Vale de Accesorios",
@@ -698,6 +720,7 @@ fun AccesoriosScanScreen(
             copiesPrinted = copiesPrinted,
             isPrinting = uiState.isPrinting,
             printStatusMessage = uiState.printStatusMessage,
+            ticketPreview = ticketPreview,
             accentColor = accentColor,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {

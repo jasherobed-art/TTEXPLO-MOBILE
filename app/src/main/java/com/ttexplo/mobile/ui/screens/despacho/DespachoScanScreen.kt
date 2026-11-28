@@ -48,7 +48,10 @@ import com.example.R
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
+import com.ttexplo.mobile.domain.model.DespachoRecord
+import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import com.ttexplo.mobile.printer.PrinterProfile
+import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
 import com.ttexplo.mobile.ui.common.AutoShrinkText
@@ -643,6 +646,26 @@ fun DespachoScanScreen(
         )
     }
 
+    val ticketPreview = remember(uiState.scannedItems, activeProfile) {
+        runCatching {
+            ValePrintHelper.previewDespacho(
+                context,
+                DespachoRecord(
+                    vale = uiState.vale,
+                    empresa = uiState.empresa,
+                    lugar = uiState.lugar,
+                    transportista = uiState.transportista,
+                    turno = uiState.turno,
+                    voladura = uiState.voladura,
+                    items = uiState.scannedItems.map {
+                        ScannedCodeRecord(it.code, it.timestamp, it.productInfo.name, it.productInfo.presentation)
+                    }
+                ),
+                activeProfile
+            )
+        }.getOrDefault("")
+    }
+
     if (showSavedReprintDialog) {
         SavedValeReprintDialog(
             valeTypeTitle = "Vale de Despacho",
@@ -653,6 +676,7 @@ fun DespachoScanScreen(
             copiesPrinted = copiesPrinted,
             isPrinting = uiState.isPrinting,
             printStatusMessage = uiState.printStatusMessage,
+            ticketPreview = ticketPreview,
             accentColor = MineHighExplosiveOrange,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {

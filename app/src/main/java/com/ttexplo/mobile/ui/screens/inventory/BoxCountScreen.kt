@@ -511,6 +511,9 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
 
     savedVale?.let { vale ->
         if (showSavedDialog) {
+            val ticketPreview = remember(vale, activeProfile) {
+                runCatching { ValePrintHelper.previewBoxCount(context, vale, activeProfile) }.getOrDefault("")
+            }
             SavedValeReprintDialog(
                 valeTypeTitle = "Conteo en caja",
                 folio = vale.folio,
@@ -520,6 +523,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                 copiesPrinted = copiesPrinted,
                 isPrinting = false,
                 printStatusMessage = printStatusMessage,
+                ticketPreview = ticketPreview,
                 onPrintClick = { printCount(activeProfile) },
                 onChangePrinterClick = { withBluetoothPermission { showPrinterSelector = true } },
                 onFinishClick = {
