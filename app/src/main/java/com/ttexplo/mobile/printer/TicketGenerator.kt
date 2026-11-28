@@ -72,6 +72,10 @@ object TicketGenerator {
     private fun signatureLine(paperWidth: PaperWidth): String =
         "_".repeat((paperWidth.lineLength - 4).coerceAtLeast(1))
 
+    /** Línea de identificación de la terminal; vacía cuando no hay device ID. */
+    private fun terminalLabel(terminalId: String): String? =
+        terminalId.takeIf { it.isNotBlank() }?.let { "TERMINAL: ${stripAccents(it)}" }
+
     data class CpclFont(
         val fontNumber: Int,
         val fontSize: Int,
@@ -319,7 +323,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val out = ByteArrayOutputStream()
         val w = paperWidth.lineLength
@@ -345,6 +350,7 @@ object TicketGenerator {
         out.write("$divider\r\n".toByteArray(CHARSET))
 
         out.write(ESC_ALIGN_LEFT)
+        terminalLabel(terminalId)?.let { out.write("$it\r\n".toByteArray(CHARSET)) }
         val ref = if (record.vale.startsWith("REF", ignoreCase = true)) record.vale else "REF${record.vale}"
         out.write("VALE: $ref\r\n".toByteArray(CHARSET))
         out.write("EMPRESA: ${stripAccents(record.empresa)}\r\n".toByteArray(CHARSET))
@@ -418,7 +424,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val w = paperWidth.lineLength
         val divider = "=".repeat(w)
@@ -435,6 +442,7 @@ object TicketGenerator {
         }
         sb.append("VALE DE DESPACHO\r\n")
         sb.append(divider).append("\r\n")
+        terminalLabel(terminalId)?.let { sb.append(it).append("\r\n") }
 
         val ref = if (record.vale.startsWith("REF", ignoreCase = true)) record.vale else "REF${record.vale}"
         sb.append("VALE: ").append(ref).append("\r\n")
@@ -501,7 +509,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val totalItems = despacho.items.size
         val grouped = despacho.items.groupBy {
@@ -541,6 +550,12 @@ object TicketGenerator {
         lines.add("LEFT")
         lines.add("LINE 10 $y $lineEnd $y 2")
         y += 16
+
+        terminalLabel(terminalId)?.let {
+            val f = selectCpclFont(it, lineEnd - 20, preferLarge = false)
+            lines.add("TEXT ${f.fontNumber} ${f.fontSize} 10 $y $it")
+            y += f.lineHeightDots
+        }
 
         val ref = if (despacho.vale.startsWith("REF", ignoreCase = true)) despacho.vale else "REF${despacho.vale}"
         lines.add("TEXT 7 0 10 $y VALE: $ref")
@@ -637,7 +652,8 @@ object TicketGenerator {
         mineName: String = "ARIA",
         permitNumber: String = "",
         includeSignatures: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val out = ByteArrayOutputStream()
         val w = paperWidth.lineLength
@@ -659,6 +675,7 @@ object TicketGenerator {
         out.write("$divider\r\n".toByteArray(CHARSET))
 
         out.write(ESC_ALIGN_LEFT)
+        terminalLabel(terminalId)?.let { out.write("$it\r\n".toByteArray(CHARSET)) }
         val acc = if (record.vale.startsWith("ACC", ignoreCase = true)) record.vale else "ACC${record.vale}"
         out.write("VALE: $acc\r\n".toByteArray(CHARSET))
         out.write("EMPRESA: ${stripAccents(record.empresa)}\r\n".toByteArray(CHARSET))
@@ -730,7 +747,8 @@ object TicketGenerator {
         mineName: String = "ARIA",
         permitNumber: String = "",
         includeSignatures: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val w = paperWidth.lineLength
         val divider = "=".repeat(w)
@@ -746,6 +764,7 @@ object TicketGenerator {
         val titleText = if (isDev) "DEVOLUCION DE ACCESORIOS" else "SALIDA DE ACCESORIOS"
         sb.append(titleText).append("\r\n")
         sb.append(divider).append("\r\n")
+        terminalLabel(terminalId)?.let { sb.append(it).append("\r\n") }
 
         val acc = if (record.vale.startsWith("ACC", ignoreCase = true)) record.vale else "ACC${record.vale}"
         sb.append("VALE: ").append(acc).append("\r\n")
@@ -812,7 +831,8 @@ object TicketGenerator {
         mineName: String = "ARIA",
         permitNumber: String = "",
         includeSignatures: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val totalPieces = accesorios.items.sumOf { it.quantity }
         val pageWidth = paperWidth.cpclDots
@@ -842,6 +862,12 @@ object TicketGenerator {
         lines.add("LEFT")
         lines.add("LINE 10 $y $lineEnd $y 2")
         y += 16
+
+        terminalLabel(terminalId)?.let {
+            val f = selectCpclFont(it, lineEnd - 20, preferLarge = false)
+            lines.add("TEXT ${f.fontNumber} ${f.fontSize} 10 $y $it")
+            y += f.lineHeightDots
+        }
 
         val acc = if (accesorios.vale.startsWith("ACC", ignoreCase = true)) accesorios.vale else "ACC${accesorios.vale}"
         lines.add("TEXT 7 0 10 $y VALE: $acc")
@@ -957,7 +983,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val out = ByteArrayOutputStream()
         val w = paperWidth.lineLength
@@ -979,6 +1006,7 @@ object TicketGenerator {
         out.write("$divider\r\n".toByteArray(CHARSET))
 
         out.write(ESC_ALIGN_LEFT)
+        terminalLabel(terminalId)?.let { out.write("$it\r\n".toByteArray(CHARSET)) }
         out.write("PROVEEDOR: ${stripAccents(record.proveedor)}\r\n".toByteArray(CHARSET))
         out.write("POLVORIN: ${stripAccents(record.polvorin)}\r\n".toByteArray(CHARSET))
         out.write("FACTURA / REMISION: ${stripAccents(record.factura)}\r\n".toByteArray(CHARSET))
@@ -1040,7 +1068,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val w = paperWidth.lineLength
         val divider = "=".repeat(w)
@@ -1051,6 +1080,7 @@ object TicketGenerator {
         if (permitNumber.isNotBlank()) sb.append("PERMISO GENERAL: ").append(stripAccents(permitNumber)).append("\r\n")
         if (headerNote.isNotBlank()) sb.append(stripAccents(headerNote)).append("\r\n")
         sb.append("VALE DE ENTRADA A POLVORIN\r\n").append(divider).append("\r\n")
+        terminalLabel(terminalId)?.let { sb.append(it).append("\r\n") }
         sb.append("PROVEEDOR: ").append(stripAccents(record.proveedor)).append("\r\n")
         sb.append("POLVORIN: ").append(stripAccents(record.polvorin)).append("\r\n")
         sb.append("FACTURA: ").append(stripAccents(record.factura)).append("\r\n")
@@ -1101,7 +1131,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val totalItems = record.items.size
         val pageWidth = paperWidth.cpclDots
@@ -1133,6 +1164,12 @@ object TicketGenerator {
         lines.add("LEFT")
         lines.add("LINE 10 $y $lineEnd $y 2")
         y += 16
+
+        terminalLabel(terminalId)?.let {
+            val f = selectCpclFont(it, lineEnd - 20, preferLarge = false)
+            lines.add("TEXT ${f.fontNumber} ${f.fontSize} 10 $y $it")
+            y += f.lineHeightDots
+        }
         lines.add("TEXT 7 0 10 $y PROVEEDOR: ${stripAccents(record.proveedor)}")
         y += 26
         lines.add("TEXT 7 0 10 $y POLVORIN: ${stripAccents(record.polvorin)}")
@@ -1216,7 +1253,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val out = ByteArrayOutputStream()
         val w = paperWidth.lineLength
@@ -1238,6 +1276,7 @@ object TicketGenerator {
         out.write("$divider\r\n".toByteArray(CHARSET))
 
         out.write(ESC_ALIGN_LEFT)
+        terminalLabel(terminalId)?.let { out.write("$it\r\n".toByteArray(CHARSET)) }
         out.write("ENTREGA (MINA): ${stripAccents(record.empleadoEntrega)}\r\n".toByteArray(CHARSET))
         out.write("RECIBE (POLVORIN): ${stripAccents(record.empleadoRecibe)}\r\n".toByteArray(CHARSET))
         val ts = record.items.firstOrNull()?.timestamp ?: DateTimeUtils.currentTimestamp()
@@ -1298,7 +1337,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val w = paperWidth.lineLength
         val divider = "=".repeat(w)
@@ -1309,6 +1349,7 @@ object TicketGenerator {
         if (permitNumber.isNotBlank()) sb.append("PERMISO GENERAL: ").append(stripAccents(permitNumber)).append("\r\n")
         if (headerNote.isNotBlank()) sb.append(stripAccents(headerNote)).append("\r\n")
         sb.append("VALE DE DEVOLUCION A POLVORIN\r\n").append(divider).append("\r\n")
+        terminalLabel(terminalId)?.let { sb.append(it).append("\r\n") }
         sb.append("ENTREGA: ").append(stripAccents(record.empleadoEntrega)).append("\r\n")
         sb.append("RECIBE: ").append(stripAccents(record.empleadoRecibe)).append("\r\n")
         val ts = record.items.firstOrNull()?.timestamp ?: DateTimeUtils.currentTimestamp()
@@ -1357,7 +1398,8 @@ object TicketGenerator {
         headerNote: String = "",
         includeSignatures: Boolean = true,
         includeBreakdown: Boolean = true,
-        includeCodeDetails: Boolean = true
+        includeCodeDetails: Boolean = true,
+        terminalId: String = ""
     ): ByteArray {
         val totalItems = record.items.size
         val pageWidth = paperWidth.cpclDots
@@ -1389,6 +1431,12 @@ object TicketGenerator {
         lines.add("LEFT")
         lines.add("LINE 10 $y $lineEnd $y 2")
         y += 16
+
+        terminalLabel(terminalId)?.let {
+            val f = selectCpclFont(it, lineEnd - 20, preferLarge = false)
+            lines.add("TEXT ${f.fontNumber} ${f.fontSize} 10 $y $it")
+            y += f.lineHeightDots
+        }
         lines.add("TEXT 7 0 10 $y ENTREGA: ${stripAccents(record.empleadoEntrega)}")
         y += 26
         lines.add("TEXT 7 0 10 $y RECIBE: ${stripAccents(record.empleadoRecibe)}")
@@ -1597,7 +1645,8 @@ object TicketGenerator {
 
     fun generateBoxCountEscPos(
         vale: BoxCountVale,
-        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH
+        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH,
+        terminalId: String = ""
     ): ByteArray {
         val out = ByteArrayOutputStream()
         val w = paperWidth.lineLength
@@ -1611,6 +1660,7 @@ object TicketGenerator {
         out.write(ESC_BOLD_OFF)
         out.write("$divider\r\n".toByteArray(CHARSET))
         out.write(ESC_ALIGN_LEFT)
+        terminalLabel(terminalId)?.let { out.write("$it\r\n".toByteArray(CHARSET)) }
         vale.items.firstOrNull()?.fechaHora?.takeIf { it.isNotBlank() }?.let {
             out.write("FECHA: $it\r\n".toByteArray(CHARSET))
         }
@@ -1633,12 +1683,14 @@ object TicketGenerator {
 
     fun generateBoxCountPlain(
         vale: BoxCountVale,
-        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH
+        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH,
+        terminalId: String = ""
     ): ByteArray {
         val w = paperWidth.lineLength
         val sb = StringBuilder()
         sb.append("CONTEO EN CAJA\r\n").append("FOLIO: ${vale.folio}\r\n")
         sb.append("=".repeat(w)).append("\r\n")
+        terminalLabel(terminalId)?.let { sb.append(it).append("\r\n") }
         vale.items.firstOrNull()?.fechaHora?.takeIf { it.isNotBlank() }?.let {
             sb.append("FECHA: $it\r\n")
         }
@@ -1658,7 +1710,8 @@ object TicketGenerator {
 
     fun generateBoxCountCpcl(
         vale: BoxCountVale,
-        paperWidth: PaperWidth = PaperWidth.WIDTH_4_INCH
+        paperWidth: PaperWidth = PaperWidth.WIDTH_4_INCH,
+        terminalId: String = ""
     ): ByteArray {
         val pageWidth = paperWidth.cpclDots
         val lineEnd = pageWidth - 20
@@ -1673,6 +1726,12 @@ object TicketGenerator {
         lines.add("LEFT")
         lines.add("LINE 10 $y $lineEnd $y 2")
         y += 16
+
+        terminalLabel(terminalId)?.let {
+            val f = selectCpclFont(it, lineEnd - 20, preferLarge = false)
+            lines.add("TEXT ${f.fontNumber} ${f.fontSize} 10 $y $it")
+            y += f.lineHeightDots
+        }
         lines.add("TEXT 7 0 10 $y CAJAS: ${vale.items.size}")
         y += 26
         lines.add("LINE 10 $y $lineEnd $y 1")

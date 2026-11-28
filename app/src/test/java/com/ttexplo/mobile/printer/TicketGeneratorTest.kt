@@ -110,6 +110,30 @@ class TicketGeneratorTest {
     }
 
     @Test
+    fun ticketShowsTerminalIdWhenProvided() {
+        val plain = String(TicketGenerator.generateDespachoPlain(
+            record = despacho, paperWidth = PaperWidth.WIDTH_3_INCH, terminalId = "ZBR-POLV-01"
+        ), charset)
+        val esc = String(TicketGenerator.generateDespachoEscPos(
+            record = despacho, paperWidth = PaperWidth.WIDTH_3_INCH, terminalId = "ZBR-POLV-01"
+        ), charset)
+        val cpcl = String(TicketGenerator.generateDespachoCpcl(
+            despacho = despacho, paperWidth = PaperWidth.WIDTH_3_INCH, terminalId = "ZBR-POLV-01"
+        ), charset)
+        assertThat(plain).contains("TERMINAL: ZBR-POLV-01")
+        assertThat(esc).contains("TERMINAL: ZBR-POLV-01")
+        assertThat(cpcl).contains("TERMINAL: ZBR-POLV-01")
+    }
+
+    @Test
+    fun ticketOmitsTerminalLineWhenBlank() {
+        val text = String(TicketGenerator.generateDespachoPlain(
+            record = despacho, paperWidth = PaperWidth.WIDTH_3_INCH
+        ), charset)
+        assertThat(text).doesNotContain("TERMINAL:")
+    }
+
+    @Test
     fun testGenerateDespachoTicket_withCustomMineAndPermit() {
         val despacho = DespachoRecord(
             vale = "7712",
