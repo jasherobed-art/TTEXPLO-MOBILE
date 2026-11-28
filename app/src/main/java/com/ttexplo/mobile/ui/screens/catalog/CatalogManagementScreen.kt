@@ -42,17 +42,22 @@ fun CatalogManagementScreen(
     val dao = (context.applicationContext as TTExploApp).database.productoDao()
 
     var searchQuery by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableIntStateOf(0) }
     var productList by remember { mutableStateOf<List<ProductoEntity>>(emptyList()) }
     var showDialog by remember { mutableStateOf(false) }
     var editingProduct by remember { mutableStateOf<ProductoEntity?>(null) }
 
     fun refresh() {
         scope.launch {
-            productList = if (searchQuery.isBlank()) dao.getAll() else dao.search(searchQuery.trim())
+            val base = if (searchQuery.isBlank()) dao.getAll() else dao.search(searchQuery.trim())
+            productList = base.filter { p ->
+                val isAccesorio = p.tipo == ProductType.ACCESORIO.name
+                if (selectedTab == 1) isAccesorio else !isAccesorio
+            }
         }
     }
 
-    LaunchedEffect(searchQuery) {
+    LaunchedEffect(searchQuery, selectedTab) {
         refresh()
     }
 
@@ -61,7 +66,7 @@ fun CatalogManagementScreen(
             TopAppBar(
                 title = {
                     AutoShrinkText(
-                        text = "Catálogo de Alto y Agente",
+                        text = "Catálogo",
                         color = MineTextPrimary,
                         fontWeight = FontWeight.Bold,
                         targetTextSize = 18.sp,
@@ -93,6 +98,25 @@ fun CatalogManagementScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Dos catálogos: alto/agente y accesorios/artificios
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MineDarkSurface,
+                contentColor = MineSafetyYellow,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Alto y Agente", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Accesorios y Artificios", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                )
+            }
+
             // Search Bar
             OutlinedTextField(
                 value = searchQuery,
@@ -111,7 +135,11 @@ fun CatalogManagementScreen(
             )
 
             Text(
-                text = "TOTAL PRODUCTOS: ${productList.size}",
+                text = if (selectedTab == 0) {
+                    "ALTO EXPLOSIVO Y AGENTE: ${productList.size}"
+                } else {
+                    "ACCESORIOS Y ARTIFICIOS: ${productList.size}"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MineTextMuted,
                 fontWeight = FontWeight.Bold
@@ -150,7 +178,8 @@ fun CatalogManagementScreen(
                     dao.insert(entity)
                     Toast.makeText(context, "Producto ${entity.idProducto} guardado", Toast.LENGTH_SHORT).show()
                     showDialog = false
-                    refresh()
+                    val target = if (entity.tipo == ProductType.ACCESORIO.name) 1 else 0
+                    if (selectedTab != target) selectedTab = target else refresh()
                 }
             }
         )

@@ -192,6 +192,12 @@ class DownloadServer(
                     path == "/export/catalogo.csv" -> export(s, "catalogo.csv", "text/csv; charset=utf-8") {
                         runBlocking { data.catalogCsv() }
                     }
+                    path == "/export/catalogo-alto.csv" -> export(s, "catalogo_alto_agente.csv", "text/csv; charset=utf-8") {
+                        runBlocking { data.catalogCsv(setOf("ALTO_EXPLOSIVO", "AGENTE")) }
+                    }
+                    path == "/export/catalogo-accesorios.csv" -> export(s, "catalogo_accesorios.csv", "text/csv; charset=utf-8") {
+                        runBlocking { data.catalogCsv(setOf("ACCESORIO")) }
+                    }
                     path == "/export/vales.txt" -> {
                         val keys = queryParams["keys"]?.split(',')
                             ?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()

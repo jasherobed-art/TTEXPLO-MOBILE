@@ -97,11 +97,12 @@ class DownloadData(
         return sb.toString()
     }
 
-    suspend fun catalogCsv(): String {
+    suspend fun catalogCsv(tipos: Set<String>? = null): String {
         val sb = StringBuilder()
         sb.append(csvRow("ID", "PRODUCTO", "PRESENTACION", "UNIDAD", "PESO", "PESO_UNITARIO",
             "CARTUCHOS_CAJA", "TIPO", "CATEGORIA", "COD_BARRAS"))
         for (p in db.productoDao().getAll()) {
+            if (tipos != null && p.tipo !in tipos) continue
             sb.append(csvRow(p.idProducto, p.producto, p.presentacion, p.unidad,
                 String.format(Locale.US, "%.3f", p.peso),
                 String.format(Locale.US, "%.6f", p.pesoUnitarioKg),
