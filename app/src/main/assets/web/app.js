@@ -954,13 +954,7 @@
     });
     $('#pPrint').addEventListener('click', function () {
       if (!state.abierto) return;
-      var p = state.abierto.split(':');
-      var tipo = p[0];
-      var raw = p.slice(1).join(':');
-      var q = tipo === 'CONTEO'
-        ? 'tipo=CONTEO&folio=' + encodeURIComponent(raw)
-        : 'tipo=' + encodeURIComponent(tipo) + '&id=' + encodeURIComponent(raw);
-      window.open('/vale?' + q + '&print=1', '_blank');
+      window.open('/vale-a4?key=' + encodeURIComponent(state.abierto), '_blank');
     });
     $('#dlgDelCancel').addEventListener('click', function () { $('#dlgDel').close(); });
     $('#dlgDelOk').addEventListener('click', confirmarBorrado);

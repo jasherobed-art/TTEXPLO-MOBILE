@@ -299,6 +299,18 @@ class DownloadServer(
                     path == "/api/vales" -> {
                         writeResponse(s, 200, "application/json; charset=utf-8", runBlocking { data.valesJson() })
                     }
+                    path == "/vale-a4" -> {
+                        val key = queryParams["key"].orEmpty()
+                        val json = if (key.isBlank()) null else runBlocking { data.valeDetail(key) }
+                        if (json == null) {
+                            writeResponse(s, 404, "text/plain; charset=utf-8", "Vale no encontrado")
+                        } else {
+                            writeResponse(
+                                s, 200, "text/html; charset=utf-8",
+                                valeA4Page(json, autoPrint = queryParams["print"] == "1")
+                            )
+                        }
+                    }
                     path == "/vale" -> {
                         val tipo = queryParams["tipo"].orEmpty()
                         val id = queryParams["id"]?.toLongOrNull() ?: 0L
@@ -454,6 +466,176 @@ header button{background:#ffb300;color:#111;border:0;border-radius:6px;padding:8
 </style></head><body>
 <header><a href="/">← Volver</a><h1>Vale ${esc(tipo)}</h1><button type="button" onclick="window.print()">Imprimir</button></header>
 <main><div class="ticket">$body</div></main>
+${if (autoPrint) "<script>window.addEventListener('load',function(){window.print()})</script>" else ""}
+</body></html>
+""".trimIndent()
+    }
+
+    private fun valeA4Page(json: String, autoPrint: Boolean): String {
+        val root = runCatching { JSONObject(json) }.getOrNull()
+            ?: return "<!DOCTYPE html><html><body>Vale no encontrado</body></html>"
+        val tipo = root.optString("tipoLabel").ifBlank { root.optString("tipo") }
+        val folio = root.optString("folio")
+        val campos = root.optJSONArray("campos")
+        val items = root.optJSONArray("items")
+        val codigos = root.optJSONArray("codigos")
+        val totales = root.optJSONObject("totales") ?: JSONObject()
+        val firmas = root.optJSONArray("firmas")
+        val alerta = root.optBoolean("alerta", false)
+        val terminal = runCatching {
+            com.ttexplo.mobile.license.LicenseManager.getFormattedDeviceId(appContext)
+        }.getOrDefault("")
+
+        var fecha = ""
+        if (campos != null) for (i in 0 until campos.length()) {
+            val c = campos.optJSONObject(i) ?: continue
+            if (c.optString("field") == "fecha") fecha = c.optString("value")
+        }
+
+        val info = StringBuilder()
+        if (campos != null) for (i in 0 until campos.length()) {
+            val c = campos.optJSONObject(i) ?: continue
+            if (c.optString("field") == "fecha") continue
+            info.append("<div><span>").append(esc(c.optString("label"))).append("</span><b>")
+                .append(esc(c.optString("value"))).append("</b></div>")
+        }
+
+        val mats = StringBuilder()
+        if (items != null) for (i in 0 until items.length()) {
+            val it = items.optJSONObject(i) ?: continue
+            mats.append("<tr><td>").append(esc(it.optString("nombre"))).append("</td><td class=\"c\">")
+                .append(esc(it.optString("empaque"))).append("</td><td class=\"r\">")
+                .append(it.optInt("cantidad", 0)).append("</td></tr>")
+        }
+
+        val tot = StringBuilder()
+        tot.append("<div><span>Piezas</span><b>").append(totales.optInt("piezas", 0)).append("</b></div>")
+        if (root.optString("tipo") != "ACCESORIOS") {
+            tot.append("<div><span>Cajas</span><b>").append(totales.optInt("cajas", 0)).append("</b></div>")
+            tot.append("<div><span>Sacos</span><b>").append(totales.optInt("sacos", 0)).append("</b></div>")
+            tot.append("<div><span>Cartuchos</span><b>").append(totales.optInt("cartuchos", 0)).append("</b></div>")
+        }
+
+        val esAccesorio = root.optString("tipo") == "ACCESORIOS"
+        fun codeText(c: JSONObject?): String {
+            if (c == null) return ""
+            val base = c.optString("codigo")
+            return if (esAccesorio) "$base × ${c.optInt("cantidad", 1)}" else base
+        }
+
+        val maxLen = if (codigos == null) 0 else (0 until codigos.length())
+            .maxOfOrNull { codigos.optJSONObject(it)?.optString("codigo")?.length ?: 0 } ?: 0
+
+        // Elige orientación y columnas para gastar el menor número de hojas.
+        val cellW = maxLen * 1.38 + 2.8
+        val colsP = maxOf(1, minOf(12, (194 / cellW).toInt()))
+        val colsL = maxOf(1, minOf(14, (281 / cellW).toInt()))
+        val rowH = 5.3
+        val rowsP = (281 / rowH).toInt()
+        val rowsL = (194 / rowH).toInt()
+        val nCodes = codigos?.length() ?: 0
+        fun sheetCount(cols: Int, rows: Int) =
+            if (nCodes == 0) 0 else (nCodes + cols * rows - 1) / (cols * rows)
+        val pagesP = sheetCount(colsP, rowsP)
+        val pagesL = sheetCount(colsL, rowsL)
+        val landscape = pagesL < pagesP
+        val cols = if (landscape) colsL else colsP
+        val pages = if (landscape) pagesL else pagesP
+
+        val codes = StringBuilder()
+        if (codigos != null) {
+            var i = 0
+            while (i < codigos.length()) {
+                codes.append("<tr>")
+                for (c in 0 until cols) {
+                    val o = if (i + c < codigos.length()) codigos.optJSONObject(i + c) else null
+                    codes.append("<td>")
+                    if (o != null) {
+                        codes.append("<div class=\"code\">").append(esc(codeText(o)))
+                            .append("</div><div class=\"time\">").append(esc(o.optString("hora"))).append("</div>")
+                    }
+                    codes.append("</td>")
+                }
+                codes.append("</tr>")
+                i += cols
+            }
+        }
+
+        val firmasHtml = StringBuilder()
+        if (firmas != null) for (i in 0 until firmas.length()) {
+            firmasHtml.append("<div>").append(esc(firmas.optString(i))).append("</div>")
+        }
+
+        return """
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<title>Vale ${esc(folio)}</title>
+<style>
+@page { size: A4 ${if (landscape) "landscape" else "portrait"}; margin: 8mm; }
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0b;color:#111;font:10pt/1.35 Arial,Helvetica,sans-serif}
+.bar{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#111;color:#eee;flex-wrap:wrap}
+.bar a{color:#ffb020;text-decoration:none}
+.bar button{margin-left:auto;background:#ffb020;border:0;border-radius:6px;padding:8px 14px;font-weight:bold;cursor:pointer}
+.sheet{background:#fff;width:min(${if (landscape) 297 else 210}mm,calc(100vw - 24px));min-height:${if (landscape) 210 else 297}mm;margin:12px auto;padding:10mm;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:12px}
+.brand{font-size:15pt;font-weight:bold;letter-spacing:.06em}
+.sub{font-size:9pt;color:#444}
+.doc{text-align:right}
+.doc h1{margin:0;font-size:16pt}
+.doc .f{font:bold 14pt monospace;margin-top:2px}
+.meta{display:flex;justify-content:space-between;font-size:9pt;color:#444;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin-bottom:12px}
+.grid div{display:flex;justify-content:space-between;border-bottom:1px dotted #bbb;padding:2px 0;font-size:9.5pt}
+.grid span{color:#555}
+.grid b{font-weight:bold;text-align:right}
+h2{font-size:10pt;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px;border-bottom:1px solid #999;padding-bottom:2px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #999;padding:3px 5px;font-size:8.5pt}
+th{background:#eee;text-align:left;font-size:8pt;text-transform:uppercase}
+td.r{text-align:right} td.c{text-align:center}
+.mono{font-family:"Courier New",monospace;font-size:7.6pt}
+.nowrap{white-space:nowrap}
+.codes{width:100%;border-collapse:collapse;table-layout:fixed}
+.codes td{border:0;border-bottom:.3pt solid #ddd;padding:1.2mm 1.6mm;vertical-align:top}
+.codes tr:nth-child(even) td{background:#f6f6f6}
+.codes .code{font:6.5pt/1.1 "Courier New",monospace;word-break:break-all}
+.codes .time{font:5.8pt/1.05 Arial,Helvetica,sans-serif;color:#555;margin-top:.3mm}
+.tot{display:flex;gap:10px;margin:10px 0}
+.tot div{flex:1;border:1px solid #999;padding:6px 8px;text-align:center}
+.tot span{display:block;font-size:7.5pt;color:#555;text-transform:uppercase}
+.tot b{font-size:13pt}
+.sig{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:26px;font-size:9pt}
+.sig div{border-top:1px solid #111;padding-top:4px;min-height:40px}
+.alert{border:1px solid #b00;color:#b00;padding:6px 8px;font-weight:bold;margin:8px 0}
+.foot{margin-top:14px;border-top:1px solid #bbb;padding-top:4px;font-size:7.5pt;color:#666;display:flex;justify-content:space-between}
+@media print{
+  body{background:#fff}
+  .bar{display:none}
+  .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none}
+  tr, .grid div, .tot div, .sig div{break-inside:avoid}
+  .codes tr{break-inside:avoid}
+  thead{display:table-header-group}
+}
+</style></head><body>
+<div class="bar"><a href="/">← Volver</a><span>Vista A4 ${if (landscape) "horizontal" else "vertical"} · $cols columnas · ${if (pages > 0) "~$pages páginas" else "sin códigos"}</span><button type="button" onclick="window.print()">Imprimir</button></div>
+<div class="sheet">
+  <div class="top">
+    <div><div class="brand">T&amp;T EXPLO MOBILE</div><div class="sub">Control de explosivos en sitio · Terminal ${esc(terminal)}</div></div>
+    <div class="doc"><h1>VALE DE ${esc(tipo.uppercase())}</h1><div class="f">${esc(folio)}</div></div>
+  </div>
+  <div class="meta"><span>Fecha: ${esc(fecha)}</span><span>Documento de control de polvorín</span></div>
+  ${if (alerta) "<div class=\"alert\">Revisar: las piezas no coinciden con lo esperado</div>" else ""}
+  <h2>Datos del vale</h2>
+  <div class="grid">$info</div>
+  <h2>Materiales</h2>
+  <table><thead><tr><th>Material</th><th style="width:22mm">Empaque</th><th style="width:18mm">Cantidad</th></tr></thead><tbody>$mats</tbody></table>
+  <div class="tot">$tot</div>
+  <h2>Códigos capturados (${codigos?.length() ?: 0})</h2>
+  <table class="codes"><tbody>$codes</tbody></table>
+  <h2>Firmas</h2>
+  <div class="sig">$firmasHtml</div>
+  <div class="foot"><span>T&amp;T Explo Mobile · Terminal ${esc(terminal)}</span><span>${esc(fecha)}</span></div>
+</div>
 ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print()})</script>" else ""}
 </body></html>
 """.trimIndent()

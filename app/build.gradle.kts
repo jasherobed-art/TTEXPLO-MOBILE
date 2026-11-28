@@ -16,11 +16,11 @@ android {
     applicationId = "com.aistudio.ttexplo.uiobza"
     minSdk = 26
     targetSdk = 36
-    versionCode = 50
-    versionName = "2.13.4"
+    versionCode = 51
+    versionName = "2.13.5"
 
     // El plugin `secrets` inyecta SYNC_HMAC_KEY desde .env/.env.example como BuildConfig.SYNC_HMAC_KEY.
-    // Declararlo aquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­ lo hace explÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­cito; el plugin sobrescribe el valor con el de .env en tiempo de build.
+    // Declararlo aquÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­ lo hace explÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­cito; el plugin sobrescribe el valor con el de .env en tiempo de build.
     buildConfigField(
         "String",
         "SYNC_HMAC_KEY",
