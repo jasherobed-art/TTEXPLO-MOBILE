@@ -203,15 +203,15 @@ main{max-width:1440px;margin:0 auto;padding:16px 20px 96px}
 
 .edit-input{width:100%;height:38px;background:var(--s1);border:1px solid var(--border);border-radius:4px;color:var(--txt);padding:0 8px;font:13px var(--ui)}
 .edit-input:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
-.codes li{flex-wrap:wrap}
-.codes li .edit-input{flex:1 0 100%;height:34px;font:12px var(--mono)}
-.codes li .time-in{flex:1 1 150px;max-width:none;font:12px var(--ui)}
+.codes li{flex-wrap:nowrap}
+.codes li .edit-input{flex:1 1 auto;min-width:0;height:34px;font:12px var(--mono)}
+.codes li .time-in{flex:0 0 172px;font:12px var(--ui)}
 .codes li .qty-in{flex:0 0 64px;font:12px var(--ui)}
 .del{background:transparent;border:1px solid var(--line);color:var(--alert);border-radius:4px;width:30px;height:30px;cursor:pointer;font-size:15px;line-height:1;flex:0 0 auto}
 .del:hover{border-color:var(--alert);background:var(--alert-bg)}
-.add{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.add .edit-input{flex:1 0 100%;font:12px var(--mono)}
-.add .time-in{flex:1 1 150px;font:12px var(--ui)}
+.add{display:flex;gap:6px;margin-top:10px;flex-wrap:nowrap}
+.add .edit-input{flex:1 1 auto;min-width:0;font:12px var(--mono)}
+.add .time-in{flex:0 0 172px;font:12px var(--ui)}
 .add .qty-in{flex:0 0 64px;font:12px var(--ui)}
 .add .btn{margin-left:auto}
 .dlg{background:var(--s2);color:var(--txt);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;width:min(400px,92vw)}
