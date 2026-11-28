@@ -261,7 +261,7 @@
 
     if (state.editando) {
       right += '<div class="codes-hd"><h4>Códigos</h4><span class="count">' + (d.codigos || []).length + '</span>' +
-        '<button type="button" class="btn btn--ghost btn--mini" id="valeDate">Cambiar fecha del vale</button></div><ul class="codes">';
+        '<button type="button" class="btn btn--ghost btn--mini" id="valeDate">Cambiar fecha del vale</button></div><ul class="codes codes--edit">';
       (d.codigos || []).forEach(function (c, i) {
         right += '<li><input class="edit-input" data-code="' + i + '" aria-label="Código ' + (i + 1) + '" value="' + esc(c.codigo) + '">' +
           '<input class="edit-input time-in" data-time="' + i + '" aria-label="Fecha y hora del código ' + (i + 1) + '" value="' + esc(c.hora) + '">' +
@@ -274,7 +274,7 @@
         '<button type="button" class="btn" id="addCode">Agregar</button></div>' +
         '<p class="note note--aviso">No se guardan en la terminal; el .txt sí las incluye.</p>';
     } else if (d.codigos && d.codigos.length) {
-      right += '<h4>Códigos</h4><ul class="codes">' + d.codigos.map(function (c) {
+      right += '<h4>Códigos</h4><ul class="codes codes--read">' + d.codigos.map(function (c) {
         return '<li><span>' + esc(c.codigo) + '</span><span>' + esc(c.hora) + '</span></li>';
       }).join('') + '</ul>';
     }
