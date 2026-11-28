@@ -113,6 +113,15 @@ main{max-width:1440px;margin:0 auto;padding:16px 20px 96px}
 .btn--primary:hover{background:#7AB8FF;border-color:#7AB8FF;color:var(--action-ink)}
 .btn--ghost{background:transparent;border-color:var(--line);color:var(--txt2)}
 .btn--mini{height:28px;padding:0 9px;font-size:11px;margin-left:auto}
+.btn--danger{background:transparent;border-color:var(--alert-line);color:var(--alert)}
+.btn--danger:hover{background:var(--alert-bg);border-color:var(--alert)}
+.panel__ft .btn--danger{margin-right:auto}
+#delCode{font:600 18px var(--mono);letter-spacing:.3em;text-align:center}
+.warn{background:var(--alert-bg);border:1px solid var(--alert-line);color:var(--alert);border-radius:4px;padding:8px 10px;font-size:12px;margin:10px 0 0}
+.warn b{font-weight:700}
+.codebox{display:flex;flex-direction:column;align-items:center;gap:2px;margin:12px 0 0;padding:10px;background:var(--s1);border:1px solid var(--border);border-radius:4px}
+.codebox span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3)}
+.codebox b{font:700 26px var(--mono);letter-spacing:.32em;color:var(--amber);padding-left:.32em}
 .btn:disabled{background:transparent;border-color:var(--line);color:var(--txt3);cursor:not-allowed}
 .tools{max-width:640px;padding:16px}
 .tools h2{font-size:15px;margin:0 0 4px}

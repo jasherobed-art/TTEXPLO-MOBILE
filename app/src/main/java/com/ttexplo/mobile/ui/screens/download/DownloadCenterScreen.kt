@@ -247,7 +247,7 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
                     Text("• Paquete completo (JSON)", color = MineTextSecondary, fontSize = 12.sp)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Solo lectura: desde la PC no se puede editar ni borrar nada.",
+                        "Desde la PC también puedes actualizar el catálogo y borrar vales (con confirmación).",
                         color = MineTextMuted,
                         fontSize = 11.sp
                     )

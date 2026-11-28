@@ -91,10 +91,26 @@
   <span><b id="barCount">0</b> <span id="barWord">seleccionados</span></span>
   <span class="tipos" id="barTipos"></span>
   <span class="sp"></span>
+  <button class="btn btn--danger" id="delSel" hidden>Borrar seleccionados</button>
   <button class="btn btn--ghost" id="batchDate" hidden>Cambiar fecha</button>
   <a class="btn btn--ghost" id="expAll" href="#" role="button">Descargar todos (.txt)</a>
   <button class="btn btn--primary" id="expSel" disabled>Descargar seleccionados (.txt)</button>
 </div>
+
+<dialog id="dlgDel" class="dlg" aria-labelledby="dlgDelH">
+  <h2 id="dlgDelH">Borrar vales</h2>
+  <p class="note" id="dlgDelNote"></p>
+  <p class="warn">También se borran de la terminal y esta información <b>no se puede recuperar</b>.</p>
+  <p class="codebox"><span>Escribe este código para confirmar</span><b id="delCodeShow">0000</b></p>
+  <label class="dlg__field"><span>Código de confirmación</span>
+    <input id="delCode" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000">
+  </label>
+  <p class="note">El código cambia en cada intento. Si no coincide, no se borra nada. La eliminación también revierte el inventario.</p>
+  <div class="dlg__ft">
+    <button type="button" class="btn btn--ghost" id="dlgDelCancel">Cancelar</button>
+    <button type="button" class="btn btn--danger" id="dlgDelOk">Borrar</button>
+  </div>
+</dialog>
 
 <dialog id="dlgProd" class="dlg" aria-labelledby="dlgProdH">
   <h2 id="dlgProdH">Editar producto</h2>
@@ -160,6 +176,7 @@
   </div>
   <div class="panel__body" id="pBody"></div>
   <div class="panel__ft">
+    <button type="button" class="btn btn--danger" id="pBorrar">Borrar vale</button>
     <button type="button" class="btn btn--ghost" id="pCancel" hidden>Cancelar</button>
     <button type="button" class="btn btn--primary" id="pSave" hidden>Guardar cambios</button>
     <button type="button" class="btn btn--ghost" id="pCerrar" hidden>Cerrar</button>

@@ -5,7 +5,7 @@
   var state = {
     vales: [], tipo: 'TODOS', q: '', sel: new Set(),
     abierto: null, detalle: null, draft: null, editando: false, foco: null,
-    edits: {}
+    edits: {}, delKeys: []
   };
   var TIPOS = [
     ['TODOS', 'Todos'], ['ENTRADA', 'Entradas'], ['DESPACHO', 'Salidas'],
@@ -123,6 +123,8 @@
       ? 'Descargar ' + n + (n === 1 ? ' vale (.txt)' : ' vales (.txt)')
       : 'Descargar seleccionados (.txt)';
     $('#batchDate').hidden = n === 0;
+    $('#delSel').hidden = n === 0;
+    $('#delSel').textContent = 'Borrar ' + n + (n === 1 ? ' vale' : ' vales');
 
     var porTipo = {};
     state.sel.forEach(function (k) {
@@ -243,6 +245,7 @@
 
     $('#pBody').innerHTML = h;
     $('#pEdit').hidden = state.editando || d.tipo === 'CONTEO';
+    $('#pBorrar').hidden = state.editando;
     $('#pCerrar').hidden = state.editando;
     $('#pSave').hidden = !state.editando;
     $('#pCancel').hidden = !state.editando;
@@ -773,6 +776,64 @@
     cargarCatalogo(prodEditando.cual);
   }
 
+  var codigoBorrado = '';
+
+  function abrirBorrado(keys) {
+    if (!keys || !keys.length) return;
+    if (state.editando) { toast('Termina o cancela la edición antes de borrar'); return; }
+    state.delKeys = keys.slice();
+    codigoBorrado = String(Math.floor(1000 + Math.random() * 9000));
+    $('#dlgDelH').textContent = keys.length === 1 ? 'Borrar vale' : 'Borrar ' + keys.length + ' vales';
+    $('#dlgDelNote').textContent = keys.length === 1
+      ? 'Se borrará 1 vale de forma permanente.'
+      : 'Se borrarán ' + keys.length + ' vales de forma permanente.';
+    $('#delCodeShow').textContent = codigoBorrado;
+    $('#delCode').value = '';
+    $('#dlgDel').showModal();
+    $('#delCode').focus();
+  }
+
+  async function confirmarBorrado() {
+    var codigo = $('#delCode').value.trim();
+    if (codigo !== codigoBorrado) { toast('El código no coincide'); return; }
+    if (!state.delKeys.length) return;
+    var body = { codigo: codigo };
+    if (state.delKeys.length === 1) body.key = state.delKeys[0];
+    else body.keys = state.delKeys;
+    var r;
+    try {
+      r = await fetch('/api/borrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch (e) {
+      toast('No se pudo conectar con la terminal');
+      return;
+    }
+    if (r.status === 401) { location.href = '/login'; return; }
+    if (r.status === 403) { toast('Código incorrecto o vencido'); return; }
+    if (!r.ok) { toast('No se pudo borrar (' + r.status + ')'); return; }
+    var j = await r.json().catch(function () { return {}; });
+    var n = j.eliminados || 0;
+    var borrados = state.delKeys.slice();
+    codigoBorrado = '';
+    $('#dlgDel').close();
+    borrados.forEach(function (k) { state.sel.delete(k); });
+    state.vales = state.vales.filter(function (v) { return borrados.indexOf(v.key) < 0; });
+    state.delKeys = [];
+    if (state.abierto && borrados.indexOf(state.abierto) >= 0) {
+      state.abierto = null;
+      state.editando = false;
+      $('#scrim').hidden = true;
+      $('#panel').hidden = true;
+      document.body.classList.remove('detalle-abierto');
+    }
+    renderChips();
+    render();
+    toast(n === 1 ? '1 vale eliminado' : n + ' vales eliminados');
+  }
+
   function show(which) {
     var dl = which === 'dl';
     $('#viewDl').hidden = !dl;
@@ -827,6 +888,17 @@
     });
 
     $('#batchDate').addEventListener('click', abrirFecha);
+    $('#delSel').addEventListener('click', function () {
+      if (state.sel.size) abrirBorrado(Array.from(state.sel));
+    });
+    $('#pBorrar').addEventListener('click', function () {
+      if (state.abierto) abrirBorrado([state.abierto]);
+    });
+    $('#dlgDelCancel').addEventListener('click', function () { $('#dlgDel').close(); });
+    $('#dlgDelOk').addEventListener('click', confirmarBorrado);
+    $('#delCode').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); confirmarBorrado(); }
+    });
     $('#dlgCancel').addEventListener('click', function () { $('#dlgDate').close(); });
     $('#dlgApply').addEventListener('click', function () {
       var fecha = $('#dlgDateInput').value;

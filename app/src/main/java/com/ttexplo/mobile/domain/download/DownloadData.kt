@@ -1,7 +1,9 @@
 package com.ttexplo.mobile.domain.download
 
 import android.content.Context
+import com.ttexplo.mobile.TTExploApp
 import com.ttexplo.mobile.data.local.AppDatabase
+import com.ttexplo.mobile.domain.inventory.InventoryReferenceType
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
 import com.ttexplo.mobile.domain.export.FlatFileFormatter
 import com.ttexplo.mobile.domain.inventory.BoxCountTxtExporter
@@ -18,6 +20,8 @@ import com.ttexplo.mobile.printer.ValePrintHelper
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Locale
+
+private const val MOTIVO_BORRADO = "Anulación desde Centro de descarga"
 
 /**
  * Construye los datos del Centro de descarga (solo lectura) a partir de Room.
@@ -128,6 +132,53 @@ class DownloadData(
                 p.cartuchosPorCaja.toString(), p.tipo, p.categoriaInventario, p.codBarras))
         }
         return sb.toString()
+    }
+
+    /** Borra vales (uno o todos) revirtiendo inventario, igual que el Historial de la app. */
+    suspend fun deleteVales(keys: List<String>?): Int {
+        val repo = (context.applicationContext as TTExploApp).inventoryRepository
+        val todas = buildList {
+            db.entradaDao().getAllEntradas().filter { it.estado != "BORRADOR" }
+                .forEach { add("ENTRADA:${it.id}") }
+            db.despachoDao().getAllDespachos().filter { it.estado != "BORRADOR" }
+                .forEach { add("DESPACHO:${it.id}") }
+            db.devolucionDao().getAllDevoluciones().filter { it.estado != "BORRADOR" }
+                .forEach { add("DEVOLUCION:${it.id}") }
+            db.accesorioDao().getAllVales().filter { it.estado != "BORRADOR" }
+                .forEach { add("ACCESORIOS:${it.id}") }
+            db.boxCountDao().getAll().map { it.folio }.distinct()
+                .forEach { add("CONTEO:$it") }
+        }
+        val objetivo = keys?.takeIf { it.isNotEmpty() } ?: todas
+        var borrados = 0
+        for (key in objetivo) {
+            val tipo = key.substringBefore(':')
+            val raw = key.substringAfter(':', "")
+            if (raw.isBlank()) continue
+            when (tipo) {
+                "ENTRADA" -> raw.toLongOrNull()?.let {
+                    repo.deleteValeAndReverse(InventoryReferenceType.ENTRADA, it, MOTIVO_BORRADO)
+                    borrados++
+                }
+                "DESPACHO" -> raw.toLongOrNull()?.let {
+                    repo.deleteValeAndReverse(InventoryReferenceType.DESPACHO, it, MOTIVO_BORRADO)
+                    borrados++
+                }
+                "DEVOLUCION" -> raw.toLongOrNull()?.let {
+                    repo.deleteValeAndReverse(InventoryReferenceType.DEVOLUCION, it, MOTIVO_BORRADO)
+                    borrados++
+                }
+                "ACCESORIOS" -> raw.toLongOrNull()?.let {
+                    repo.deleteValeAndReverse(InventoryReferenceType.ACCESORIO_VALE, it, MOTIVO_BORRADO)
+                    borrados++
+                }
+                "CONTEO" -> {
+                    db.boxCountDao().deleteByFolio(raw)
+                    borrados++
+                }
+            }
+        }
+        return borrados
     }
 
     /** Catálogo de la terminal para consultarlo desde la web. */

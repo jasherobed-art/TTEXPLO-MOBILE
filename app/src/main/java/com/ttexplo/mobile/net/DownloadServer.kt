@@ -7,6 +7,7 @@ import com.ttexplo.mobile.domain.download.parseEdits
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.OutputStream
 import java.net.Inet4Address
@@ -54,6 +55,8 @@ class DownloadServer(
 
     @Volatile var pin: String = newPin()
         private set
+
+
 
     /** Clientes conectados en este momento (para el foco de estado en pantalla). */
     val clients = MutableStateFlow(0)
@@ -216,6 +219,31 @@ class DownloadServer(
                     }
                     path == "/export/todo.json" -> export(s, "ttexplo_datos.json", "application/json; charset=utf-8") {
                         runBlocking { data.allJson() }
+                    }
+                    path == "/api/borrar" && method == "POST" -> {
+                        val obj = runCatching { JSONObject(body) }.getOrNull()
+                        val code = obj?.optString("codigo").orEmpty()
+                        when {
+                            obj == null || !Regex("^\\d{4}$").matches(code) -> writeResponse(
+                                s, 403, "application/json; charset=utf-8",
+                                "{\"error\":\"codigo\"}"
+                            )
+                            else -> {
+                                val keys = when {
+                                    obj.optBoolean("todos", false) -> null
+                                    obj.has("keys") -> obj.optJSONArray("keys")?.let { arr ->
+                                        (0 until arr.length()).map { arr.optString(it) }
+                                            .filter { it.isNotBlank() }
+                                    } ?: emptyList()
+                                    else -> listOf(obj.optString("key")).filter { it.isNotBlank() }
+                                }
+                                val n = runBlocking { data.deleteVales(keys) }
+                                writeResponse(
+                                    s, 200, "application/json; charset=utf-8",
+                                    "{\"eliminados\":$n}"
+                                )
+                            }
+                        }
                     }
                     path == "/api/catalogo/producto" && method == "POST" -> {
                         val code = runBlocking { data.saveProductJson(body) }
