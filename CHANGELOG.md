@@ -4,7 +4,13 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.8.0] — Build 38 (Actual)
+## [v2.8.1] — Build 39 (Actual)
+### Nuevo
+- **Ticket con terminal de origen:** cada vale (despacho, entrada, accesorios, devolución y conteo) muestra la línea `TERMINAL: <deviceId>` al inicio de sus datos, para saber qué terminal lo generó cuando varias operan a la vez. También aparece en la vista previa y en el dashboard del Centro de descarga.
+
+---
+
+## [v2.8.0] — Build 38
 ### Nuevo
 - **Centro de descarga por WiFi:** la terminal enciende un servidor local con PIN de 6 dígitos. Desde una PC en la misma red se abre `http://IP:8080` y se descargan vales, inventario y catálogo (CSV) o el paquete completo (JSON).
 - **Varios clientes a la vez:** el servidor atiende dos o más PC simultáneas.
