@@ -156,25 +156,35 @@ class DownloadData(
             val raw = key.substringAfter(':', "")
             if (raw.isBlank()) continue
             when (tipo) {
-                "ENTRADA" -> raw.toLongOrNull()?.let {
-                    repo.deleteValeAndReverse(InventoryReferenceType.ENTRADA, it, MOTIVO_BORRADO)
-                    borrados++
+                "ENTRADA" -> raw.toLongOrNull()?.let { id ->
+                    if (db.entradaDao().getEntradaById(id) != null) {
+                        repo.deleteValeAndReverse(InventoryReferenceType.ENTRADA, id, MOTIVO_BORRADO)
+                        borrados++
+                    }
                 }
-                "DESPACHO" -> raw.toLongOrNull()?.let {
-                    repo.deleteValeAndReverse(InventoryReferenceType.DESPACHO, it, MOTIVO_BORRADO)
-                    borrados++
+                "DESPACHO" -> raw.toLongOrNull()?.let { id ->
+                    if (db.despachoDao().getDespachoById(id) != null) {
+                        repo.deleteValeAndReverse(InventoryReferenceType.DESPACHO, id, MOTIVO_BORRADO)
+                        borrados++
+                    }
                 }
-                "DEVOLUCION" -> raw.toLongOrNull()?.let {
-                    repo.deleteValeAndReverse(InventoryReferenceType.DEVOLUCION, it, MOTIVO_BORRADO)
-                    borrados++
+                "DEVOLUCION" -> raw.toLongOrNull()?.let { id ->
+                    if (db.devolucionDao().getDevolucionById(id) != null) {
+                        repo.deleteValeAndReverse(InventoryReferenceType.DEVOLUCION, id, MOTIVO_BORRADO)
+                        borrados++
+                    }
                 }
-                "ACCESORIOS" -> raw.toLongOrNull()?.let {
-                    repo.deleteValeAndReverse(InventoryReferenceType.ACCESORIO_VALE, it, MOTIVO_BORRADO)
-                    borrados++
+                "ACCESORIOS" -> raw.toLongOrNull()?.let { id ->
+                    if (db.accesorioDao().getValeById(id) != null) {
+                        repo.deleteValeAndReverse(InventoryReferenceType.ACCESORIO_VALE, id, MOTIVO_BORRADO)
+                        borrados++
+                    }
                 }
                 "CONTEO" -> {
-                    db.boxCountDao().deleteByFolio(raw)
-                    borrados++
+                    if (db.boxCountDao().getByFolio(raw).isNotEmpty()) {
+                        db.boxCountDao().deleteByFolio(raw)
+                        borrados++
+                    }
                 }
             }
         }
@@ -254,12 +264,18 @@ class DownloadData(
         }
         val parsedType = runCatching { com.ttexplo.mobile.domain.model.ProductType.valueOf(tipo) }
             .getOrDefault(com.ttexplo.mobile.domain.model.ProductType.ACCESORIO)
-        val categoria = com.ttexplo.mobile.domain.model.InventoryCategory
-            .fromStringOrNull(obj.optString("categoria"))
-            ?.name
-            ?: current?.categoriaInventario
-            ?: com.ttexplo.mobile.domain.model.InventoryCategory
+        val categoria = if (tipo != "ACCESORIO") {
+            // Alto explosivo / agente: la familia se recalcula, no se hereda del tipo anterior.
+            com.ttexplo.mobile.domain.model.InventoryCategory
                 .inferCategory(parsedType, id, nombre, unidad).name
+        } else {
+            com.ttexplo.mobile.domain.model.InventoryCategory
+                .fromStringOrNull(obj.optString("categoria"))
+                ?.name
+                ?: current?.categoriaInventario
+                ?: com.ttexplo.mobile.domain.model.InventoryCategory
+                    .inferCategory(parsedType, id, nombre, unidad).name
+        }
 
         val base = current ?: com.ttexplo.mobile.data.local.entity.ProductoEntity(
             idProducto = id,

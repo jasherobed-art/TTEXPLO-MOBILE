@@ -491,6 +491,7 @@
     body.set('edits', JSON.stringify(state.edits));
     var r = await fetch('/export/vales.txt', { method: 'POST', body: body });
     if (r.status === 401) { location.href = '/login'; return; }
+    if (r.status === 413) { toast('Las correcciones son muy grandes para un solo archivo'); return; }
     if (!r.ok) { toast('No se pudo descargar el .txt'); return; }
     var blob = await r.blob();
     var a = document.createElement('a');
@@ -855,15 +856,28 @@
 
   var codigoBorrado = '';
 
-  function abrirBorrado(keys) {
+  async function abrirBorrado(keys) {
     if (!keys || !keys.length) return;
     if (state.editando) { toast('Termina o cancela la edición antes de borrar'); return; }
     state.delKeys = keys.slice();
-    codigoBorrado = String(Math.floor(1000 + Math.random() * 9000));
+    codigoBorrado = '';
+    var r;
+    try {
+      r = await fetch('/api/borrar/codigo', { method: 'POST' });
+    } catch (e) {
+      toast('No se pudo conectar con la terminal');
+      return;
+    }
+    if (r.status === 401) { location.href = '/login'; return; }
+    if (!r.ok) { toast('No se pudo generar el código'); return; }
+    var j = await r.json().catch(function () { return {}; });
+    codigoBorrado = j.codigo || '';
+    if (!codigoBorrado) { toast('No se pudo generar el código'); return; }
     $('#dlgDelH').textContent = keys.length === 1 ? 'Borrar vale' : 'Borrar ' + keys.length + ' vales';
-    $('#dlgDelNote').textContent = keys.length === 1
+    $('#dlgDelNote').textContent = (keys.length === 1
       ? 'Se borrará 1 vale de forma permanente.'
-      : 'Se borrarán ' + keys.length + ' vales de forma permanente.';
+      : 'Se borrarán ' + keys.length + ' vales de forma permanente.') +
+      (j.minutos ? ' El código vale ' + j.minutos + ' minutos.' : '');
     $('#delCodeShow').textContent = codigoBorrado;
     $('#delCode').value = '';
     $('#dlgDel').showModal();

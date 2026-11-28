@@ -1,6 +1,7 @@
 package com.ttexplo.mobile.net
 
 import android.content.Context
+import android.util.Log
 import com.ttexplo.mobile.TTExploApp
 import com.ttexplo.mobile.domain.download.DownloadData
 import com.ttexplo.mobile.domain.download.parseEdits
@@ -67,6 +68,42 @@ class DownloadServer(
 
     /** Hora en que el servidor se apagará solo (epoch ms); 0 si está apagado. */
     val expiresAt = MutableStateFlow(0L)
+
+    /** Código de borrado de un solo uso, generado y validado por la terminal. */
+    @Volatile private var deleteCode: String = ""
+    @Volatile private var deleteCodeExpiresAt: Long = 0L
+    private val failedPins = java.util.concurrent.ConcurrentHashMap<String, MutableList<Long>>()
+
+    private fun issueDeleteCode(): String = synchronized(this) {
+        deleteCode = Random.nextInt(1000, 10000).toString()
+        deleteCodeExpiresAt = System.currentTimeMillis() + 3 * 60_000L
+        deleteCode
+    }
+
+    private fun takeDeleteCode(input: String): Boolean = synchronized(this) {
+        val ok = deleteCode.isNotEmpty() &&
+            System.currentTimeMillis() <= deleteCodeExpiresAt &&
+            input.trim() == deleteCode
+        if (ok) {
+            deleteCode = ""
+            deleteCodeExpiresAt = 0L
+        }
+        ok
+    }
+
+    private fun tooManyPinAttempts(ip: String): Boolean {
+        val now = System.currentTimeMillis()
+        val tries = failedPins.getOrPut(ip) { mutableListOf() }
+        synchronized(tries) {
+            tries.removeIf { now - it > 60_000L }
+            return tries.size >= 5
+        }
+    }
+
+    private fun registerPinFailure(ip: String) {
+        val tries = failedPins.getOrPut(ip) { mutableListOf() }
+        synchronized(tries) { tries.add(System.currentTimeMillis()) }
+    }
 
     fun newPin(): String = Random.nextInt(100, 1000).toString()
 
@@ -192,17 +229,27 @@ class DownloadServer(
                 when {
                     path == "/login" && method == "POST" -> {
                         val given = parseQuery(body)["pin"]
-                        if (given == pin) {
-                            writeResponse(
-                                s, 302, "text/plain; charset=utf-8", "OK",
-                                listOf(
-                                    "Location: /",
-                                    "Set-Cookie: ttex_session=$sessionToken; Path=/; HttpOnly; SameSite=Lax"
-                                )
+                        val ip = s.inetAddress?.hostAddress ?: "local"
+                        when {
+                            tooManyPinAttempts(ip) -> writeResponse(
+                                s, 200, "text/html; charset=utf-8",
+                                loginPage("Demasiados intentos. Espera 1 minuto.")
                             )
-                        } else {
-                            writeResponse(s, 200, "text/html; charset=utf-8",
-                                loginPage("PIN incorrecto. Intenta de nuevo."))
+                            given == pin -> {
+                                failedPins.remove(ip)
+                                writeResponse(
+                                    s, 302, "text/plain; charset=utf-8", "OK",
+                                    listOf(
+                                        "Location: /",
+                                        "Set-Cookie: ttex_session=$sessionToken; Path=/; HttpOnly; SameSite=Lax"
+                                    )
+                                )
+                            }
+                            else -> {
+                                registerPinFailure(ip)
+                                writeResponse(s, 200, "text/html; charset=utf-8",
+                                    loginPage("PIN incorrecto. Intenta de nuevo."))
+                            }
                         }
                     }
                     path == "/login" || !authorized -> {
@@ -236,27 +283,41 @@ class DownloadServer(
                         runBlocking { data.catalogCsv(setOf("ACCESORIO")) }
                     }
                     path == "/export/vales.txt" -> {
-                        val params = if (method == "POST") parseQuery(body) else queryParams
-                        val keys = params["keys"]?.split(',')
-                            ?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
-                        val edits = params["edits"]?.let {
-                            runCatching { parseEdits(it) }.getOrNull()
-                        }
-                        // Nombre con fecha y hora: varios consolidados del mismo día no se pisan.
-                        val stamp = DateTimeUtils.currentTimestamp().take(16)
-                            .replace(" ", "_").replace(":", "")
-                        export(s, "vales-consolidado-$stamp.txt", "text/plain; charset=utf-8") {
-                            runBlocking { data.valesTxt(keys, edits) }
+                        if (method == "POST" && contentLength > MAX_BODY) {
+                            writeResponse(
+                                s, 413, "application/json; charset=utf-8",
+                                "{\"error\":\"ediciones_muy_grandes\"}"
+                            )
+                        } else {
+                            val params = if (method == "POST") parseQuery(body) else queryParams
+                            val keys = params["keys"]?.split(',')
+                                ?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+                            val edits = params["edits"]?.let {
+                                runCatching { parseEdits(it) }.getOrNull()
+                            }
+                            // Nombre con fecha y hora: varios consolidados del mismo día no se pisan.
+                            val stamp = DateTimeUtils.currentTimestamp().take(16)
+                                .replace(" ", "_").replace(":", "")
+                            export(s, "vales-consolidado-$stamp.txt", "text/plain; charset=utf-8") {
+                                runBlocking { data.valesTxt(keys, edits) }
+                            }
                         }
                     }
                     path == "/export/todo.json" -> export(s, "ttexplo_datos.json", "application/json; charset=utf-8") {
                         runBlocking { data.allJson() }
                     }
+                    path == "/api/borrar/codigo" && method == "POST" -> {
+                        val code = issueDeleteCode()
+                        writeResponse(
+                            s, 200, "application/json; charset=utf-8",
+                            "{\"codigo\":\"$code\",\"minutos\":3}"
+                        )
+                    }
                     path == "/api/borrar" && method == "POST" -> {
                         val obj = runCatching { JSONObject(body) }.getOrNull()
                         val code = obj?.optString("codigo").orEmpty()
                         when {
-                            obj == null || !Regex("^\\d{4}$").matches(code) -> writeResponse(
+                            obj == null || !takeDeleteCode(code) -> writeResponse(
                                 s, 403, "application/json; charset=utf-8",
                                 "{\"error\":\"codigo\"}"
                             )
@@ -366,8 +427,9 @@ class DownloadServer(
                     else -> writeResponse(s, 404, "text/plain; charset=utf-8", "No encontrado")
                 }
             }
-        } catch (_: Exception) {
-            // Cliente desconectado o petición inválida: se ignora.
+        } catch (e: Exception) {
+            // Cliente desconectado o petición inválida: se registra para diagnóstico.
+            Log.w("DownloadServer", "Fallo atendiendo petición", e)
         }
     }
 

@@ -8,17 +8,17 @@ import java.io.File
 class VersionMetadataTest {
 
     @Test
-    fun appVersionIs2110() {
-        assertThat(BuildConfig.VERSION_NAME).isEqualTo("2.11.0")
-        assertThat(BuildConfig.VERSION_CODE).isEqualTo(43)
+    fun appVersionIsCurrent() {
+        assertThat(BuildConfig.VERSION_NAME).isEqualTo("2.14.1")
+        assertThat(BuildConfig.VERSION_CODE).isEqualTo(57)
     }
 
     @Test
-    fun generatorHtmlTargets2110() {
+    fun generatorHtmlTargetsCurrentVersion() {
         val root = generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
             .first { File(it, "app/src/main/java").exists() }
         val html = File(root, "license_generator/index.html").readText()
-        assertThat(html).contains("2.11.0")
+        assertThat(html).contains(BuildConfig.VERSION_NAME)
         assertThat(html).contains("appVersion")
     }
 }

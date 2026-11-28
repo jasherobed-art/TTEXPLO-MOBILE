@@ -13,6 +13,8 @@ object StandardUnits {
 
     /** Lleva cualquier variante ("KGS", "METRO", "PIEZA"…) a KG, MTS o PZA; si no la reconoce, la infiere. */
     fun normalize(raw: String?, tipo: String, id: String, producto: String): String {
+        // Alto explosivo y agente siempre se manejan en kilos.
+        if (tipo == "ALTO_EXPLOSIVO" || tipo == "AGENTE") return KG
         val unit = raw?.trim()?.uppercase()?.removeSuffix(".").orEmpty()
         when {
             unit in KILOS -> return KG
