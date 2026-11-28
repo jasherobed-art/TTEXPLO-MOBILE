@@ -55,6 +55,7 @@ import com.ttexplo.mobile.printer.PrinterProfile
 import com.ttexplo.mobile.printer.ValePrintHelper
 import com.ttexplo.mobile.scanner.ZebraScannerReceiver
 import com.ttexplo.mobile.ui.common.AlwaysActiveBarcodeField
+import androidx.compose.ui.text.style.TextAlign
 import com.ttexplo.mobile.ui.common.AutoShrinkText
 import com.ttexplo.mobile.ui.common.CompactScanMetricsRibbon
 import com.ttexplo.mobile.ui.common.DateCorrectionDialog
