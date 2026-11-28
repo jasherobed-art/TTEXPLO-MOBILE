@@ -1070,6 +1070,11 @@
       input.name = 'detalle';
       input.value = JSON.stringify(state.detalle);
       form.appendChild(input);
+      var keyInput = document.createElement('input');
+      keyInput.type = 'hidden';
+      keyInput.name = 'key';
+      keyInput.value = state.abierto;
+      form.appendChild(keyInput);
       document.body.appendChild(form);
       form.submit();
       setTimeout(function () { form.remove(); }, 1000);

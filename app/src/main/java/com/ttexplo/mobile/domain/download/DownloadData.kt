@@ -872,47 +872,91 @@ class DownloadData(
         return arr.toString()
     }
 
-    /** Ticket PLAIN de un vale para la previsualización web. */
-    suspend fun ticketFor(tipo: String, id: Long, folio: String?): String? = when (tipo.uppercase()) {
-        "ENTRADA" -> {
-            val e = db.entradaDao().getEntradaById(id) ?: return null
-            val items = db.entradaDao().getItemsForEntrada(e.id).map {
-                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
-            }
-            ValePrintHelper.previewEntrada(context, EntradaRecord(e.proveedor, e.polvorin, e.factura, items), null)
-        }
-        "DESPACHO" -> {
-            val d = db.despachoDao().getDespachoById(id) ?: return null
-            val items = db.despachoDao().getItemsForDespacho(d.id).map {
-                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
-            }
-            ValePrintHelper.previewDespacho(context,
-                DespachoRecord(d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura, items), null)
-        }
-        "DEVOLUCION" -> {
-            val dev = db.devolucionDao().getDevolucionById(id) ?: return null
-            val items = db.devolucionDao().getItemsForDevolucion(dev.id).map {
-                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
-            }
-            ValePrintHelper.previewDevolucion(context,
-                DevolucionRecord(dev.empleadoEntrega, dev.empleadoRecibe, items), null)
-        }
-        "ACCESORIOS" -> {
-            val a = db.accesorioDao().getValeById(id) ?: return null
-            val items = db.accesorioDao().getItemsForVale(a.id).map {
-                AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
-            }
-            ValePrintHelper.previewAccesorios(context,
-                AccesoriosRecord(a.vale, a.empresa, a.lugar, a.transportista, a.turno, a.recibio, a.entrego, a.voladura, items), null)
-        }
-        "CONTEO" -> {
-            val f = folio ?: return null
-            val rows = db.boxCountDao().getByFolio(f)
-            if (rows.isEmpty()) null
-            else ValePrintHelper.previewBoxCount(context, BoxCountVale(f, rows.map { it.toDomain() }), null)
-        }
-        else -> null
+    private sealed class TicketSource {
+        data class Entrada(val record: EntradaRecord) : TicketSource()
+        data class Despacho(val record: DespachoRecord) : TicketSource()
+        data class Devolucion(val record: DevolucionRecord) : TicketSource()
+        data class Accesorios(val record: AccesoriosRecord) : TicketSource()
+        data class Conteo(val vale: BoxCountVale) : TicketSource()
     }
+
+    private suspend fun loadTicket(tipo: String, id: Long, folio: String?): TicketSource? =
+        when (tipo.uppercase()) {
+            "ENTRADA" -> db.entradaDao().getEntradaById(id)?.let { e ->
+                TicketSource.Entrada(
+                    EntradaRecord(
+                        e.proveedor, e.polvorin, e.factura,
+                        db.entradaDao().getItemsForEntrada(e.id).map {
+                            ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
+                        }
+                    )
+                )
+            }
+            "DESPACHO" -> db.despachoDao().getDespachoById(id)?.let { d ->
+                TicketSource.Despacho(
+                    DespachoRecord(
+                        d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura,
+                        db.despachoDao().getItemsForDespacho(d.id).map {
+                            ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
+                        }
+                    )
+                )
+            }
+            "DEVOLUCION" -> db.devolucionDao().getDevolucionById(id)?.let { dev ->
+                TicketSource.Devolucion(
+                    DevolucionRecord(
+                        dev.empleadoEntrega, dev.empleadoRecibe,
+                        db.devolucionDao().getItemsForDevolucion(dev.id).map {
+                            ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
+                        }
+                    )
+                )
+            }
+            "ACCESORIOS" -> db.accesorioDao().getValeById(id)?.let { a ->
+                TicketSource.Accesorios(
+                    AccesoriosRecord(
+                        a.vale, a.empresa, a.lugar, a.transportista, a.turno,
+                        a.recibio, a.entrego, a.voladura,
+                        db.accesorioDao().getItemsForVale(a.id).map {
+                            AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
+                        }
+                    )
+                )
+            }
+            "CONTEO" -> folio?.let { f ->
+                db.boxCountDao().getByFolio(f).takeIf { it.isNotEmpty() }?.let { rows ->
+                    TicketSource.Conteo(BoxCountVale(f, rows.map { it.toDomain() }))
+                }
+            }
+            else -> null
+        }
+
+    /** Ticket PLAIN de un vale para la previsualización web. */
+    suspend fun ticketFor(tipo: String, id: Long, folio: String?): String? =
+        when (val t = loadTicket(tipo, id, folio)) {
+            is TicketSource.Entrada -> ValePrintHelper.previewEntrada(context, t.record)
+            is TicketSource.Despacho -> ValePrintHelper.previewDespacho(context, t.record)
+            is TicketSource.Devolucion -> ValePrintHelper.previewDevolucion(context, t.record)
+            is TicketSource.Accesorios -> ValePrintHelper.previewAccesorios(context, t.record)
+            is TicketSource.Conteo -> ValePrintHelper.previewBoxCount(context, t.vale)
+            null -> null
+        }
+
+    /** Reimprime en la impresora térmica el ticket original guardado en la terminal. */
+    suspend fun printTicket(key: String): ValePrintHelper.PrintOutcome? {
+        val parts = key.split(':', limit = 2)
+        if (parts.size != 2) return null
+        val raw = parts[1]
+        val source = loadTicket(parts[0], raw.toLongOrNull() ?: 0L, raw) ?: return null
+        return when (source) {
+            is TicketSource.Entrada -> ValePrintHelper.printEntrada(context, source.record)
+            is TicketSource.Despacho -> ValePrintHelper.printDespacho(context, source.record)
+            is TicketSource.Devolucion -> ValePrintHelper.printDevolucion(context, source.record)
+            is TicketSource.Accesorios -> ValePrintHelper.printAccesorios(context, source.record)
+            is TicketSource.Conteo -> ValePrintHelper.printBoxCount(context, source.vale)
+        }
+    }
+
 
     suspend fun allJson(): String {
         val root = JSONObject()

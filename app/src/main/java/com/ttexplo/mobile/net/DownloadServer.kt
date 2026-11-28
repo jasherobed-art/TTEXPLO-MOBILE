@@ -416,6 +416,25 @@ class DownloadServer(
                             }
                         }
                     }
+                    path == "/api/imprimir-ticket" && method == "POST" -> {
+                        val key = runCatching { JSONObject(body).optString("key") }.getOrNull().orEmpty()
+                        if (key.isBlank()) {
+                            writeResponse(s, 400, "application/json; charset=utf-8",
+                                "{\"error\":\"key\"}")
+                        } else {
+                            val outcome = runBlocking { data.printTicket(key) }
+                            if (outcome == null) {
+                                writeResponse(s, 404, "application/json; charset=utf-8",
+                                    "{\"error\":\"not_found\"}")
+                            } else {
+                                val json = JSONObject()
+                                    .put("ok", outcome.success)
+                                    .put("message", outcome.message)
+                                    .put("printer", outcome.printerLabel)
+                                writeResponse(s, 200, "application/json; charset=utf-8", json.toString())
+                            }
+                        }
+                    }
                     path == "/api/vales" -> {
                         writeResponse(s, 200, "application/json; charset=utf-8", runBlocking { data.valesJson() })
                     }
@@ -426,12 +445,13 @@ class DownloadServer(
                                 "El vale es demasiado grande para imprimir con ediciones. Usa el .txt."
                             )
                         } else {
+                            val params = if (method == "POST") parseQuery(body) else queryParams
+                            val key = params["key"].orEmpty()
                             val json = if (method == "POST") {
-                                parseQuery(body)["detalle"]?.let {
+                                params["detalle"]?.let {
                                     runBlocking { data.printDetail(it) }
                                 }
                             } else {
-                                val key = queryParams["key"].orEmpty()
                                 if (key.isBlank()) {
                                     null
                                 } else {
@@ -445,7 +465,11 @@ class DownloadServer(
                             } else {
                                 writeResponse(
                                     s, 200, "text/html; charset=utf-8",
-                                    valeA4Page(json, autoPrint = method == "GET" && queryParams["print"] == "1")
+                                    valeA4Page(
+                                        json,
+                                        autoPrint = method == "GET" && queryParams["print"] == "1",
+                                        key = key
+                                    )
                                 )
                             }
                         }
@@ -613,7 +637,7 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
 """.trimIndent()
     }
 
-    private fun valeA4Page(json: String, autoPrint: Boolean): String {
+    private fun valeA4Page(json: String, autoPrint: Boolean, key: String = ""): String {
         val root = runCatching { JSONObject(json) }.getOrNull()
             ?: return "<!DOCTYPE html><html><body>Vale no encontrado</body></html>"
         val tipoRaw = root.optString("tipo").uppercase()
@@ -720,6 +744,36 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
             firmasHtml.append("<div>").append(esc(firmas.optString(i))).append("</div>")
         }
 
+        val ticketButton = if (key.isNotBlank()) {
+            "<button type=\"button\" id=\"btnTicket\" onclick=\"imprimirTicket()\">Ticket térmico</button>"
+        } else {
+            ""
+        }
+        val ticketScript = if (key.isNotBlank()) {
+            """
+<script>
+const TICKET_KEY = ${JSONObject.quote(key)};
+async function imprimirTicket() {
+  if (!confirm('Se imprimirá el ticket original guardado en la terminal, sin las correcciones de esta sesión. ¿Continuar?')) return;
+  const b = document.getElementById('btnTicket');
+  if (b) b.disabled = true;
+  try {
+    const r = await fetch('/api/imprimir-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: TICKET_KEY }) });
+    if (r.status === 401) { location.href = '/login'; return; }
+    const j = await r.json().catch(function () { return {}; });
+    alert(j.message || (j.ok ? 'Ticket enviado a la impresora' : 'No se pudo imprimir'));
+  } catch (e) {
+    alert('No se pudo conectar con la terminal');
+  } finally {
+    if (b) b.disabled = false;
+  }
+}
+</script>
+""".trimIndent()
+        } else {
+            ""
+        }
+
         return """
 <!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
 <title>Vale ${esc(folio)}</title>
@@ -729,7 +783,7 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
 body{margin:0;background:#0b0b0b;color:#111;font:10pt/1.35 Arial,Helvetica,sans-serif}
 .bar{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#111;color:#eee;flex-wrap:wrap}
 .bar a{color:#ffb020;text-decoration:none}
-.bar button{margin-left:auto;background:#ffb020;border:0;border-radius:6px;padding:8px 14px;font-weight:bold;cursor:pointer}
+.bar .actions{margin-left:auto;display:flex;gap:8px}.bar button{background:#ffb020;border:0;border-radius:6px;padding:8px 14px;font-weight:bold;cursor:pointer}
 .sheet{background:#fff;width:min(210mm,calc(100vw - 24px));min-height:297mm;margin:12px auto;padding:10mm;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:12px}
 .brand{font-size:15pt;font-weight:bold;letter-spacing:.06em}
@@ -770,7 +824,7 @@ td.desc span{display:block;color:#444;font-size:8pt;margin-top:1px}
   thead{display:table-header-group}
 }
 </style></head><body>
-<div class="bar"><a href="/">← Volver</a><span>Vista A4 · $pagesLabel</span><button type="button" onclick="window.print()">Imprimir</button></div>
+<div class="bar"><a href="/">← Volver</a><span>Vista A4 · $pagesLabel</span><span class="actions">$ticketButton<button type="button" onclick="window.print()">Imprimir A4</button></span></div>
 <div class="sheet">
   <div class="top">
     <div><div class="brand">T&amp;T EXPLO MOBILE</div><div class="sub">Control de explosivos en sitio · Terminal ${esc(terminal)}</div></div>
@@ -789,6 +843,7 @@ td.desc span{display:block;color:#444;font-size:8pt;margin-top:1px}
   <div class="foot"><span>T&amp;T Explo Mobile · Terminal ${esc(terminal)}</span><span>${esc(fecha)}</span></div>
 </div>
 ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print()})</script>" else ""}
+$ticketScript
 </body></html>
 """.trimIndent()
     }
