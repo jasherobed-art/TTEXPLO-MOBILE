@@ -9,7 +9,7 @@ que leer el proyecto completo.
 Cuando pidas trabajar en una UE, di el ID y el build; el agente va directo al
 archivo indicado.
 
-**Versión del índice:** build 41 (v2.9.0).
+**Versión del índice:** build 42 (v2.10.0).
 La columna **Build** es el `versionCode` vigente en el último commit que
 modificó ese archivo (obtenido de `git log` + `git show`).
 
@@ -71,6 +71,7 @@ modificó ese archivo (obtenido de `git log` + `git show`).
 | UE-23 | Audio y alertas | `ui/screens/settings/AudioSettingsCard.kt` | `AudioSettingsCard` | 19 |
 | UE-24 | Perfiles de impresora | `ui/screens/settings/PrinterProfilesSettingsCard.kt` | `PrinterProfilesSettingsCard`, `PrinterProfileEditorDialog` | 20 |
 | UE-25 | Centro de descarga (WiFi) | `ui/screens/download/DownloadCenterScreen.kt` + `net/DownloadServer.kt` + `domain/download/DownloadData.kt` | `DownloadCenterScreen`, `DownloadServer`, `DownloadData` | 38 |
+| UE-26 | Centro de descargas web | `assets/web/index.html` + `net/DownloadServer.kt` + `domain/download/DownloadData.kt` | `index.html`, `app.css`, `app.js`, `DownloadServer` | 42 |
 
 ## Componentes compartidos (no son pantallas)
 

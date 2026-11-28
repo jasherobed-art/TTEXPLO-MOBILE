@@ -4,7 +4,16 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.9.0] — Build 41 (Actual)
+## [v2.10.0] — Build 42 (Actual)
+### Nuevo
+- **Centro de descargas web renovado:** la terminal sirve la interfaz desde `assets/web` (HTML/CSS/JS), con lista de vales, filtros, búsqueda, selección múltiple, panel de detalle de solo lectura y PIN de 3 dígitos.
+- **Descarga consolidada:** el `.txt` para T&T Explo incluye los cinco mnemónicos (PRV, REF, DEV, ACC, CAJ) y permite descargar todos o solo los seleccionados.
+- **Herramientas:** exportación del catálogo en CSV.
+- **Seguridad mínima:** PIN fuera de la URL, `401` JSON para `/api` y cabeceras de seguridad.
+
+---
+
+## [v2.9.0] — Build 41
 ### Nuevo
 - **Catálogo de accesorios real:** se cargaron los 28 accesorios de T&T Explo con nombre, unidad y código `X` + IdProducto. El catálogo viaja dentro del APK y se refresca al instalar.
 - **Escaneo de accesorios:** acepta el código corto (`X100121`) y el completo de la etiqueta (`X100121000000001`), resolviendo el producto por los primeros 7 caracteres; el serial de caja se conserva para trazabilidad.
