@@ -434,18 +434,65 @@ fun SavedValeReprintDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(max = 300.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black)
+                        .background(Color.White)
                         .border(1.dp, MineBorderGray, RoundedCornerShape(6.dp))
                         .padding(8.dp)
                 ) {
-                    Text(
-                        text = ticketSummary?.takeIf { it.isNotBlank() } ?: "Resumen de materiales no disponible.",
-                        color = Color.White,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp
-                    )
+                    val lines = ticketPreview?.lines()?.filter { it.isNotBlank() } ?: emptyList()
+                    if (lines.isEmpty()) {
+                        Text("Ticket no disponible.", color = Color.Black, fontSize = 11.sp)
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            var idx = 0
+                            while (idx < lines.size) {
+                                val line = lines[idx].trimEnd()
+                                val isTotal = line.contains("TOTAL DE MATERIALES", ignoreCase = true)
+                                if (isTotal) {
+                                    val nextLine = lines.getOrNull(idx + 1)
+                                    val hasBreakdown = nextLine?.contains("CAJAS", ignoreCase = true) == true
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color.Black)
+                                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = line.trim(),
+                                            color = Color.White,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 10.sp,
+                                            lineHeight = 12.sp
+                                        )
+                                        if (hasBreakdown && nextLine != null) {
+                                            Text(
+                                                text = nextLine.trim(),
+                                                color = Color.White,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 10.sp,
+                                                lineHeight = 12.sp
+                                            )
+                                        }
+                                    }
+                                    idx += if (hasBreakdown) 2 else 1
+                                } else {
+                                    Text(
+                                        text = line,
+                                        color = Color.Black,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp
+                                    )
+                                    idx++
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Button(

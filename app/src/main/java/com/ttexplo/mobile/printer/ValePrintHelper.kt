@@ -276,7 +276,7 @@ object ValePrintHelper {
             headerNote = s.getTicketHeader(),
             includeSignatures = s.getPrintSignatures(),
             includeBreakdown = s.getPrintBreakdown(),
-            includeCodeDetails = s.getPrintCodeDetails()
+            includeCodeDetails = false
         ).toString(Charsets.UTF_8)
     }
 
@@ -290,7 +290,7 @@ object ValePrintHelper {
             headerNote = s.getTicketHeader(),
             includeSignatures = s.getPrintSignatures(),
             includeBreakdown = s.getPrintBreakdown(),
-            includeCodeDetails = s.getPrintCodeDetails()
+            includeCodeDetails = false
         ).toString(Charsets.UTF_8)
     }
 
@@ -302,7 +302,7 @@ object ValePrintHelper {
             mineName = s.getMineName(),
             permitNumber = s.getPermitNumber(),
             includeSignatures = s.getPrintSignatures(),
-            includeCodeDetails = s.getPrintCodeDetails()
+            includeCodeDetails = false
         ).toString(Charsets.UTF_8)
     }
 
@@ -316,7 +316,7 @@ object ValePrintHelper {
             headerNote = s.getTicketHeader(),
             includeSignatures = s.getPrintSignatures(),
             includeBreakdown = s.getPrintBreakdown(),
-            includeCodeDetails = s.getPrintCodeDetails()
+            includeCodeDetails = false
         ).toString(Charsets.UTF_8)
     }
 
