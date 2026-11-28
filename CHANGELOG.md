@@ -4,7 +4,14 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.8.2] — Build 40 (Actual)
+## [v2.9.0] — Build 41 (Actual)
+### Nuevo
+- **Catálogo de accesorios real:** se cargaron los 28 accesorios de T&T Explo con nombre, unidad y código `X` + IdProducto. El catálogo viaja dentro del APK y se refresca al instalar.
+- **Escaneo de accesorios:** acepta el código corto (`X100121`) y el completo de la etiqueta (`X100121000000001`), resolviendo el producto por los primeros 7 caracteres; el serial de caja se conserva para trazabilidad.
+
+---
+
+## [v2.8.2] — Build 40
 ### Corregido
 - **PC conectadas en el Centro de descarga:** el contador ya no marca 0 con la PC enlazada. Ahora cuenta las PC con actividad reciente (heartbeat cada 15 s) y las retira a los 45 s sin actividad.
 - **Tickets:** los atajos `generateDespachoTicket` y `generateAccesoriosTicket` también reenvían el `terminalId`; si el device ID no está disponible, no se imprime `TERMINAL: UNKNOWN`.
