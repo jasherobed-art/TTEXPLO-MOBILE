@@ -498,8 +498,9 @@ object TicketGenerator {
 
     fun generateDespachoTicket(
         despacho: DespachoRecord,
-        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH
-    ): ByteArray = generateDespachoEscPos(despacho, paperWidth)
+        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH,
+        terminalId: String = ""
+    ): ByteArray = generateDespachoEscPos(despacho, paperWidth, terminalId = terminalId)
 
     fun generateDespachoCpcl(
         despacho: DespachoRecord,
@@ -822,8 +823,9 @@ object TicketGenerator {
 
     fun generateAccesoriosTicket(
         accesorios: AccesoriosRecord,
-        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH
-    ): ByteArray = generateAccesoriosEscPos(accesorios, paperWidth)
+        paperWidth: PaperWidth = PaperWidth.WIDTH_3_INCH,
+        terminalId: String = ""
+    ): ByteArray = generateAccesoriosEscPos(accesorios, paperWidth, terminalId = terminalId)
 
     fun generateAccesoriosCpcl(
         accesorios: AccesoriosRecord,

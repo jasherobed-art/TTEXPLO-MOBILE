@@ -36,7 +36,8 @@ object ValePrintHelper {
         return Triple(target.first, target.second, protocol to width)
     }
 
-    private fun terminal(context: Context): String = LicenseManager.getFormattedDeviceId(context)
+    private fun terminal(context: Context): String =
+        LicenseManager.getFormattedDeviceId(context).takeUnless { it.isBlank() || it.equals("UNKNOWN", ignoreCase = true) } ?: ""
 
     suspend fun printDespacho(
         context: Context,

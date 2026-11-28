@@ -1,10 +1,14 @@
 package com.ttexplo.mobile.printer
 
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
+import com.ttexplo.mobile.domain.inventory.BoxCountItem
+import com.ttexplo.mobile.domain.inventory.BoxCountVale
 import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.DevolucionRecord
+import com.ttexplo.mobile.domain.model.EntradaRecord
 import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import org.junit.Test
 import java.nio.charset.Charset
@@ -42,6 +46,22 @@ class TicketGeneratorTest {
         empleadoRecibe = "MPRG",
         items = listOf(
             ScannedCodeRecord("272120826024843282", "2026-10-07 04:41:01", "AUSTINITE 15 CA-1", "SACO")
+        )
+    )
+
+    private val entrada = EntradaRecord(
+        proveedor = "MPRG",
+        polvorin = "PRINCIPAL",
+        factura = "F-1001",
+        items = listOf(
+            ScannedCodeRecord("272120826024843282", "2026-10-07 04:41:01", "AUSTINITE 15 CA-1", "SACO")
+        )
+    )
+
+    private val boxCount = BoxCountVale(
+        folio = "CC-20261127-001",
+        items = listOf(
+            BoxCountItem("X100182000000009", "EMULEX C", "KP-01", 2, "2026-11-27 08:00:00")
         )
     )
 
@@ -131,6 +151,47 @@ class TicketGeneratorTest {
             record = despacho, paperWidth = PaperWidth.WIDTH_3_INCH
         ), charset)
         assertThat(text).doesNotContain("TERMINAL:")
+    }
+
+    @Test
+    fun wrappersForwardTerminalId() {
+        val id = "ZBR-POLV-01"
+        val despachoText = String(TicketGenerator.generateDespachoTicket(
+            despacho, PaperWidth.WIDTH_3_INCH, terminalId = id
+        ), charset)
+        val accesoriosText = String(TicketGenerator.generateAccesoriosTicket(
+            accesorios, PaperWidth.WIDTH_3_INCH, terminalId = id
+        ), charset)
+        assertThat(despachoText).contains("TERMINAL: $id")
+        assertThat(accesoriosText).contains("TERMINAL: $id")
+    }
+
+    @Test
+    fun everyValeGeneratorPrintsTerminalOnceBeforeItsData() {
+        val id = "ZBR-POLV-01"
+        val tickets = listOf(
+            Triple("despacho esc", String(TicketGenerator.generateDespachoEscPos(despacho, terminalId = id), charset), "VALE: REF"),
+            Triple("despacho plain", String(TicketGenerator.generateDespachoPlain(despacho, terminalId = id), charset), "VALE: REF"),
+            Triple("despacho cpcl", String(TicketGenerator.generateDespachoCpcl(despacho, terminalId = id), charset), "VALE: REF"),
+            Triple("entrada esc", String(TicketGenerator.generateEntradaEscPos(entrada, terminalId = id), charset), "PROVEEDOR:"),
+            Triple("entrada plain", String(TicketGenerator.generateEntradaPlain(entrada, terminalId = id), charset), "PROVEEDOR:"),
+            Triple("entrada cpcl", String(TicketGenerator.generateEntradaCpcl(entrada, terminalId = id), charset), "PROVEEDOR:"),
+            Triple("accesorios esc", String(TicketGenerator.generateAccesoriosEscPos(accesorios, terminalId = id), charset), "VALE: ACC"),
+            Triple("accesorios plain", String(TicketGenerator.generateAccesoriosPlain(accesorios, terminalId = id), charset), "VALE: ACC"),
+            Triple("accesorios cpcl", String(TicketGenerator.generateAccesoriosCpcl(accesorios, terminalId = id), charset), "VALE: ACC"),
+            Triple("devolucion esc", String(TicketGenerator.generateDevolucionEscPos(devolucion, terminalId = id), charset), "ENTREGA"),
+            Triple("devolucion plain", String(TicketGenerator.generateDevolucionPlain(devolucion, terminalId = id), charset), "ENTREGA"),
+            Triple("devolucion cpcl", String(TicketGenerator.generateDevolucionCpcl(devolucion, terminalId = id), charset), "ENTREGA"),
+            Triple("boxcount esc", String(TicketGenerator.generateBoxCountEscPos(boxCount, terminalId = id), charset), "CAJAS:"),
+            Triple("boxcount plain", String(TicketGenerator.generateBoxCountPlain(boxCount, terminalId = id), charset), "CAJAS:"),
+            Triple("boxcount cpcl", String(TicketGenerator.generateBoxCountCpcl(boxCount, terminalId = id), charset), "CAJAS:")
+        )
+        tickets.forEach { (name, text, marker) ->
+            assertWithMessage(name).that(text).contains("TERMINAL: $id")
+            assertWithMessage(name).that(text.indexOf("TERMINAL:")).isAtLeast(0)
+            assertWithMessage(name).that(text.indexOf("TERMINAL:")).isEqualTo(text.lastIndexOf("TERMINAL:"))
+            assertWithMessage(name).that(text.indexOf("TERMINAL:")).isLessThan(text.indexOf(marker))
+        }
     }
 
     @Test
