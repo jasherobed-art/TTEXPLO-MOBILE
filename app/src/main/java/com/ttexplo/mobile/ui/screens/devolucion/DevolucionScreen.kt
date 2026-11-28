@@ -63,6 +63,7 @@ import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.domain.scanner.ScanResult
 import com.ttexplo.mobile.domain.scanner.ScanValidator
+import com.ttexplo.mobile.domain.inventory.WeightFormat
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
 import com.ttexplo.mobile.printer.BluetoothPrinterManager
@@ -967,6 +968,14 @@ fun DevolucionScreen(
         }.getOrDefault("")
     }
 
+    val ticketSummary = remember(items) {
+        val cajas = items.count { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }
+        val sacos = items.count { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }
+        val cartuchos = items.count { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }
+        val kg = items.sumOf { WeightFormat.itemWeightKg(it) }
+        "CAJAS: $cajas   SACOS: $sacos   CARTUCHOS: $cartuchos\nTOTAL: ${items.size} lecturas · ${WeightFormat.kg3(kg)} kg"
+    }
+
     if (showSavedReprintDialog) {
         val folio = if (empleadoEntrega.startsWith("DEV", ignoreCase = true)) empleadoEntrega else "DEV$empleadoEntrega"
         SavedValeReprintDialog(
@@ -979,6 +988,7 @@ fun DevolucionScreen(
             isPrinting = isPrinting,
             printStatusMessage = printStatusMessage,
             ticketPreview = ticketPreview,
+            ticketSummary = ticketSummary,
             accentColor = MineAgentCyan,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {

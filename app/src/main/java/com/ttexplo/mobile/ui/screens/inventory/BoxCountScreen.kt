@@ -524,6 +524,7 @@ fun BoxCountScreen(onNavigateBack: () -> Unit) {
                 isPrinting = false,
                 printStatusMessage = printStatusMessage,
                 ticketPreview = ticketPreview,
+                ticketSummary = "CAJAS: ${vale.items.size}\nPIEZAS: ${vale.totalPiezas}",
                 onPrintClick = { printCount(activeProfile) },
                 onChangePrinterClick = { withBluetoothPermission { showPrinterSelector = true } },
                 onFinishClick = {

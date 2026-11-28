@@ -336,6 +336,7 @@ fun SavedValeReprintDialog(
     isPrinting: Boolean,
     printStatusMessage: String?,
     ticketPreview: String? = null,
+    ticketSummary: String? = null,
     accentColor: Color = MineSafetyYellow,
     onPrintClick: () -> Unit,
     onChangePrinterClick: () -> Unit,
@@ -381,12 +382,6 @@ fun SavedValeReprintDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "El vale se guardó correctamente en el historial e inventario. ¿Desea imprimir el ticket térmico ahora?",
-                    color = MineTextSecondary,
-                    fontSize = 12.sp
-                )
-
                 if (copiesPrinted > 0) {
                     Row(
                         modifier = Modifier
@@ -418,43 +413,39 @@ fun SavedValeReprintDialog(
                     )
                 }
 
-                // Previsualización del ticket térmico antes de imprimir.
-                Text(
-                    text = "PREVISUALIZACIÓN DEL TICKET",
-                    color = MineSafetyYellow,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                // Listo para imprimir + resumen de materiales (cuadro negro).
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MineSuccessGreen.copy(alpha = 0.16f))
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MineSuccessGreenLight, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = "LISTO PARA IMPRIMIR",
+                        color = MineSuccessGreenLight,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 240.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color.White)
+                        .background(Color.Black)
                         .border(1.dp, MineBorderGray, RoundedCornerShape(6.dp))
                         .padding(8.dp)
                 ) {
-                    if (!ticketPreview.isNullOrBlank()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState())
-                        ) {
-                            Text(
-                                text = ticketPreview,
-                                color = Color.Black,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 10.sp,
-                                lineHeight = 13.sp
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = "Vista previa no disponible para esta impresora.",
-                            color = Color(0xFF555555),
-                            fontSize = 11.sp
-                        )
-                    }
+                    Text(
+                        text = ticketSummary?.takeIf { it.isNotBlank() } ?: "Resumen de materiales no disponible.",
+                        color = Color.White,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
                 }
 
                 Button(

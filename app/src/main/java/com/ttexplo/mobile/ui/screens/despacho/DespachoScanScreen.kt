@@ -48,6 +48,7 @@ import com.example.R
 import com.ttexplo.mobile.domain.scanner.BarcodeItem
 import com.ttexplo.mobile.domain.scanner.TipoEmpaque
 import com.ttexplo.mobile.domain.scanner.correctBarcodeDate
+import com.ttexplo.mobile.domain.inventory.WeightFormat
 import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import com.ttexplo.mobile.printer.PrinterProfile
@@ -666,6 +667,14 @@ fun DespachoScanScreen(
         }.getOrDefault("")
     }
 
+    val ticketSummary = remember(uiState.scannedItems) {
+        val cajas = uiState.scannedItems.count { it.empaque == TipoEmpaque.CAJA || it.code.length == 30 }
+        val sacos = uiState.scannedItems.count { it.empaque == TipoEmpaque.SACO || it.code.length == 18 }
+        val cartuchos = uiState.scannedItems.count { it.empaque == TipoEmpaque.PIEZA || it.code.length in 16..17 }
+        val kg = uiState.scannedItems.sumOf { WeightFormat.itemWeightKg(it) }
+        "CAJAS: $cajas   SACOS: $sacos   CARTUCHOS: $cartuchos\nTOTAL: ${uiState.scannedItems.size} lecturas · ${WeightFormat.kg3(kg)} kg"
+    }
+
     if (showSavedReprintDialog) {
         SavedValeReprintDialog(
             valeTypeTitle = "Vale de Despacho",
@@ -677,6 +686,7 @@ fun DespachoScanScreen(
             isPrinting = uiState.isPrinting,
             printStatusMessage = uiState.printStatusMessage,
             ticketPreview = ticketPreview,
+            ticketSummary = ticketSummary,
             accentColor = MineHighExplosiveOrange,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {

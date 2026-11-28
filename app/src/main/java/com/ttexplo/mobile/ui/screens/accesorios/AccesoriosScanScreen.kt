@@ -710,6 +710,10 @@ fun AccesoriosScanScreen(
         }.getOrDefault("")
     }
 
+    val ticketSummary = remember(uiState.items) {
+        "ACCESORIOS: ${uiState.items.size}\nPIEZAS: ${uiState.items.sumOf { it.quantity }}"
+    }
+
     if (showSavedReprintDialog) {
         SavedValeReprintDialog(
             valeTypeTitle = if (isDevolucion) "Devolución de Accesorios" else "Vale de Accesorios",
@@ -721,6 +725,7 @@ fun AccesoriosScanScreen(
             isPrinting = uiState.isPrinting,
             printStatusMessage = uiState.printStatusMessage,
             ticketPreview = ticketPreview,
+            ticketSummary = ticketSummary,
             accentColor = accentColor,
             onPrintClick = { executePrint(trackCopy = true) },
             onChangePrinterClick = {
