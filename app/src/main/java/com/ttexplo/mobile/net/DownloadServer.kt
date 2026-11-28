@@ -29,10 +29,17 @@ class DownloadServer(
     context: Context,
     private val port: Int = 8080
 ) {
+    private val appContext = context.applicationContext
     private val data = DownloadData(
         (context.applicationContext as TTExploApp).database,
         context.applicationContext
     )
+    private val indexHtml by lazy { assetText("index.html") }
+    private val appCss by lazy { assetText("app.css") }
+    private val appJs by lazy { assetText("app.js") }
+
+    private fun assetText(name: String): String =
+        appContext.assets.open("web/$name").bufferedReader(Charsets.UTF_8).use { it.readText() }
     private val sessionToken = UUID.randomUUID().toString()
     private val seenClients = java.util.concurrent.ConcurrentHashMap<String, Long>()
     @Volatile private var pool: java.util.concurrent.ExecutorService? = null
@@ -52,7 +59,7 @@ class DownloadServer(
     /** Última vez que una PC hizo una petición (epoch ms). */
     val lastClientAt = MutableStateFlow(0L)
 
-    fun newPin(): String = Random.nextInt(100000, 1000000).toString()
+    fun newPin(): String = Random.nextInt(100, 1000).toString()
 
     fun regeneratePin() {
         pin = newPin()
@@ -139,8 +146,7 @@ class DownloadServer(
                 val queryParams = parseQuery(query)
                 val cookie = headers["cookie"].orEmpty()
 
-                val authorized = cookie.contains("ttex_session=$sessionToken") ||
-                    queryParams["pin"] == pin
+                val authorized = cookie.contains("ttex_session=$sessionToken")
                 if (authorized) {
                     markClient(s.inetAddress?.hostAddress ?: "local")
                     lastClientAt.value = System.currentTimeMillis()
@@ -163,7 +169,12 @@ class DownloadServer(
                         }
                     }
                     path == "/login" || !authorized -> {
-                        writeResponse(s, 200, "text/html; charset=utf-8", loginPage(null))
+                        if (path.startsWith("/api/") || path.startsWith("/export/")) {
+                            writeResponse(s, 401, "application/json; charset=utf-8",
+                                "{\"error\":\"unauthorized\"}")
+                        } else {
+                            writeResponse(s, 200, "text/html; charset=utf-8", loginPage(null))
+                        }
                     }
                     path == "/api/ping" -> {
                         writeResponse(s, 200, "application/json; charset=utf-8", "{\"ok\":true}")
@@ -181,11 +192,25 @@ class DownloadServer(
                     path == "/export/catalogo.csv" -> export(s, "catalogo.csv", "text/csv; charset=utf-8") {
                         runBlocking { data.catalogCsv() }
                     }
-                    path == "/export/vales.txt" -> export(s, "vales.txt", "text/plain; charset=utf-8") {
-                        runBlocking { data.valesTxt() }
+                    path == "/export/vales.txt" -> {
+                        val keys = queryParams["keys"]?.split(',')
+                            ?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+                        export(s, "vales.txt", "text/plain; charset=utf-8") {
+                            runBlocking { data.valesTxt(keys) }
+                        }
                     }
                     path == "/export/todo.json" -> export(s, "ttexplo_datos.json", "application/json; charset=utf-8") {
                         runBlocking { data.allJson() }
+                    }
+                    path == "/api/vale" -> {
+                        val key = queryParams["key"].orEmpty()
+                        val json = if (key.isBlank()) null else runBlocking { data.valeDetail(key) }
+                        if (json == null) {
+                            writeResponse(s, 404, "application/json; charset=utf-8",
+                                "{\"error\":\"not_found\"}")
+                        } else {
+                            writeResponse(s, 200, "application/json; charset=utf-8", json)
+                        }
                     }
                     path == "/api/vales" -> {
                         writeResponse(s, 200, "application/json; charset=utf-8", runBlocking { data.valesJson() })
@@ -201,7 +226,12 @@ class DownloadServer(
                             writeResponse(s, 200, "text/html; charset=utf-8", ticketPage(tipo, plain))
                         }
                     }
-                    path == "/" -> writeResponse(s, 200, "text/html; charset=utf-8", dashboardPage())
+                    path == "/" || path == "/index.html" ->
+                        writeResponse(s, 200, "text/html; charset=utf-8", indexHtml, SEC_HEADERS)
+                    path == "/app.css" ->
+                        writeResponse(s, 200, "text/css; charset=utf-8", appCss, SEC_HEADERS)
+                    path == "/app.js" ->
+                        writeResponse(s, 200, "text/javascript; charset=utf-8", appJs, SEC_HEADERS)
                     else -> writeResponse(s, 404, "text/plain; charset=utf-8", "No encontrado")
                 }
             }
@@ -267,6 +297,13 @@ class DownloadServer(
     companion object {
         private const val PRESENCE_TTL_MS = 45_000L
         private const val PRESENCE_POLL_MS = 15_000L
+
+        private val SEC_HEADERS = listOf(
+            "X-Content-Type-Options: nosniff",
+            "X-Frame-Options: DENY",
+            "Referrer-Policy: no-referrer",
+            "Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+        )
 
         fun deviceIp(): String {
             return try {
@@ -340,10 +377,10 @@ button{width:100%;background:#ffb300;color:#111;border:0;border-radius:8px;paddi
 font-size:14px;font-weight:bold;cursor:pointer}
 .err{color:#e57373;font-size:12px;margin-bottom:10px}
 </style></head><body><div class="card">
-<h1>T&amp;T EXPLO</h1><p>Ingresa el PIN que muestra la terminal</p>
+<h1>T&amp;T EXPLO</h1><p>Ingresa el PIN de 3 dígitos que muestra la terminal</p>
 ${error?.let { "<div class=\"err\">$it</div>" } ?: ""}
 <form method="post" action="/login">
-<input name="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" autofocus placeholder="PIN">
+<input name="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="3" autofocus placeholder="PIN">
 <button type="submit">ENTRAR</button>
 </form></div></body></html>
 """.trimIndent()

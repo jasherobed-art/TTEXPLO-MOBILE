@@ -3,6 +3,7 @@ package com.ttexplo.mobile.domain.download
 import android.content.Context
 import com.ttexplo.mobile.data.local.AppDatabase
 import com.ttexplo.mobile.domain.export.FlatFileFormatter
+import com.ttexplo.mobile.domain.inventory.BoxCountTxtExporter
 import com.ttexplo.mobile.domain.inventory.BoxCountVale
 import com.ttexplo.mobile.domain.model.AccesoriosRecord
 import com.ttexplo.mobile.domain.model.AccessoryItemRecord
@@ -109,20 +110,12 @@ class DownloadData(
         return sb.toString()
     }
 
-    /** Archivo .txt consolidado, el mismo que usa T&T Explo para sincronizar. */
-    suspend fun valesTxt(): String {
+    /** Archivo .txt consolidado con PRV, REF, DEV, ACC y CAJ. */
+    suspend fun valesTxt(keys: Set<String>? = null): String {
         val sb = StringBuilder()
-        for (d in db.despachoDao().getAllDespachos()) {
-            if (d.estado == "BORRADOR") continue
-            val items = db.despachoDao().getItemsForDespacho(d.id).map {
-                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
-            }
-            sb.append(FlatFileFormatter.formatDespacho(
-                DespachoRecord(d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura, items)
-            )).append("\r\n")
-        }
         for (e in db.entradaDao().getAllEntradas()) {
             if (e.estado == "BORRADOR") continue
+            if (keys != null && "ENTRADA:${e.id}" !in keys) continue
             val items = db.entradaDao().getItemsForEntrada(e.id).map {
                 ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
             }
@@ -130,17 +123,19 @@ class DownloadData(
                 EntradaRecord(e.proveedor, e.polvorin, e.factura, items)
             )).append("\r\n")
         }
-        for (a in db.accesorioDao().getAllVales()) {
-            if (a.estado == "BORRADOR") continue
-            val items = db.accesorioDao().getItemsForVale(a.id).map {
-                AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
+        for (d in db.despachoDao().getAllDespachos()) {
+            if (d.estado == "BORRADOR") continue
+            if (keys != null && "DESPACHO:${d.id}" !in keys) continue
+            val items = db.despachoDao().getItemsForDespacho(d.id).map {
+                ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
             }
-            sb.append(FlatFileFormatter.formatAccesorios(
-                AccesoriosRecord(a.vale, a.empresa, a.lugar, a.transportista, a.turno, a.recibio, a.entrego, a.voladura, items)
+            sb.append(FlatFileFormatter.formatDespacho(
+                DespachoRecord(d.vale, d.empresa, d.lugar, d.transportista, d.turno, d.voladura, items)
             )).append("\r\n")
         }
         for (dev in db.devolucionDao().getAllDevoluciones()) {
             if (dev.estado == "BORRADOR") continue
+            if (keys != null && "DEVOLUCION:${dev.id}" !in keys) continue
             val items = db.devolucionDao().getItemsForDevolucion(dev.id).map {
                 ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
             }
@@ -148,44 +143,217 @@ class DownloadData(
                 DevolucionRecord(dev.empleadoEntrega, dev.empleadoRecibe, items)
             )).append("\r\n")
         }
-        return sb.toString().trim()
+        for (a in db.accesorioDao().getAllVales()) {
+            if (a.estado == "BORRADOR") continue
+            if (keys != null && "ACCESORIOS:${a.id}" !in keys) continue
+            val items = db.accesorioDao().getItemsForVale(a.id).map {
+                AccessoryItemRecord(it.codigoAccesorio, it.cantidad, it.fechaEscaneo)
+            }
+            sb.append(FlatFileFormatter.formatAccesorios(
+                AccesoriosRecord(a.vale, a.empresa, a.lugar, a.transportista, a.turno, a.recibio, a.entrego, a.voladura, items)
+            )).append("\r\n")
+        }
+        db.boxCountDao().getAll().groupBy { it.folio }.forEach { (folio, rows) ->
+            if (keys != null && "CONTEO:$folio" !in keys) return@forEach
+            sb.append(BoxCountTxtExporter.renderItems(rows.map { it.toDomain() })).append("\r\n")
+        }
+        return sb.toString().replace("\r\n", "\n").replace("\n", "\r\n").trim()
     }
 
-    /** Lista de vales para el panel web (clic → previsualización). */
+    private fun empaqueFor(code: String): String = when (code.length) {
+        30 -> "CAJA"
+        18 -> "SACO"
+        16 -> "CARTUCHO"
+        else -> "PIEZA"
+    }
+
+    private fun detailJson(
+        tipo: String,
+        tipoLabel: String,
+        folio: String,
+        datos: List<Pair<String, String>>,
+        items: List<Triple<String, String, Int>>,
+        codigos: List<Pair<String, String>>,
+        totales: Map<String, Int>,
+        firmas: List<String>,
+        alerta: Boolean = false
+    ): String {
+        val root = JSONObject().put("tipo", tipo).put("tipoLabel", tipoLabel).put("folio", folio)
+        val d = JSONArray()
+        datos.forEach { d.put(JSONObject().put("label", it.first).put("value", it.second)) }
+        root.put("datos", d)
+        val itemsArr = JSONArray()
+        items.forEach {
+            itemsArr.put(JSONObject().put("nombre", it.first).put("empaque", it.second).put("cantidad", it.third))
+        }
+        root.put("items", itemsArr)
+        val codes = JSONArray()
+        codigos.forEach { codes.put(JSONObject().put("codigo", it.first).put("hora", it.second)) }
+        root.put("codigos", codes)
+        val totals = JSONObject()
+        totales.forEach { (k, v) -> totals.put(k, v) }
+        root.put("totales", totals)
+        val f = JSONArray()
+        firmas.forEach { f.put(it) }
+        root.put("firmas", f)
+        root.put("alerta", alerta)
+        root.put("sub", if (tipo == "ACCESORIOS") {
+            "Accesorios ${totales["accesorios"] ?: 0}"
+        } else {
+            "Cajas ${totales["cajas"] ?: 0} · Sacos ${totales["sacos"] ?: 0}"
+        })
+        return root.toString()
+    }
+
+    private fun explosiveDetail(
+        tipo: String,
+        tipoLabel: String,
+        folio: String,
+        datos: List<Pair<String, String>>,
+        items: List<ScannedCodeRecord>,
+        firmas: List<String>
+    ): String {
+        val grouped = items.groupBy {
+            (it.productName.ifBlank { "Material ${it.code.take(3)}" }) to empaqueFor(it.code)
+        }.map { (k, v) -> Triple(k.first, k.second, v.size) }
+        val totals = mutableMapOf("piezas" to items.size, "cajas" to 0, "sacos" to 0, "cartuchos" to 0, "accesorios" to 0)
+        items.forEach {
+            val key = when (empaqueFor(it.code)) {
+                "CAJA" -> "cajas"
+                "SACO" -> "sacos"
+                "CARTUCHO" -> "cartuchos"
+                else -> null
+            }
+            if (key != null) totals[key] = (totals[key] ?: 0) + 1
+        }
+        return detailJson(tipo, tipoLabel, folio, datos, grouped, items.map { it.code to it.timestamp }, totals, firmas)
+    }
+
+    private suspend fun accessoryName(code: String): String {
+        val key = if (code.length > 7 && code.take(7).matches(Regex("^X\\d{6}$"))) code.take(7) else code
+        val product = db.productoDao().getById(key)
+            ?: db.productoDao().getByCodBarras(key)
+            ?: db.productoDao().getByCodBarras(code)
+            ?: db.productoDao().getById(code)
+        return product?.producto ?: code
+    }
+
+    /** Detalle estructurado de un vale para el panel web. */
+    suspend fun valeDetail(key: String): String? {
+        val parts = key.split(':', limit = 2)
+        if (parts.size != 2) return null
+        val tipo = parts[0].uppercase()
+        val raw = parts[1]
+        return when (tipo) {
+            "ENTRADA" -> {
+                val id = raw.toLongOrNull() ?: return null
+                val e = db.entradaDao().getEntradaById(id) ?: return null
+                val items = db.entradaDao().getItemsForEntrada(e.id).map {
+                    ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
+                }
+                explosiveDetail("ENTRADA", "Entrada", e.factura, listOf(
+                    "Proveedor" to e.proveedor, "Polvorín" to e.polvorin,
+                    "Factura / Remisión" to e.factura, "Fecha" to e.fechaCreacion
+                ), items, listOf("Recibió en polvorín: ${e.polvorin}", "Entregó proveedor: ${e.proveedor}"))
+            }
+            "DESPACHO" -> {
+                val id = raw.toLongOrNull() ?: return null
+                val d = db.despachoDao().getDespachoById(id) ?: return null
+                val items = db.despachoDao().getItemsForDespacho(d.id).map {
+                    ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo, it.productoNombre, it.presentacion)
+                }
+                explosiveDetail("DESPACHO", "Salida", d.vale, listOf(
+                    "Empresa" to d.empresa, "Lugar" to d.lugar, "Transporte" to d.transportista,
+                    "Turno" to d.turno, "Voladura" to d.voladura, "Fecha" to d.fechaCreacion
+                ), items, listOf("Entregó: ${d.transportista}", "Recibió: ${d.empresa}"))
+            }
+            "DEVOLUCION" -> {
+                val id = raw.toLongOrNull() ?: return null
+                val dev = db.devolucionDao().getDevolucionById(id) ?: return null
+                val items = db.devolucionDao().getItemsForDevolucion(dev.id).map {
+                    ScannedCodeRecord(it.codigoBarras, it.fechaEscaneo)
+                }
+                explosiveDetail("DEVOLUCION", "Devolución", "DEV${dev.id}", listOf(
+                    "Entrega" to dev.empleadoEntrega, "Recibe" to dev.empleadoRecibe,
+                    "Fecha" to dev.fechaCreacion
+                ), items, listOf("Entregó: ${dev.empleadoEntrega}", "Recibió: ${dev.empleadoRecibe}"))
+            }
+            "ACCESORIOS" -> {
+                val id = raw.toLongOrNull() ?: return null
+                val a = db.accesorioDao().getValeById(id) ?: return null
+                val rows = db.accesorioDao().getItemsForVale(a.id)
+                val items = rows.map { Triple(accessoryName(it.codigoAccesorio), "ACCESORIO", kotlin.math.abs(it.cantidad)) }
+                val total = items.sumOf { it.third }
+                val header = a.voladura.toIntOrNull()
+                detailJson("ACCESORIOS", "Accesorios", a.vale, listOf(
+                    "Empresa" to a.empresa, "Lugar" to a.lugar, "Entrega" to a.entrego,
+                    "Recibió" to a.recibio, "Turno" to a.turno, "Fecha" to a.fechaCreacion
+                ), items, rows.map { it.codigoAccesorio to it.fechaEscaneo },
+                    mapOf("piezas" to total, "cajas" to 0, "sacos" to 0, "cartuchos" to 0, "accesorios" to total),
+                    listOf("Entregó: ${a.entrego}", "Recibió: ${a.recibio}"),
+                    alerta = header != null && header != total)
+            }
+            "CONTEO" -> {
+                val rows = db.boxCountDao().getByFolio(raw)
+                if (rows.isEmpty()) return null
+                val items = rows.map { Triple("Caja ${it.codigo}", "CAJA", it.piezas) }
+                detailJson("CONTEO", "Conteo", raw, listOf(
+                    "Folio" to raw, "Cajas" to rows.size.toString(),
+                    "Fecha" to (rows.firstOrNull()?.fechaHora ?: "")
+                ), items, emptyList(),
+                    mapOf("piezas" to rows.sumOf { it.piezas }, "cajas" to rows.size,
+                        "sacos" to 0, "cartuchos" to 0, "accesorios" to 0), emptyList())
+            }
+            else -> null
+        }
+    }
+
+    /** Lista de vales para el panel web. */
     suspend fun valesJson(): String {
         val arr = JSONArray()
         for (e in db.entradaDao().getAllEntradas()) {
             if (e.estado == "BORRADOR") continue
-            arr.put(JSONObject().put("tipo", "ENTRADA").put("id", e.id)
+            arr.put(JSONObject().put("tipo", "ENTRADA").put("tipoLabel", "Entrada").put("id", e.id)
+                .put("key", "ENTRADA:${e.id}")
                 .put("folio", e.factura).put("fecha", e.fechaCreacion)
                 .put("resumen", "Prov ${e.proveedor} · Polv ${e.polvorin}")
+                .put("piezas", db.entradaDao().getItemsForEntrada(e.id).size)
                 .put("url", "/vale?tipo=ENTRADA&id=${e.id}"))
         }
         for (d in db.despachoDao().getAllDespachos()) {
             if (d.estado == "BORRADOR") continue
-            arr.put(JSONObject().put("tipo", "DESPACHO").put("id", d.id)
+            arr.put(JSONObject().put("tipo", "DESPACHO").put("tipoLabel", "Salida").put("id", d.id)
+                .put("key", "DESPACHO:${d.id}")
                 .put("folio", d.vale).put("fecha", d.fechaCreacion)
                 .put("resumen", "${d.empresa} · ${d.lugar}")
+                .put("piezas", db.despachoDao().getItemsForDespacho(d.id).size)
                 .put("url", "/vale?tipo=DESPACHO&id=${d.id}"))
         }
         for (dev in db.devolucionDao().getAllDevoluciones()) {
             if (dev.estado == "BORRADOR") continue
-            arr.put(JSONObject().put("tipo", "DEVOLUCION").put("id", dev.id)
+            arr.put(JSONObject().put("tipo", "DEVOLUCION").put("tipoLabel", "Devolución").put("id", dev.id)
+                .put("key", "DEVOLUCION:${dev.id}")
                 .put("folio", "DEV${dev.id}").put("fecha", dev.fechaCreacion)
                 .put("resumen", "${dev.empleadoEntrega} → ${dev.empleadoRecibe}")
+                .put("piezas", db.devolucionDao().getItemsForDevolucion(dev.id).size)
                 .put("url", "/vale?tipo=DEVOLUCION&id=${dev.id}"))
         }
         for (a in db.accesorioDao().getAllVales()) {
             if (a.estado == "BORRADOR") continue
-            arr.put(JSONObject().put("tipo", "ACCESORIOS").put("id", a.id)
+            val piezas = db.accesorioDao().getItemsForVale(a.id).sumOf { kotlin.math.abs(it.cantidad) }
+            arr.put(JSONObject().put("tipo", "ACCESORIOS").put("tipoLabel", "Accesorio").put("id", a.id)
+                .put("key", "ACCESORIOS:${a.id}")
                 .put("folio", a.vale).put("fecha", a.fechaCreacion)
                 .put("resumen", "${a.empresa} · ${a.recibio}")
+                .put("piezas", piezas)
                 .put("url", "/vale?tipo=ACCESORIOS&id=${a.id}"))
         }
         db.boxCountDao().getAll().groupBy { it.folio }.forEach { (folio, rows) ->
-            arr.put(JSONObject().put("tipo", "CONTEO").put("id", 0)
+            arr.put(JSONObject().put("tipo", "CONTEO").put("tipoLabel", "Conteo").put("id", 0)
+                .put("key", "CONTEO:$folio")
                 .put("folio", folio).put("fecha", rows.firstOrNull()?.fechaHora ?: "")
                 .put("resumen", "${rows.size} cajas · ${rows.sumOf { it.piezas }} piezas")
+                .put("piezas", rows.sumOf { it.piezas })
                 .put("url", "/vale?tipo=CONTEO&folio=${java.net.URLEncoder.encode(folio, "UTF-8")}"))
         }
         return arr.toString()

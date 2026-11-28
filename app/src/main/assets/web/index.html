@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T&amp;T Explo · Centro de descargas</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/app.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="brand">T&amp;T EXPLO <span>· Centro de descargas</span></div>
+  <nav>
+    <button type="button" class="on" id="tabDl" aria-pressed="true">Descargas</button>
+    <button type="button" id="tabTools" aria-pressed="false">Herramientas</button>
+  </nav>
+  <div class="status"><span class="dot" aria-hidden="true"></span>EN VIVO</div>
+</header>
+
+<main>
+  <section id="viewDl">
+    <div class="kpis" id="kpis" aria-label="Resumen"></div>
+
+    <div class="toolbar">
+      <div class="chips" id="chips" role="group" aria-label="Filtrar por tipo"></div>
+      <label class="sr-only" for="q" hidden>Buscar vales</label>
+      <input class="search" id="q" type="search" autocomplete="off" placeholder="Buscar folio, empresa o fecha…">
+      <span class="count" id="regs" role="status" aria-live="polite"></span>
+    </div>
+
+    <section class="card" aria-labelledby="listH">
+      <div class="list-hd">
+        <h2 id="listH">Vales registrados</h2>
+        <label class="check-all"><input type="checkbox" id="all">Seleccionar filtrados</label>
+        <span class="sp"></span>
+        <span class="count" id="selCount" role="status" aria-live="polite">0 marcados</span>
+      </div>
+      <div id="list" class="list" aria-live="polite"></div>
+    </section>
+  </section>
+
+  <section id="viewTools" hidden>
+    <div class="card tools">
+      <h2>Catálogo de productos</h2>
+      <p class="note">Descarga el catálogo actual en CSV. La importación desde la web llegará en la siguiente entrega.</p>
+      <a class="btn btn--primary" href="/export/catalogo.csv">Descargar catálogo (CSV)</a>
+    </div>
+  </section>
+</main>
+
+<div class="bar">
+  <span>Vales: <b id="barCount">0</b> seleccionados</span>
+  <span class="sp"></span>
+  <a class="btn btn--ghost" href="/export/vales.txt">Descargar todos (.txt)</a>
+  <button class="btn btn--primary" id="expSel" disabled>Descargar seleccionados (.txt)</button>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="pFolio" hidden>
+  <div class="panel__hd">
+    <span class="t" id="pTag"></span>
+    <h3 id="pFolio" tabindex="-1"></h3>
+    <button type="button" class="btn btn--ghost" id="pClose">Cerrar</button>
+  </div>
+  <div class="panel__body" id="pBody"></div>
+</aside>
+<p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
+</body>
+</html>
