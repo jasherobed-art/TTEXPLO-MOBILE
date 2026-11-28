@@ -307,7 +307,10 @@ class DownloadServer(
                         if (plain == null) {
                             writeResponse(s, 404, "text/plain; charset=utf-8", "Vale no encontrado")
                         } else {
-                            writeResponse(s, 200, "text/html; charset=utf-8", ticketPage(tipo, plain))
+                            writeResponse(
+                                s, 200, "text/html; charset=utf-8",
+                                ticketPage(tipo, plain, autoPrint = queryParams["print"] == "1")
+                            )
                         }
                     }
                     path == "/" || path == "/index.html" ->
@@ -410,7 +413,7 @@ class DownloadServer(
         .replace("<", "&lt;")
         .replace(">", "&gt;")
 
-    private fun ticketPage(tipo: String, plain: String): String {
+    private fun ticketPage(tipo: String, plain: String, autoPrint: Boolean = false): String {
         val lines = plain.lines().filter { it.isNotBlank() }
         val body = StringBuilder()
         var i = 0
@@ -441,9 +444,18 @@ main{padding:24px;display:flex;justify-content:center}
 .ticket{background:#fff;color:#000;font-family:ui-monospace,Menlo,Consolas,monospace;
 font-size:12px;line-height:1.45;padding:18px 16px;width:340px;border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .ticket .total{background:#000;color:#fff;padding:4px 6px;margin:6px 0;font-weight:bold}
+header button{background:#ffb300;color:#111;border:0;border-radius:6px;padding:8px 14px;font-weight:bold;cursor:pointer;margin-left:auto}
+@media print{
+  body{background:#fff;color:#000}
+  header{display:none}
+  main{padding:0;display:block}
+  .ticket{box-shadow:none;border-radius:0;width:auto;max-width:80mm;margin:0 auto}
+}
 </style></head><body>
-<header><a href="/">← Volver</a><h1>Vale ${esc(tipo)}</h1></header>
-<main><div class="ticket">$body</div></main></body></html>
+<header><a href="/">← Volver</a><h1>Vale ${esc(tipo)}</h1><button type="button" onclick="window.print()">Imprimir</button></header>
+<main><div class="ticket">$body</div></main>
+${if (autoPrint) "<script>window.addEventListener('load',function(){window.print()})</script>" else ""}
+</body></html>
 """.trimIndent()
     }
 

@@ -290,6 +290,7 @@
     $('#pBody').innerHTML = h;
     $('#pEdit').hidden = state.editando || d.tipo === 'CONTEO';
     $('#pBorrar').hidden = state.editando;
+    $('#pPrint').hidden = state.editando;
     $('#pCerrar').hidden = state.editando;
     $('#pSave').hidden = !state.editando;
     $('#pCancel').hidden = !state.editando;
@@ -950,6 +951,16 @@
     });
     $('#pBorrar').addEventListener('click', function () {
       if (state.abierto) abrirBorrado([state.abierto]);
+    });
+    $('#pPrint').addEventListener('click', function () {
+      if (!state.abierto) return;
+      var p = state.abierto.split(':');
+      var tipo = p[0];
+      var raw = p.slice(1).join(':');
+      var q = tipo === 'CONTEO'
+        ? 'tipo=CONTEO&folio=' + encodeURIComponent(raw)
+        : 'tipo=' + encodeURIComponent(tipo) + '&id=' + encodeURIComponent(raw);
+      window.open('/vale?' + q + '&print=1', '_blank');
     });
     $('#dlgDelCancel').addEventListener('click', function () { $('#dlgDel').close(); });
     $('#dlgDelOk').addEventListener('click', confirmarBorrado);
