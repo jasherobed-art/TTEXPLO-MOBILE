@@ -5,6 +5,7 @@ import android.util.Log
 import com.ttexplo.mobile.TTExploApp
 import com.ttexplo.mobile.domain.download.DownloadData
 import com.ttexplo.mobile.domain.download.parseEdits
+import com.ttexplo.mobile.domain.inventory.WeightFormat
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -427,11 +428,17 @@ class DownloadServer(
                         } else {
                             val json = if (method == "POST") {
                                 parseQuery(body)["detalle"]?.let {
-                                    runBlocking { data.recalcDetail(it) }
+                                    runBlocking { data.printDetail(it) }
                                 }
                             } else {
                                 val key = queryParams["key"].orEmpty()
-                                if (key.isBlank()) null else runBlocking { data.valeDetail(key) }
+                                if (key.isBlank()) {
+                                    null
+                                } else {
+                                    runBlocking { data.valeDetail(key) }?.let {
+                                        runBlocking { data.printDetail(it) }
+                                    }
+                                }
                             }
                             if (json == null) {
                                 writeResponse(s, 404, "text/plain; charset=utf-8", "Vale no encontrado")
@@ -609,14 +616,17 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
     private fun valeA4Page(json: String, autoPrint: Boolean): String {
         val root = runCatching { JSONObject(json) }.getOrNull()
             ?: return "<!DOCTYPE html><html><body>Vale no encontrado</body></html>"
-        val tipo = root.optString("tipoLabel").ifBlank { root.optString("tipo") }
+        val tipoRaw = root.optString("tipo").uppercase()
+        val tipo = root.optString("tipoLabel").ifBlank { tipoRaw }
         val folio = root.optString("folio")
         val campos = root.optJSONArray("campos")
-        val items = root.optJSONArray("items")
-        val codigos = root.optJSONArray("codigos")
-        val totales = root.optJSONObject("totales") ?: JSONObject()
+        val items = root.optJSONArray("printItems") ?: root.optJSONArray("items")
+        val codigos = root.optJSONArray("printCodigos") ?: root.optJSONArray("codigos")
+        val totales = root.optJSONObject("printTotales") ?: root.optJSONObject("totales") ?: JSONObject()
         val firmas = root.optJSONArray("firmas")
-        val alerta = root.optBoolean("alerta", false)
+        val esAccesorio = tipoRaw == "ACCESORIOS"
+        val esConteo = tipoRaw == "CONTEO"
+        val showWeight = !esAccesorio && !esConteo
         val terminal = runCatching {
             com.ttexplo.mobile.license.LicenseManager.getFormattedDeviceId(appContext)
         }.getOrDefault("")
@@ -638,66 +648,74 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
         val mats = StringBuilder()
         if (items != null) for (i in 0 until items.length()) {
             val it = items.optJSONObject(i) ?: continue
-            mats.append("<tr><td>").append(esc(it.optString("nombre"))).append("</td><td class=\"c\">")
-                .append(esc(it.optString("empaque"))).append("</td><td class=\"r\">")
-                .append(it.optInt("cantidad", 0)).append("</td></tr>")
+            val presentacion = it.optString("presentacion")
+            mats.append("<tr><td class=\"desc\"><b>").append(esc(it.optString("nombre"))).append("</b>")
+            if (presentacion.isNotBlank()) {
+                mats.append("<span>").append(esc(presentacion)).append("</span>")
+            }
+            mats.append("</td><td class=\"c\">").append(esc(it.optString("empaque")))
+                .append("</td><td class=\"r\">").append(it.optInt("cantidad", 0)).append("</td>")
+            if (showWeight) {
+                mats.append("<td class=\"r\">")
+                if (it.optBoolean("pesoConocido", false)) {
+                    mats.append(WeightFormat.kg3(it.optDouble("peso", 0.0)))
+                } else {
+                    mats.append("—")
+                }
+                mats.append("</td>")
+            }
+            mats.append("</tr>")
         }
+
+        val matsHeader = StringBuilder("<tr><th>Material / descripción</th><th style=\"width:20mm\">")
+            .append(if (esAccesorio) "Unidad" else "Empaque")
+            .append("</th><th style=\"width:17mm\">Cantidad</th>")
+        if (showWeight) matsHeader.append("<th style=\"width:21mm\">Peso (kg)</th>")
+        matsHeader.append("</tr>")
 
         val tot = StringBuilder()
         tot.append("<div><span>Piezas</span><b>").append(totales.optInt("piezas", 0)).append("</b></div>")
-        if (root.optString("tipo") != "ACCESORIOS") {
+        if (!esAccesorio) {
             tot.append("<div><span>Cajas</span><b>").append(totales.optInt("cajas", 0)).append("</b></div>")
             tot.append("<div><span>Sacos</span><b>").append(totales.optInt("sacos", 0)).append("</b></div>")
             tot.append("<div><span>Cartuchos</span><b>").append(totales.optInt("cartuchos", 0)).append("</b></div>")
         }
-
-        val esAccesorio = root.optString("tipo") == "ACCESORIOS"
-        fun codeText(c: JSONObject?): String {
-            if (c == null) return ""
-            val base = c.optString("codigo")
-            return if (esAccesorio) "$base × ${c.optInt("cantidad", 1)}" else base
+        val pesoParcial = showWeight && totales.optBoolean("pesoParcial", false)
+        if (showWeight) {
+            tot.append("<div><span>Peso total").append(if (pesoParcial) "*" else "").append("</span><b>")
+                .append(WeightFormat.kg3(totales.optDouble("pesoKg", 0.0))).append("</b></div>")
+        }
+        val pesoNota = if (pesoParcial) {
+            "<div class=\"note\">* No incluye materiales sin peso calibrado.</div>"
+        } else {
+            ""
         }
 
-        val maxLen = if (codigos == null) 0 else (0 until codigos.length())
-            .maxOfOrNull {
-                val o = codigos.optJSONObject(it)
-                val base = o?.optString("codigo")?.length ?: 0
-                if (esAccesorio) base + 3 + (o?.optInt("cantidad", 1) ?: 1).toString().length else base
-            } ?: 0
-
-        // Elige orientación y columnas para gastar el menor número de hojas.
-        val cellW = maxLen * 1.38 + 2.8
-        val colsP = maxOf(1, minOf(12, (194 / cellW).toInt()))
-        val colsL = maxOf(1, minOf(14, (281 / cellW).toInt()))
-        val rowH = 5.3
-        val rowsP = (281 / rowH).toInt()
-        val rowsL = (194 / rowH).toInt()
         val nCodes = codigos?.length() ?: 0
-        fun sheetCount(cols: Int, rows: Int) =
-            if (nCodes == 0) 0 else (nCodes + cols * rows - 1) / (cols * rows)
-        val pagesP = sheetCount(colsP, rowsP)
-        val pagesL = sheetCount(colsL, rowsL)
-        val landscape = pagesL < pagesP
-        val cols = if (landscape) colsL else colsP
-        val pages = if (landscape) pagesL else pagesP
-
         val codes = StringBuilder()
-        if (codigos != null) {
-            var i = 0
-            while (i < codigos.length()) {
-                codes.append("<tr>")
-                for (c in 0 until cols) {
-                    val o = if (i + c < codigos.length()) codigos.optJSONObject(i + c) else null
-                    codes.append("<td>")
-                    if (o != null) {
-                        codes.append("<div class=\"code\">").append(esc(codeText(o)))
-                            .append("</div><div class=\"time\">").append(esc(o.optString("hora"))).append("</div>")
-                    }
-                    codes.append("</td>")
-                }
-                codes.append("</tr>")
-                i += cols
-            }
+        if (codigos != null) for (i in 0 until codigos.length()) {
+            val o = codigos.optJSONObject(i) ?: continue
+            val code = o.optString("codigo")
+            val codeText = if (esAccesorio) "$code × ${o.optInt("cantidad", 1)}" else code
+            codes.append("<tr><td class=\"code\">").append(esc(codeText))
+                .append("</td><td class=\"cdesc\">").append(esc(o.optString("descripcion")))
+                .append("</td><td class=\"time\">").append(esc(o.optString("hora").take(10))).append("</td></tr>")
+        }
+        val codesHtml = if (nCodes == 0) {
+            ""
+        } else {
+            """
+  <h2>Códigos capturados ($nCodes)</h2>
+  <table class="codes-table"><thead><tr><th style="width:60mm">Código</th><th>Descripción</th><th style="width:20mm">Fecha</th></tr></thead><tbody>$codes</tbody></table>
+""".trimIndent()
+        }
+
+        val rowsPerPage = 38
+        val pages = if (nCodes == 0) 0 else (nCodes + rowsPerPage - 1) / rowsPerPage
+        val pagesLabel = when {
+            nCodes == 0 -> "sin códigos"
+            pages == 1 -> "1 página"
+            else -> "~$pages páginas"
         }
 
         val firmasHtml = StringBuilder()
@@ -709,13 +727,13 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
 <!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
 <title>Vale ${esc(folio)}</title>
 <style>
-@page { size: A4 ${if (landscape) "landscape" else "portrait"}; margin: 8mm; }
+@page { size: A4 portrait; margin: 8mm; }
 *{box-sizing:border-box}
 body{margin:0;background:#0b0b0b;color:#111;font:10pt/1.35 Arial,Helvetica,sans-serif}
 .bar{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#111;color:#eee;flex-wrap:wrap}
 .bar a{color:#ffb020;text-decoration:none}
 .bar button{margin-left:auto;background:#ffb020;border:0;border-radius:6px;padding:8px 14px;font-weight:bold;cursor:pointer}
-.sheet{background:#fff;width:min(${if (landscape) 297 else 210}mm,calc(100vw - 24px));min-height:${if (landscape) 210 else 297}mm;margin:12px auto;padding:10mm;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+.sheet{background:#fff;width:min(210mm,calc(100vw - 24px));min-height:297mm;margin:12px auto;padding:10mm;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:12px}
 .brand{font-size:15pt;font-weight:bold;letter-spacing:.06em}
 .sub{font-size:9pt;color:#444}
@@ -732,45 +750,43 @@ table{width:100%;border-collapse:collapse}
 th,td{border:1px solid #999;padding:3px 5px;font-size:8.5pt}
 th{background:#eee;text-align:left;font-size:8pt;text-transform:uppercase}
 td.r{text-align:right} td.c{text-align:center}
-.mono{font-family:"Courier New",monospace;font-size:7.6pt}
-.nowrap{white-space:nowrap}
-.codes{width:100%;border-collapse:collapse;table-layout:fixed}
-.codes td{border:0;border-bottom:.3pt solid #ddd;padding:1.2mm 1.6mm;vertical-align:top}
-.codes tr:nth-child(even) td{background:#f6f6f6}
-.codes .code{font:6.5pt/1.1 "Courier New",monospace;word-break:break-all}
-.codes .time{font:5.8pt/1.05 Arial,Helvetica,sans-serif;color:#555;margin-top:.3mm}
-.tot{display:flex;gap:10px;margin:10px 0}
-.tot div{flex:1;border:1px solid #999;padding:6px 8px;text-align:center}
+td.desc b{display:block;font-size:9.5pt}
+td.desc span{display:block;color:#444;font-size:8pt;margin-top:1px}
+.codes-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.codes-table th,.codes-table td{border:1px solid #999;padding:1.5px 4px;font-size:8pt;line-height:1.2;vertical-align:top}
+.codes-table .code{font:7.2pt/1.15 "Courier New",monospace;word-break:break-all}
+.codes-table .cdesc{font-size:8pt}
+.codes-table .time{font:7pt/1.2 "Courier New",monospace;color:#444;white-space:nowrap}
+.tot{display:flex;gap:8px;margin:10px 0}
+.tot div{flex:1;border:1px solid #999;padding:5px 6px;text-align:center}
 .tot span{display:block;font-size:7.5pt;color:#555;text-transform:uppercase}
-.tot b{font-size:13pt}
+.tot b{font-size:12pt}
+.note{font-size:7.5pt;color:#555;margin-top:3px}
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:26px;font-size:9pt}
 .sig div{border-top:1px solid #111;padding-top:4px;min-height:40px}
-.alert{border:1px solid #b00;color:#b00;padding:6px 8px;font-weight:bold;margin:8px 0}
 .foot{margin-top:14px;border-top:1px solid #bbb;padding-top:4px;font-size:7.5pt;color:#666;display:flex;justify-content:space-between}
 @media print{
   body{background:#fff}
   .bar{display:none}
   .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none}
   tr, .grid div, .tot div, .sig div{break-inside:avoid}
-  .codes tr{break-inside:avoid}
   thead{display:table-header-group}
 }
 </style></head><body>
-<div class="bar"><a href="/">← Volver</a><span>Vista A4 ${if (landscape) "horizontal" else "vertical"} · $cols columnas · ${if (pages > 0) "~$pages páginas" else "sin códigos"}</span><button type="button" onclick="window.print()">Imprimir</button></div>
+<div class="bar"><a href="/">← Volver</a><span>Vista A4 · $pagesLabel</span><button type="button" onclick="window.print()">Imprimir</button></div>
 <div class="sheet">
   <div class="top">
     <div><div class="brand">T&amp;T EXPLO MOBILE</div><div class="sub">Control de explosivos en sitio · Terminal ${esc(terminal)}</div></div>
     <div class="doc"><h1>VALE DE ${esc(tipo.uppercase())}</h1><div class="f">${esc(folio)}</div></div>
   </div>
   <div class="meta"><span>Fecha: ${esc(fecha)}</span><span>Documento de control de polvorín</span></div>
-  ${if (alerta) "<div class=\"alert\">Revisar: las piezas no coinciden con lo esperado</div>" else ""}
   <h2>Datos del vale</h2>
   <div class="grid">$info</div>
   <h2>Materiales</h2>
-  <table><thead><tr><th>Material</th><th style="width:22mm">Empaque</th><th style="width:18mm">Cantidad</th></tr></thead><tbody>$mats</tbody></table>
+  <table><thead>$matsHeader</thead><tbody>$mats</tbody></table>
   <div class="tot">$tot</div>
-  <h2>Códigos capturados (${codigos?.length() ?: 0})</h2>
-  <table class="codes"><tbody>$codes</tbody></table>
+  $pesoNota
+  $codesHtml
   <h2>Firmas</h2>
   <div class="sig">$firmasHtml</div>
   <div class="foot"><span>T&amp;T Explo Mobile · Terminal ${esc(terminal)}</span><span>${esc(fecha)}</span></div>

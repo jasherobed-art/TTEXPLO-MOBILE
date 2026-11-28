@@ -3,6 +3,7 @@ package com.ttexplo.mobile.domain.download
 import android.content.Context
 import com.ttexplo.mobile.TTExploApp
 import com.ttexplo.mobile.data.local.AppDatabase
+import com.ttexplo.mobile.data.local.entity.ProductoEntity
 import com.ttexplo.mobile.domain.inventory.InventoryReferenceType
 import com.ttexplo.mobile.data.repository.CatalogRepositoryImpl
 import com.ttexplo.mobile.domain.export.FlatFileFormatter
@@ -13,8 +14,10 @@ import com.ttexplo.mobile.domain.model.AccessoryItemRecord
 import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.DevolucionRecord
 import com.ttexplo.mobile.domain.model.EntradaRecord
-import com.ttexplo.mobile.domain.model.ScannedCodeRecord
+import com.ttexplo.mobile.domain.model.InventoryCategory
 import com.ttexplo.mobile.domain.model.ProductClassifier
+import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.domain.model.ScannedCodeRecord
 import com.ttexplo.mobile.domain.model.StandardUnits
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.printer.ValePrintHelper
@@ -566,6 +569,182 @@ class DownloadData(
         root.put("items", items)
         root.put("totales", totales)
         root.put("alerta", false)
+        return root.toString()
+    }
+
+    private data class PrintRow(
+        val nombre: String,
+        val presentacion: String,
+        val empaque: String,
+        var cantidad: Int = 0,
+        var pesoKg: Double = 0.0,
+        var pesoConocido: Boolean = true
+    )
+
+    private fun unitLabel(unit: String): String = when (unit.uppercase()) {
+        "MTS" -> "Metros"
+        "PZA" -> "Piezas"
+        "KG" -> "KG"
+        else -> unit
+    }
+
+    private fun shortUnit(unit: String): String = when (unit.uppercase()) {
+        "MTS" -> "MTS"
+        "PZA" -> "PZA"
+        "KG" -> "KG"
+        else -> unit.uppercase()
+    }
+
+    private fun measureText(product: ProductoEntity?, empaque: String): String {
+        val preset = product?.presentacion?.trim().orEmpty()
+        if (preset.isNotBlank()) return preset
+        val weight = product?.peso ?: 0.0
+        if ((empaque == "CAJA" || empaque == "SACO") && weight > 0.0) {
+            val number = if (weight % 1.0 == 0.0) weight.toInt().toString() else weight.toString()
+            return "$number ${product?.unidad?.trim().orEmpty()}".trim()
+        }
+        return ""
+    }
+
+    private fun accessoryUnit(product: ProductoEntity?, code: String): String {
+        val raw = product?.unidad?.trim().orEmpty()
+        if (raw.isNotBlank()) {
+            return StandardUnits.normalize(raw, "ACCESORIO", code, product?.producto.orEmpty())
+        }
+        return InventoryCategory.inferCategory(
+            ProductType.ACCESORIO, code, product?.producto.orEmpty(), ""
+        ).defaultUnit
+    }
+
+    /**
+     * Datos exclusivos de la hoja A4. No modifica `items`, `totales` ni `codigos`,
+     * que son los que usa la pantalla del Centro de descargas.
+     */
+    suspend fun printDetail(json: String): String? {
+        val root = runCatching { JSONObject(json) }.getOrNull() ?: return null
+        val tipo = root.optString("tipo").uppercase()
+        if (tipo.isBlank()) return null
+        if (tipo == "CONTEO") return root.toString()
+
+        val codigos = root.optJSONArray("codigos") ?: JSONArray()
+        val productos = db.productoDao().getAll()
+        val porId = HashMap<String, ProductoEntity>()
+        val porBarras = HashMap<String, ProductoEntity>()
+        productos.forEach { p ->
+            porId[p.idProducto.uppercase()] = p
+            porBarras[p.codBarras.uppercase()] = p
+        }
+
+        val esAccesorio = tipo == "ACCESORIOS"
+        val filas = LinkedHashMap<String, PrintRow>()
+        val printCodigos = JSONArray()
+        var piezas = 0
+        var cajas = 0
+        var sacos = 0
+        var cartuchos = 0
+        var pesoTotal = 0.0
+        var pesoParcial = false
+
+        for (i in 0 until codigos.length()) {
+            val c = codigos.optJSONObject(i) ?: continue
+            val code = c.optString("codigo").trim()
+            if (code.isEmpty()) continue
+            val cantidad = if (esAccesorio) {
+                kotlin.math.abs(c.optInt("cantidad", 1)).coerceAtLeast(1)
+            } else {
+                1
+            }
+            val nombre: String
+            val presentacion: String
+            val empaque: String
+            val key: String
+            val product: ProductoEntity?
+
+            if (esAccesorio) {
+                val codeKey = if (code.length > 7 && code.take(7).matches(accessoryKeyRegex)) {
+                    code.take(7)
+                } else {
+                    code
+                }.uppercase()
+                product = porId[codeKey] ?: porBarras[codeKey]
+                    ?: porBarras[code.uppercase()] ?: porId[code.uppercase()]
+                val unit = accessoryUnit(product, code)
+                nombre = product?.producto?.trim()?.ifBlank { code } ?: code
+                presentacion = unitLabel(unit)
+                empaque = shortUnit(unit)
+                key = "$nombre|$presentacion|$empaque"
+            } else {
+                val prefix = ProductClassifier.extractPrefix(code).uppercase()
+                product = porId[prefix] ?: porBarras[prefix]
+                    ?: porBarras[code.uppercase()] ?: porId[code.uppercase()]
+                nombre = product?.producto?.trim()?.ifBlank { "Material ${code.take(3)}" }
+                    ?: "Material ${code.take(3)}"
+                empaque = empaqueFor(code)
+                presentacion = measureText(product, empaque)
+                key = "$nombre|$presentacion|$empaque"
+            }
+
+            val row = filas.getOrPut(key) {
+                PrintRow(nombre, presentacion, empaque)
+            }
+            row.cantidad += cantidad
+            val peso = PrintMaterialWeight.totalKg(product?.toDomain(), empaque, cantidad)
+            if (peso == null) {
+                row.pesoConocido = false
+                if (!esAccesorio) pesoParcial = true
+            } else {
+                row.pesoKg += peso
+                pesoTotal += peso
+            }
+
+            val descripcion = if (esAccesorio) {
+                if (nombre.equals(code, ignoreCase = true)) presentacion else "$nombre · $presentacion"
+            } else {
+                if (presentacion.isBlank()) nombre else "$nombre · $presentacion"
+            }
+            printCodigos.put(
+                JSONObject()
+                    .put("codigo", code)
+                    .put("hora", c.optString("hora"))
+                    .put("descripcion", descripcion)
+                    .put("cantidad", cantidad)
+            )
+
+            piezas += cantidad
+            if (!esAccesorio) {
+                when (empaque) {
+                    "CAJA" -> cajas++
+                    "SACO" -> sacos++
+                    "CARTUCHO" -> cartuchos++
+                }
+            }
+        }
+
+        val printItems = JSONArray()
+        filas.values.forEach { r ->
+            printItems.put(
+                JSONObject()
+                    .put("nombre", r.nombre)
+                    .put("presentacion", r.presentacion)
+                    .put("empaque", r.empaque)
+                    .put("cantidad", r.cantidad)
+                    .put("peso", r.pesoKg)
+                    .put("pesoConocido", r.pesoConocido && !esAccesorio)
+            )
+        }
+
+        val printTotales = JSONObject()
+            .put("piezas", piezas)
+            .put("cajas", if (esAccesorio) 0 else cajas)
+            .put("sacos", if (esAccesorio) 0 else sacos)
+            .put("cartuchos", if (esAccesorio) 0 else cartuchos)
+            .put("accesorios", if (esAccesorio) piezas else 0)
+            .put("pesoKg", if (esAccesorio) 0.0 else pesoTotal)
+            .put("pesoParcial", !esAccesorio && pesoParcial)
+
+        root.put("printItems", printItems)
+        root.put("printTotales", printTotales)
+        root.put("printCodigos", printCodigos)
         return root.toString()
     }
 
