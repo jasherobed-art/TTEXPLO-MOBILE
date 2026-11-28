@@ -9,7 +9,7 @@ que leer el proyecto completo.
 Cuando pidas trabajar en una UE, di el ID y el build; el agente va directo al
 archivo indicado.
 
-**Versión del índice:** build 42 (v2.10.0).
+**Versión del índice:** build 43 (v2.11.0).
 La columna **Build** es el `versionCode` vigente en el último commit que
 modificó ese archivo (obtenido de `git log` + `git show`).
 

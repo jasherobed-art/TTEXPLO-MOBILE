@@ -4,7 +4,14 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.10.0] — Build 42 (Actual)
+## [v2.11.0] — Build 43 (Actual)
+### Nuevo
+- **Catálogos separados:** la app y la web separan “Alto explosivo y agente” de “Accesorios y artificios”. La base sigue siendo una sola; cada vista filtra por tipo.
+- **Exportación separada:** CSV de alto/agente y CSV de accesorios en Herramientas.
+
+---
+
+## [v2.10.0] — Build 42
 ### Nuevo
 - **Centro de descargas web renovado:** la terminal sirve la interfaz desde `assets/web` (HTML/CSS/JS), con lista de vales, filtros, búsqueda, selección múltiple, panel de detalle de solo lectura y PIN de 3 dígitos.
 - **Descarga consolidada:** el `.txt` para T&T Explo incluye los cinco mnemónicos (PRV, REF, DEV, ACC, CAJ) y permite descargar todos o solo los seleccionados.
