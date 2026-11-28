@@ -46,14 +46,21 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
     var running by remember { mutableStateOf(false) }
     val clients by server.clients.collectAsStateWithLifecycle()
     val lastClientAt by server.lastClientAt.collectAsStateWithLifecycle()
+    val expiresAt by server.expiresAt.collectAsStateWithLifecycle()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var pin by remember { mutableStateOf(server.pin) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(2000)
+            delay(1000)
             now = System.currentTimeMillis()
+            running = server.running
         }
     }
+    val restanteMs = if (running && expiresAt > now) expiresAt - now else 0L
+    val restanteTexto = if (restanteMs > 0) {
+        val total = restanteMs / 1000
+        "Se apaga solo en %d:%02d:%02d".format(total / 3600, (total % 3600) / 60, total % 60)
+    } else ""
     val ip = remember { DownloadServer.deviceIp() }
     val url = "http://$ip:8080"
     val recentlyConnected = lastClientAt > 0L && now - lastClientAt < 60_000L
@@ -195,6 +202,24 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
                         )
                         TextButton(onClick = { server.regeneratePin(); pin = server.pin }) {
                             Text("REGENERAR", color = MineAgentCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    if (running) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(restanteTexto, color = MineTextMuted, fontSize = 11.sp)
+                            TextButton(onClick = { server.extendSession() }) {
+                                Text(
+                                    "EXTENDER 2 H",
+                                    color = MineAgentCyan,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 

@@ -49,6 +49,7 @@ class DownloadServer(
     @Volatile private var serverSocket: ServerSocket? = null
     @Volatile private var acceptThread: Thread? = null
     @Volatile private var presenceThread: Thread? = null
+    @Volatile private var autoStopThread: Thread? = null
 
     @Volatile var running: Boolean = false
         private set
@@ -63,6 +64,9 @@ class DownloadServer(
 
     /** Última vez que una PC hizo una petición (epoch ms). */
     val lastClientAt = MutableStateFlow(0L)
+
+    /** Hora en que el servidor se apagará solo (epoch ms); 0 si está apagado. */
+    val expiresAt = MutableStateFlow(0L)
 
     fun newPin(): String = Random.nextInt(100, 1000).toString()
 
@@ -102,6 +106,31 @@ class DownloadServer(
                 pruneClients()
             }
         }.also { it.isDaemon = true; it.start() }
+        scheduleAutoStop()
+    }
+
+    /** Reinicia el contador de 2 horas sin apagar el servidor. */
+    fun extendSession() {
+        if (running) scheduleAutoStop()
+    }
+
+    private fun scheduleAutoStop() {
+        expiresAt.value = System.currentTimeMillis() + SESSION_MS
+        autoStopThread?.interrupt()
+        autoStopThread = Thread {
+            try {
+                while (running) {
+                    val left = expiresAt.value - System.currentTimeMillis()
+                    if (left <= 0L) {
+                        stop()
+                        break
+                    }
+                    Thread.sleep(minOf(left, 5_000L))
+                }
+            } catch (_: InterruptedException) {
+                // Contador reiniciado o servidor apagado.
+            }
+        }.also { it.isDaemon = true; it.start() }
     }
 
     fun stop() {
@@ -113,6 +142,9 @@ class DownloadServer(
         pool = null
         runCatching { presenceThread?.interrupt() }
         presenceThread = null
+        runCatching { autoStopThread?.interrupt() }
+        autoStopThread = null
+        expiresAt.value = 0L
         seenClients.clear()
         clients.value = 0
     }
@@ -397,6 +429,7 @@ class DownloadServer(
         private const val PRESENCE_TTL_MS = 45_000L
         private const val PRESENCE_POLL_MS = 15_000L
         private const val MAX_BODY = 1_000_000
+        private const val SESSION_MS = 2 * 60 * 60 * 1000L
 
         private val SEC_HEADERS = listOf(
             "X-Content-Type-Options: nosniff",
