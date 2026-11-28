@@ -4,7 +4,14 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.8.1] — Build 39 (Actual)
+## [v2.8.2] — Build 40 (Actual)
+### Corregido
+- **PC conectadas en el Centro de descarga:** el contador ya no marca 0 con la PC enlazada. Ahora cuenta las PC con actividad reciente (heartbeat cada 15 s) y las retira a los 45 s sin actividad.
+- **Tickets:** los atajos `generateDespachoTicket` y `generateAccesoriosTicket` también reenvían el `terminalId`; si el device ID no está disponible, no se imprime `TERMINAL: UNKNOWN`.
+
+---
+
+## [v2.8.1] — Build 39
 ### Nuevo
 - **Ticket con terminal de origen:** cada vale (despacho, entrada, accesorios, devolución y conteo) muestra la línea `TERMINAL: <deviceId>` al inicio de sus datos, para saber qué terminal lo generó cuando varias operan a la vez. También aparece en la vista previa y en el dashboard del Centro de descarga.
 
