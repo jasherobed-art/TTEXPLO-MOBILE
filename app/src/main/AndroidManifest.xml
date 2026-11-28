@@ -4,6 +4,10 @@
     <!-- Hardware permissions -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Servidor local de descarga (solo red WiFi local, sin nube) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- Bluetooth permissions for mobile thermal printer -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />

@@ -40,7 +40,8 @@ fun HomeScreen(
     onNavigateToBoxCount: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
     onNavigateToHistory: () -> Unit = {},
-    onNavigateToLicense: () -> Unit = {}
+    onNavigateToLicense: () -> Unit = {},
+    onOpenDownloadCenter: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var licenseCheck by remember { mutableStateOf(LicenseManager.checkLicense(context)) }
@@ -335,6 +336,16 @@ fun HomeScreen(
                 icon = Icons.Default.Settings,
                 isCompact = true,
                 onClick = onNavigateToSettings
+            )
+
+            // 10. Centro de descarga (WiFi)
+            MenuActionCard(
+                title = "10. Centro de descarga (WiFi)",
+                subtitle = "Descargar vales, inventario y catálogo desde la PC en la misma red",
+                accentColor = MineAgentCyan,
+                icon = Icons.Default.Wifi,
+                isCompact = true,
+                onClick = onOpenDownloadCenter
             )
 
             Spacer(modifier = Modifier.height(10.dp))

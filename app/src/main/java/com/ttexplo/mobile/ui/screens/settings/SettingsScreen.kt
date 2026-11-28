@@ -162,6 +162,7 @@ fun SettingsScreen(
     onNavigateCatalog: () -> Unit,
     onNavigateHistory: () -> Unit,
     onNavigateToLicense: () -> Unit = {},
+    onNavigateDownloadCenter: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -794,6 +795,51 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
+
+            // ==========================================
+            // SECCIÓN 5.5: CENTRO DE DESCARGA (WiFi)
+            // ==========================================
+            CollapsibleSettingsSection("CENTRO DE DESCARGA (WiFi)", "download" in expandedSections, { toggleSection("download") }) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MineDarkSurface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MineBorderGray),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.Wifi, contentDescription = null, tint = MineAgentCyan)
+                            Text(
+                                text = "DESCARGAR POR WIFI",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MineAgentCyan,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = "Enciende un servidor local con PIN para descargar vales, inventario y catálogo desde una PC en la misma red.",
+                            color = MineTextSecondary,
+                            fontSize = 12.sp
+                        )
+                        Button(
+                            onClick = onNavigateDownloadCenter,
+                            modifier = Modifier.fillMaxWidth().height(44.dp).testTag("settings_open_download_center_button"),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MineAgentCyan, contentColor = MineDarkBackground)
+                        ) {
+                            Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            AutoShrinkText("ABRIR CENTRO DE DESCARGA", fontWeight = FontWeight.Bold, targetTextSize = 12.sp, minTextSize = 10.sp)
+                        }
+                    }
+                }
             }
 
             // ==========================================

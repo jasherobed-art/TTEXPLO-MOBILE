@@ -9,7 +9,7 @@ que leer el proyecto completo.
 Cuando pidas trabajar en una UE, di el ID y el build; el agente va directo al
 archivo indicado.
 
-**Versión del índice:** build 37 (v2.7.2), commit `6163df2`.
+**Versión del índice:** build 38 (v2.8.0).
 La columna **Build** es el `versionCode` vigente en el último commit que
 modificó ese archivo (obtenido de `git log` + `git show`).
 
@@ -26,7 +26,7 @@ modificó ese archivo (obtenido de `git log` + `git show`).
 
 | ID | Nombre | Archivo | Composable principal | Build |
 |----|--------|---------|----------------------|-------|
-| UE-01 | Inicio | `ui/screens/home/HomeScreen.kt` | `HomeScreen`, `MenuActionCard` | 37 |
+| UE-01 | Inicio | `ui/screens/home/HomeScreen.kt` | `HomeScreen`, `MenuActionCard` | 38 |
 | UE-02 | Entradas · Encabezado | `ui/screens/entradas/EntradasHeaderScreen.kt` | `EntradasHeaderScreen` | 20 |
 | UE-03 | Entradas · Escaneo | `ui/screens/entradas/EntradasScanScreen.kt` | `EntradasScanScreen`, `CompactMetric`, `EntradaScannedItemCard` | 22 |
 | UE-04 | Salidas · Encabezado | `ui/screens/despacho/DespachoHeaderScreen.kt` | `DespachoHeaderScreen` | 20 |
@@ -67,9 +67,10 @@ modificó ese archivo (obtenido de `git log` + `git show`).
 
 | ID | Nombre | Archivo | Composable principal | Build |
 |----|--------|---------|----------------------|-------|
-| UE-22 | Configuración y Sistema | `ui/screens/settings/SettingsScreen.kt` | `SettingsScreen`, `CollapsibleSettingsSection` | 37 |
+| UE-22 | Configuración y Sistema | `ui/screens/settings/SettingsScreen.kt` | `SettingsScreen`, `CollapsibleSettingsSection` | 38 |
 | UE-23 | Audio y alertas | `ui/screens/settings/AudioSettingsCard.kt` | `AudioSettingsCard` | 19 |
 | UE-24 | Perfiles de impresora | `ui/screens/settings/PrinterProfilesSettingsCard.kt` | `PrinterProfilesSettingsCard`, `PrinterProfileEditorDialog` | 20 |
+| UE-25 | Centro de descarga (WiFi) | `ui/screens/download/DownloadCenterScreen.kt` + `net/DownloadServer.kt` + `domain/download/DownloadData.kt` | `DownloadCenterScreen`, `DownloadServer`, `DownloadData` | 38 |
 
 ## Componentes compartidos (no son pantallas)
 

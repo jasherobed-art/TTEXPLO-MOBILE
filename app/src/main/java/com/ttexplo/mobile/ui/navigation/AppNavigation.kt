@@ -117,6 +117,7 @@ sealed class Screen(val route: String) {
         fun createRoute(canBack: Boolean = false): String = "license?canBack=$canBack"
     }
     object LicenseVault : Screen("license_vault")
+    object DownloadCenter : Screen("download_center")
 }
 
 fun requiredLicenseModule(route: String?): String? = when (route) {

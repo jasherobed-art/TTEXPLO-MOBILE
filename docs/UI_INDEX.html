@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Índice de UEs — T&amp;T Explo Mobile</title>
+<style>
+  :root{--bg:#0b0b0b;--panel:#161616;--card:#1e1e1e;--line:#333;--yellow:#ffd400;--text:#eaeaea;--muted:#9a9a9a;--cyan:#29b6f6;--green:#81c784}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px}
+  h1{color:var(--yellow);font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2}
+  input[type=search],select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+  input[type=search]{flex:1;min-width:220px}
+  input[type=search]:focus,select:focus{border-color:var(--yellow)}
+  .hint{color:var(--muted);font-size:12px;margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(390px,1fr));gap:12px}
+  .ue{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
+  .ue:hover{border-color:var(--yellow)}
+  .ue .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .id{background:var(--yellow);color:#111;font-weight:800;font-size:12px;padding:3px 8px;border-radius:5px;white-space:nowrap}
+  .name{font-size:15px;font-weight:700;flex:1}
+  .build{font-size:11px;color:var(--green);border:1px solid #2e7d32;border-radius:4px;padding:2px 6px}
+  .file{font-family:monospace;font-size:11px;color:var(--cyan);word-break:break-all;margin-bottom:8px}
+  .comps{font-size:12px;color:var(--text);line-height:1.6}
+  .comps b{color:var(--yellow);font-weight:600}
+  .elems{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+  .el{font-size:11px;background:#121212;border:1px solid var(--line);border-radius:12px;padding:3px 9px;color:var(--muted);cursor:pointer}
+  .el:hover{border-color:var(--yellow);color:var(--text)}
+  .ref{margin-top:10px;font-size:11px;background:#121212;border:1px dashed var(--line);border-radius:6px;padding:7px 9px;color:var(--green);display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .ref button{background:none;border:none;color:var(--yellow);font-size:11px;cursor:pointer;font-weight:bold}
+  .group{grid-column:1/-1;color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase;margin:14px 0 2px;border-bottom:1px solid var(--line);padding-bottom:6px}
+  .small{font-size:11px;color:var(--muted)}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--yellow);color:#111;padding:10px 18px;border-radius:8px;font-weight:bold;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body>
+  <h1>Índice de Unidades de Interfaz (UE)</h1>
+  <p class="sub">T&amp;T Explo Mobile · build 37 (v2.7.2) · 24 pantallas + base. Haz clic en una UE o en un elemento para copiar la referencia y pegármela.</p>
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Buscar UE, nombre, archivo o elemento…">
+    <select id="group">
+      <option value="">Todos los módulos</option>
+      <option value="base">Base</option>
+      <option value="oper">Operativos</option>
+      <option value="inv">Inventario y sincronización</option>
+      <option value="hist">Historial</option>
+      <option value="lic">Licencia</option>
+      <option value="set">Configuración</option>
+      <option value="share">Compartidos / VM</option>
+    </select>
+  </div>
+  <p class="hint">Ejemplo: me dices <b>«UE-07 · elemento Cantidad»</b> y yo abro <code>AccesoriosScanScreen.kt</code> y trabajo solo en ese control.</p>
+  <div class="grid" id="grid"></div>
+  <div id="toast">Referencia copiada</div>
+
+<script>
+const UES=[
+ {id:'UE-00',g:'base',name:'Navegación / rutas',file:'ui/navigation/AppNavigation.kt',build:'—',comps:'Screen (rutas), RouteParamCodec, requiredLicenseModule',els:['rutas','createRoute','codificación b64~','mapeo de licencia']},
+ {id:'UE-00b',g:'base',name:'Tema y componentes base',file:'ui/theme/Theme.kt · Color.kt · Type.kt',build:'—',comps:'TTExploTheme, darkColorScheme, Shapes, Typography',els:['colores','tipografía','formas','AutoShrinkText']},
+ {id:'UE-01',g:'oper',name:'Inicio',file:'ui/screens/home/HomeScreen.kt',build:37,comps:'HomeScreen, MenuActionCard',els:['TopAppBar','banner de licencia','OPERACIONES PRINCIPALES','GESTIÓN Y REPORTES','9 tarjetas','footer de versión']},
+ {id:'UE-02',g:'oper',name:'Entradas · Encabezado',file:'ui/screens/entradas/EntradasHeaderScreen.kt',build:20,comps:'EntradasHeaderScreen',els:['borrador activo','proveedor','polvorín','factura','CONTINUAR A ESCANEO']},
+ {id:'UE-03',g:'oper',name:'Entradas · Escaneo',file:'ui/screens/entradas/EntradasScanScreen.kt',build:22,comps:'EntradasScanScreen, CompactMetric, EntradaScannedItemCard',els:['franja TOT/C/S/U','campo de código','filtros de producto','lista de códigos','duplicados','impresión','guardar','diálogos']},
+ {id:'UE-04',g:'oper',name:'Salidas · Encabezado',file:'ui/screens/despacho/DespachoHeaderScreen.kt',build:20,comps:'DespachoHeaderScreen',els:['borrador activo','vale','empresa','lugar','transportista','turno','voladura']},
+ {id:'UE-05',g:'oper',name:'Salidas · Escaneo',file:'ui/screens/despacho/DespachoScanScreen.kt',build:22,comps:'DespachoScanScreen, CompactDespachoMetric, DespachoScannedItemRow',els:['métricas','campo de código','filtros','lista','duplicados','corrección de fecha','impresión','guardar']},
+ {id:'UE-06',g:'oper',name:'Accesorios · Encabezado',file:'ui/screens/accesorios/AccesoriosHeaderScreen.kt',build:20,comps:'AccesoriosHeaderScreen',els:['vale','empresa','lugar','recibio','entrego','voladura','8 campos']},
+ {id:'UE-07',g:'oper',name:'Accesorios · Escaneo',file:'ui/screens/accesorios/AccesoriosScanScreen.kt',build:21,comps:'AccesoriosScanScreen, AccessoryRowCard',els:['cantidad','campo de código','filtro de código','lista','impresión','guardar','devolución']},
+ {id:'UE-08',g:'oper',name:'Devolución de alto/agente',file:'ui/screens/devolucion/DevolucionScreen.kt',build:22,comps:'DevolucionScreen',els:['empleado entrega','empleado recibe','captura','filtros','impresión','guardar']},
+ {id:'UE-09',g:'oper',name:'Catálogo de productos',file:'ui/screens/catalog/CatalogManagementScreen.kt',build:19,comps:'CatalogManagementScreen, ProductCardItem',els:['buscador','lista de productos','editar producto','ProductEditDialog']},
+ {id:'UE-10',g:'inv',name:'Inventario en polvorín',file:'ui/screens/inventory/InventoryScreen.kt',build:21,comps:'InventoryScreen, FiveFamilyTotalsDashboard, FamilyKpiCard, InventoryProductCard, InventoryEmptyState',els:['dashboard 5 familias','buscador','filtros','tarjetas de producto','Kardex','carga rápida','menú overflow','avisos de sync']},
+ {id:'UE-11',g:'inv',name:'Conteo en caja',file:'ui/screens/inventory/BoxCountScreen.kt',build:31,comps:'BoxCountScreen, BoxCountMetric',els:['KP','piezas','código de 30 dígitos','lista de cajas','duplicados','confirmar conteo','imprimir']},
+ {id:'UE-12',g:'inv',name:'Carga rápida / ajuste',file:'ui/screens/inventory/QuickInventoryDialog.kt',build:20,comps:'QuickInventoryDialog',els:['selector de producto','modo carga/ajuste','cajas','cartuchos','sacos','peso','accesorios','observaciones']},
+ {id:'UE-13',g:'inv',name:'Kardex y códigos',file:'ui/screens/inventory/ProductKardexSheet.kt',build:21,comps:'ProductKardexSheet, SedenaCodeRow, KardexEntryRow',els:['pestaña Kardex','pestaña Códigos','buscador de código','filtros','movimientos']},
+ {id:'UE-14',g:'inv',name:'Lienzo de QR',file:'ui/screens/inventory/QrCodeCanvas.kt',build:19,comps:'QrCodeCanvas',els:['render QR','tamaño']},
+ {id:'UE-15',g:'inv',name:'Centro de sincronización',file:'ui/screens/inventory/InventorySyncScreen.kt',build:20,comps:'InventorySyncScreen, SendSyncTab',els:['pestaña Enviar','pestaña Recibir','pestaña Historial','alcance','densidad','QR','navegación de QR']},
+ {id:'UE-16',g:'inv',name:'Recepción y conflictos',file:'ui/screens/inventory/InventorySyncReceiveAndConflictsTabs.kt',build:20,comps:'ReceiveSyncTab, SyncMergeReportCard, ConflictsAndHistoryTab, ConflictAlertCard, SyncSessionHistoryCard',els:['entrada manual','importar JSON','panel demo','informe de fusión','conflictos','historial de sesiones']},
+ {id:'UE-17',g:'hist',name:'Historial de vales',file:'ui/screens/history/ValesHistoryScreen.kt',build:37,comps:'ValesHistoryScreen',els:['filtros por tipo','lista de vales','exportar consolidado','compartir','selección múltiple','borrado con código','detalle']},
+ {id:'UE-18',g:'hist',name:'Tarjeta de vale',file:'ui/screens/history/ValeHistoryCard.kt',build:27,comps:'ValeHistoryCard, HistoryTypeFilterRow, ValeCardActionCell',els:['tipo y folio','empresa y fecha','checkbox','Imprimir','Editar','Enviar','Borrar']},
+ {id:'UE-19',g:'hist',name:'Detalle de vale',file:'ui/screens/history/ValeHistoryDetailView.kt',build:37,comps:'ValeHistoryDetailView, ValeDetailCodeRow',els:['encabezado','reimpresión','códigos','Editar','Compartir']},
+ {id:'UE-20',g:'lic',name:'Activación de licencia',file:'ui/screens/license/LicenseScreen.kt',build:37,comps:'LicenseScreen',els:['Device ID','COPIAR ID','estado de licencia','campo de token','PEGAR','IMPORTAR .LIC','ACTIVAR','escaneo QR']},
+ {id:'UE-21',g:'lic',name:'Bóveda de licencias',file:'ui/screens/license/LicenseVaultScreen.kt',build:20,comps:'LicenseVaultScreen',els:['lista de licencias','agregar','Instalar','Copiar','Compartir','Eliminar','exportar/importar']},
+ {id:'UE-22',g:'set',name:'Configuración y Sistema',file:'ui/screens/settings/SettingsScreen.kt',build:37,comps:'SettingsScreen, CollapsibleSettingsSection',els:['interruptor vertical','Audio','Impresoras','Datos de mina','Catálogo','Exportación','Licencia y Hardware ID','Información del sistema']},
+ {id:'UE-23',g:'set',name:'Audio y alertas',file:'ui/screens/settings/AudioSettingsCard.kt',build:19,comps:'AudioSettingsCard',els:['sonido','vibración','destello','volumen','stream MEDIA/ALARM','pruebas']},
+ {id:'UE-24',g:'set',name:'Perfiles de impresora',file:'ui/screens/settings/PrinterProfilesSettingsCard.kt',build:20,comps:'PrinterProfilesSettingsCard, PrinterProfileEditorDialog',els:['perfiles','alias','MAC','protocolo','ancho de papel','firmas','desglose','detalle','editor']},
+ {id:'UE-S1',g:'share',name:'Texto auto-escalable',file:'ui/common/AutoShrinkText.kt',build:'—',comps:'AutoShrinkText',els:['minTextSize','initialTextSize','ellipsis']},
+ {id:'UE-S2',g:'share',name:'Componentes de escaneo',file:'ui/common/CompactScanComponents.kt',build:'—',comps:'CompactScanMetricsRibbon, AlwaysActiveBarcodeField, HorizontalProductFilterRow, DuplicateBadgeChip',els:['franja de métricas','campo de código','filtros','insignia de duplicado']},
+ {id:'UE-S3',g:'share',name:'Feedback y diálogos',file:'ui/common/ScanFlashOverlay.kt · SoundFeedbackManager.kt · TwoStepDeleteDialog.kt · ProductEditDialog.kt · PrinterDialogs.kt',build:'—',comps:'ScanFlashOverlay, SoundFeedbackManager, diálogos reutilizables',els:['destello','sonido','borrado en 2 pasos','edición de producto','selector de impresora']},
+ {id:'UE-S4',g:'share',name:'ViewModels',file:'ui/screens/*/*ViewModel.kt',build:'—',comps:'Entradas, Despacho, Accesorios, Inventario, Sync, Settings, Devolución',els:['uiState','onBarcodeScanned','duplicados','guardado en Room','impresión']}
+];
+const groups={base:'Base',oper:'Módulos operativos',inv:'Inventario y sincronización',hist:'Historial',lic:'Licencia',set:'Configuración',share:'Compartidos y VM'};
+const grid=document.getElementById('grid'),q=document.getElementById('q'),sel=document.getElementById('group'),toast=document.getElementById('toast');
+function ref(u,el){return 'UE '+u.id.replace('UE-','')+(u.build!=='—'?' · v'+u.build:'')+' · '+u.name+(el?' · elemento '+el:'')+' · '+u.file}
+function copy(t){navigator.clipboard.writeText(t).then(()=>{toast.textContent='Copiado: '+t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200)})}
+function render(){
+  const term=q.value.toLowerCase().trim(),g=sel.value;
+  grid.innerHTML='';let lastG=null;
+  UES.filter(u=>(!g||u.g===g)&&(!term||(u.id+' '+u.name+' '+u.file+' '+u.comps+' '+u.els.join(' ')).toLowerCase().includes(term))).forEach(u=>{
+    if(u.g!==lastG){lastG=u.g;const d=document.createElement('div');d.className='group';d.textContent=groups[u.g];grid.appendChild(d)}
+    const c=document.createElement('div');c.className='ue';
+    c.innerHTML='<div class="top"><span class="id">'+u.id+'</span><span class="name">'+u.name+'</span><span class="build">v'+u.build+'</span></div>'+
+      '<div class="file">'+u.file+'</div><div class="comps"><b>Composables:</b> '+u.comps+'</div>'+
+      '<div class="elems">'+u.els.map(e=>'<span class="el">'+e+'</span>').join('')+'</div>'+
+      '<div class="ref"><span>'+ref(u)+'</span><button>copiar</button></div>';
+    c.onclick=ev=>{if(ev.target.tagName==='BUTTON'){copy(ref(u));return}if(ev.target.classList.contains('el')){copy(ref(u,ev.target.textContent));return}copy(ref(u))};
+    grid.appendChild(c)
+  })
+}
+q.oninput=render;sel.onchange=render;render();
+</script>
+</body>
+</html>

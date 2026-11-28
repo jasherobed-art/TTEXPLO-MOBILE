@@ -4,7 +4,16 @@ Este archivo registra todas las versiones del proyecto usando **Versionado Semá
 
 ---
 
-## [v2.7.2] — Build 37 (Actual)
+## [v2.8.0] — Build 38 (Actual)
+### Nuevo
+- **Centro de descarga por WiFi:** la terminal enciende un servidor local con PIN de 6 dígitos. Desde una PC en la misma red se abre `http://IP:8080` y se descargan vales, inventario y catálogo (CSV) o el paquete completo (JSON).
+- **Varios clientes a la vez:** el servidor atiende dos o más PC simultáneas.
+- **Foco de estado:** verde “CONECTADO” cuando una PC está enlazada, ámbar “ESPERANDO CONEXIÓN” y gris “SERVIDOR APAGADO”.
+- **Solo lectura:** la descarga no permite editar ni borrar desde la PC.
+
+---
+
+## [v2.7.2] — Build 37
 ### Mejorado (UI, revisión del campo)
 - **Piso de legibilidad:** `AutoShrinkText` ya no reduce texto por debajo de 12 sp, para que códigos y etiquetas se lean con poca luz y EPI.
 - **Colores de estado:** los mensajes de licencia y exportación usan tokens de texto (`MineErrorText` / `MineSuccessText`) en lugar de colores de relleno, con mejor contraste.

@@ -1,6 +1,6 @@
 # Manual del usuario — T&T Explo Mobile
 
-T&T Explo Mobile 2.7.2 (build 37) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
+T&T Explo Mobile 2.8.0 (build 38) es la app del polvorín. Sirve para lo de todos los días: activar la terminal, capturar vales, ver existencias y pasar datos a otra terminal.
 
 Funciona sin internet. Lo que capturas queda guardado en la terminal y se comparte con QR o con un archivo JSON.
 
@@ -31,7 +31,7 @@ Tu licencia define qué módulos puedes usar. Tu administrador elige el perfil: 
 
 ## Pantalla de inicio
 
-Arriba verás `v2.7.2`. Debajo están los módulos que incluye tu licencia. Los que no cubre no aparecen. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
+Arriba verás `v2.8.0`. Debajo están los módulos que incluye tu licencia. Los que no cubre no aparecen. Tocas y entras. La app se abre siempre en vertical; no gira a horizontal.
 
 | Módulo | Para qué lo usas |
 |---|---|
@@ -183,6 +183,16 @@ En **Historial** ves las sesiones y los conflictos. Toca una fila para ver el de
 Solo ves los vales de los módulos que incluye tu licencia.
 
 Borrar no es de un toque: pide un código de 4 dígitos. Esa molestia es a propósito.
+
+## Descargar información por WiFi
+
+1. Abre **9. Configuración** → **CENTRO DE DESCARGA (WiFi)**.
+2. Toca **ENCENDER**. Verás una dirección `http://...:8080` y un PIN de 6 dígitos.
+3. En la PC, conectada a la misma red WiFi, abre esa dirección en el navegador.
+4. Escribe el PIN y entra.
+5. Descarga vales, inventario, catálogo (CSV) o el paquete completo (JSON).
+
+El foco se pone **verde** cuando una PC está conectada. Pueden conectarse **varias PC al mismo tiempo**. El servidor solo funciona mientras esa pantalla está abierta y es de **solo lectura**: desde la PC no se edita ni se borra nada.
 
 ## Configuración
 
@@ -595,7 +605,7 @@ Tu licencia no incluye ese módulo. Solo se muestran los módulos cubiertos por 
 Si algo falla, manda esto:
 
 - Device ID de la terminal.
-- Versión, por ejemplo `v2.7.2 (Build 37)`.
+- Versión, por ejemplo `v2.8.0 (Build 38)`.
 - Número de vale o ID de producto.
 - Hora del evento y nombre de la mina.
 - Captura del error, si salió.

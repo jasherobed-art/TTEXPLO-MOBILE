@@ -51,6 +51,7 @@ import com.ttexplo.mobile.ui.screens.despacho.DespachoHeaderScreen
 import com.ttexplo.mobile.ui.screens.despacho.DespachoScanScreen
 import com.ttexplo.mobile.ui.screens.despacho.DespachoViewModel
 import com.ttexplo.mobile.ui.screens.devolucion.DevolucionScreen
+import com.ttexplo.mobile.ui.screens.download.DownloadCenterScreen
 import com.ttexplo.mobile.ui.screens.entradas.EntradasHeaderScreen
 import com.ttexplo.mobile.ui.screens.entradas.EntradasScanScreen
 import com.ttexplo.mobile.ui.screens.entradas.EntradasViewModel
@@ -180,7 +181,8 @@ fun TTExploAppNavigation() {
                 onNavigateToBoxCount = { navController.navigate(Screen.BoxCount.route) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToHistory = { navController.navigate(Screen.ValesHistory.route) },
-                onNavigateToLicense = { navController.navigate(Screen.License.createRoute(canBack = true)) }
+                onNavigateToLicense = { navController.navigate(Screen.License.createRoute(canBack = true)) },
+                onOpenDownloadCenter = { navController.navigate(Screen.DownloadCenter.route) }
             )
         }
 
@@ -411,8 +413,13 @@ fun TTExploAppNavigation() {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateCatalog = { navController.navigate(Screen.CatalogManagement.route) },
                 onNavigateHistory = { navController.navigate(Screen.ValesHistory.route) },
-                onNavigateToLicense = { navController.navigate(Screen.License.createRoute(canBack = true)) }
+                onNavigateToLicense = { navController.navigate(Screen.License.createRoute(canBack = true)) },
+                onNavigateDownloadCenter = { navController.navigate(Screen.DownloadCenter.route) }
             )
+        }
+
+        composable(Screen.DownloadCenter.route) {
+            DownloadCenterScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         // 7. CATALOG CRUD MODULE
