@@ -166,12 +166,15 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
+                        AutoShrinkText(
                             text = url,
+                            modifier = Modifier.weight(1f),
                             color = MineSafetyYellow,
-                            fontFamily = FontFamily.Monospace,
+                            initialTextSize = 14.sp,
+                            minTextSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
                         )
                         TextButton(onClick = {
                             val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -265,14 +268,17 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("QUÉ PUEDES DESCARGAR", color = MineSafetyYellow, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("• Vales de entradas, salidas, devoluciones y accesorios (CSV)", color = MineTextSecondary, fontSize = 12.sp)
-                    Text("• Inventario y movimientos (CSV)", color = MineTextSecondary, fontSize = 12.sp)
-                    Text("• Catálogo de productos (CSV)", color = MineTextSecondary, fontSize = 12.sp)
-                    Text("• Paquete completo (JSON)", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("QUÉ PUEDES HACER DESDE LA PC", color = MineSafetyYellow, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("• Consultar y descargar vales (CSV y .txt consolidado)", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("• Descargar inventario y movimientos (CSV)", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("• Consultar, agregar y editar el catálogo, y subir CSV", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("• Editar vales y fechas; los cambios se aplican al .txt", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("• Imprimir vales en hoja normal (A4)", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("• Borrar vales con un código de confirmación de 4 dígitos", color = MineTextSecondary, fontSize = 12.sp)
+                    Text("• Descargar el paquete completo (JSON)", color = MineTextSecondary, fontSize = 12.sp)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Desde la PC también puedes actualizar el catálogo y borrar vales (con confirmación).",
+                        "El servidor se apaga solo a las 2 horas; puedes extenderlo o apagarlo cuando quieras.",
                         color = MineTextMuted,
                         fontSize = 11.sp
                     )
@@ -313,9 +319,9 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
 
     if (showTutorial) {
         val steps = listOf(
-            Triple("1. Enciende el servidor", "Toca ENCENDER. La terminal te da una dirección y un PIN.", Icons.Default.Wifi),
+            Triple("1. Enciende el servidor", "Toca ENCENDER. Verás la dirección, el PIN y el tiempo restante (2 horas).", Icons.Default.Wifi),
             Triple("2. Conéctate desde la PC", "En la PC, en la misma red WiFi, abre http://IP:8080 y escribe el PIN.", Icons.Default.Computer),
-            Triple("3. Descarga tus datos", "Vales (.txt y CSV), inventario y catálogo. Varias PC pueden conectarse a la vez.", Icons.Default.CloudDownload)
+            Triple("3. Descarga y administra", "Descarga vales (.txt y CSV), consulta o edita el catálogo, edita vales e imprime en A4. Varias PC a la vez.", Icons.Default.CloudDownload)
         )
         val stepColors = listOf(MineAgentCyan, MineSafetyYellow, MineSuccessGreenLight)
         Dialog(onDismissRequest = { closeTutorial() }) {
@@ -326,7 +332,7 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "CÓMO DESCARGAR POR WIFI",
+                        "CÓMO USAR EL CENTRO DE DESCARGA",
                         color = MineSafetyYellow,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 15.sp
