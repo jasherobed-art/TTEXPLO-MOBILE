@@ -14,7 +14,6 @@ import java.net.Socket
 import java.net.URLDecoder
 import java.util.UUID
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
 /**
@@ -35,10 +34,11 @@ class DownloadServer(
         context.applicationContext
     )
     private val sessionToken = UUID.randomUUID().toString()
-    private val clientCount = AtomicInteger(0)
+    private val seenClients = java.util.concurrent.ConcurrentHashMap<String, Long>()
     @Volatile private var pool: java.util.concurrent.ExecutorService? = null
     @Volatile private var serverSocket: ServerSocket? = null
     @Volatile private var acceptThread: Thread? = null
+    @Volatile private var presenceThread: Thread? = null
 
     @Volatile var running: Boolean = false
         private set
@@ -80,6 +80,16 @@ class DownloadServer(
                 }
             }
         }.also { it.isDaemon = true; it.start() }
+        presenceThread = Thread {
+            while (running) {
+                try {
+                    Thread.sleep(PRESENCE_POLL_MS)
+                } catch (_: InterruptedException) {
+                    break
+                }
+                pruneClients()
+            }
+        }.also { it.isDaemon = true; it.start() }
     }
 
     fun stop() {
@@ -89,12 +99,13 @@ class DownloadServer(
         acceptThread = null
         runCatching { pool?.shutdownNow() }
         pool = null
+        runCatching { presenceThread?.interrupt() }
+        presenceThread = null
+        seenClients.clear()
         clients.value = 0
     }
 
     private fun handle(socket: Socket) {
-        clients.value = clientCount.incrementAndGet()
-        lastClientAt.value = System.currentTimeMillis()
         try {
             socket.use { s ->
                 s.soTimeout = 10_000
@@ -130,6 +141,10 @@ class DownloadServer(
 
                 val authorized = cookie.contains("ttex_session=$sessionToken") ||
                     queryParams["pin"] == pin
+                if (authorized) {
+                    markClient(s.inetAddress?.hostAddress ?: "local")
+                    lastClientAt.value = System.currentTimeMillis()
+                }
 
                 when {
                     path == "/login" && method == "POST" -> {
@@ -149,6 +164,9 @@ class DownloadServer(
                     }
                     path == "/login" || !authorized -> {
                         writeResponse(s, 200, "text/html; charset=utf-8", loginPage(null))
+                    }
+                    path == "/api/ping" -> {
+                        writeResponse(s, 200, "application/json; charset=utf-8", "{\"ok\":true}")
                     }
                     path == "/api/summary" -> {
                         val json = runBlocking { data.summaryJson() }
@@ -189,8 +207,6 @@ class DownloadServer(
             }
         } catch (_: Exception) {
             // Cliente desconectado o petición inválida: se ignora.
-        } finally {
-            clients.value = clientCount.decrementAndGet()
         }
     }
 
@@ -227,6 +243,17 @@ class DownloadServer(
         out.flush()
     }
 
+    private fun markClient(ip: String) {
+        seenClients[ip] = System.currentTimeMillis()
+        pruneClients()
+    }
+
+    private fun pruneClients() {
+        val cutoff = System.currentTimeMillis() - PRESENCE_TTL_MS
+        seenClients.entries.removeIf { it.value < cutoff }
+        clients.value = seenClients.size
+    }
+
     private fun parseQuery(raw: String): Map<String, String> {
         if (raw.isBlank()) return emptyMap()
         return raw.split('&').mapNotNull {
@@ -238,6 +265,9 @@ class DownloadServer(
     }
 
     companion object {
+        private const val PRESENCE_TTL_MS = 45_000L
+        private const val PRESENCE_POLL_MS = 15_000L
+
         fun deviceIp(): String {
             return try {
                 NetworkInterface.getNetworkInterfaces().toList()
@@ -388,6 +418,7 @@ fetch('/api/vales').then(r=>r.json()).then(list=>{
    a.append(t,f,r,d);g.appendChild(a);
  }
 }).catch(()=>{document.getElementById('vales').innerHTML='<div class="card">No se pudieron cargar los vales.</div>'});
+setInterval(()=>fetch('/api/ping').catch(()=>{}),15000);
 </script></body></html>
 """.trimIndent()
 }

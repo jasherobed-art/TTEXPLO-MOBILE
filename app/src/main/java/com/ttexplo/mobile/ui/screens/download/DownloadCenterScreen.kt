@@ -253,7 +253,7 @@ fun DownloadCenterScreen(onNavigateBack: () -> Unit) {
                     )
                     if (running) {
                         Text(
-                            "Clientes conectados ahora: $clients",
+                            "PC conectadas ahora: $clients",
                             color = MineSuccessGreenLight,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
