@@ -186,18 +186,29 @@ class DownloadServer(
         clients.value = 0
     }
 
+    private fun readHttpLine(input: java.io.InputStream): String? {
+        val buf = java.io.ByteArrayOutputStream()
+        while (true) {
+            val b = input.read()
+            if (b < 0) return if (buf.size() == 0) null else buf.toString("UTF-8")
+            if (b == '\n'.code) return buf.toString("UTF-8").removeSuffix("\r")
+            buf.write(b)
+            if (buf.size() > 16_384) return null
+        }
+    }
+
     private fun handle(socket: Socket) {
         try {
             socket.use { s ->
                 s.soTimeout = 10_000
-                val reader = s.getInputStream().bufferedReader(Charsets.UTF_8)
-                val requestLine = reader.readLine() ?: return
+                val input = s.getInputStream()
+                val requestLine = readHttpLine(input) ?: return
                 val parts = requestLine.split(' ')
                 val method = parts.getOrNull(0) ?: "GET"
                 val rawPath = parts.getOrNull(1) ?: "/"
                 val headers = mutableMapOf<String, String>()
                 while (true) {
-                    val line = reader.readLine() ?: break
+                    val line = readHttpLine(input) ?: break
                     if (line.isEmpty()) break
                     val idx = line.indexOf(':')
                     if (idx > 0) headers[line.substring(0, idx).trim().lowercase()] =
@@ -205,14 +216,15 @@ class DownloadServer(
                 }
                 val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
                 val body = if (contentLength in 1..MAX_BODY) {
-                    val chars = CharArray(contentLength)
+                    // Content-Length son bytes, no caracteres: leer bytes y decodificar UTF-8.
+                    val bytes = ByteArray(contentLength)
                     var read = 0
                     while (read < contentLength) {
-                        val n = reader.read(chars, read, contentLength - read)
+                        val n = input.read(bytes, read, contentLength - read)
                         if (n < 0) break
                         read += n
                     }
-                    String(chars, 0, read)
+                    String(bytes, 0, read, Charsets.UTF_8)
                 } else ""
 
                 val path = rawPath.substringBefore('?')
@@ -389,19 +401,46 @@ class DownloadServer(
                             writeResponse(s, 200, "application/json; charset=utf-8", json)
                         }
                     }
+                    path == "/api/vale-detalle" && method == "POST" -> {
+                        if (contentLength > MAX_BODY) {
+                            writeResponse(s, 413, "application/json; charset=utf-8",
+                                "{\"error\":\"detalle_muy_grande\"}")
+                        } else {
+                            val json = runBlocking { data.recalcDetail(body) }
+                            if (json == null) {
+                                writeResponse(s, 400, "application/json; charset=utf-8",
+                                    "{\"error\":\"detalle_invalido\"}")
+                            } else {
+                                writeResponse(s, 200, "application/json; charset=utf-8", json)
+                            }
+                        }
+                    }
                     path == "/api/vales" -> {
                         writeResponse(s, 200, "application/json; charset=utf-8", runBlocking { data.valesJson() })
                     }
                     path == "/vale-a4" -> {
-                        val key = queryParams["key"].orEmpty()
-                        val json = if (key.isBlank()) null else runBlocking { data.valeDetail(key) }
-                        if (json == null) {
-                            writeResponse(s, 404, "text/plain; charset=utf-8", "Vale no encontrado")
-                        } else {
+                        if (method == "POST" && contentLength > MAX_BODY) {
                             writeResponse(
-                                s, 200, "text/html; charset=utf-8",
-                                valeA4Page(json, autoPrint = queryParams["print"] == "1")
+                                s, 413, "text/plain; charset=utf-8",
+                                "El vale es demasiado grande para imprimir con ediciones. Usa el .txt."
                             )
+                        } else {
+                            val json = if (method == "POST") {
+                                parseQuery(body)["detalle"]?.let {
+                                    runBlocking { data.recalcDetail(it) }
+                                }
+                            } else {
+                                val key = queryParams["key"].orEmpty()
+                                if (key.isBlank()) null else runBlocking { data.valeDetail(key) }
+                            }
+                            if (json == null) {
+                                writeResponse(s, 404, "text/plain; charset=utf-8", "Vale no encontrado")
+                            } else {
+                                writeResponse(
+                                    s, 200, "text/html; charset=utf-8",
+                                    valeA4Page(json, autoPrint = method == "GET" && queryParams["print"] == "1")
+                                )
+                            }
                         }
                     }
                     path == "/vale" -> {
@@ -450,7 +489,8 @@ class DownloadServer(
     ) {
         val bytes = body.toByteArray(Charsets.UTF_8)
         val reason = when (status) {
-            200 -> "OK"; 302 -> "Found"; 401 -> "Unauthorized"; 404 -> "Not Found"; else -> "OK"
+            200 -> "OK"; 302 -> "Found"; 400 -> "Bad Request"; 401 -> "Unauthorized"
+            404 -> "Not Found"; 413 -> "Payload Too Large"; else -> "OK"
         }
         val out: OutputStream = socket.getOutputStream()
         val sb = StringBuilder()
@@ -619,7 +659,11 @@ ${if (autoPrint) "<script>window.addEventListener('load',function(){window.print
         }
 
         val maxLen = if (codigos == null) 0 else (0 until codigos.length())
-            .maxOfOrNull { codigos.optJSONObject(it)?.optString("codigo")?.length ?: 0 } ?: 0
+            .maxOfOrNull {
+                val o = codigos.optJSONObject(it)
+                val base = o?.optString("codigo")?.length ?: 0
+                if (esAccesorio) base + 3 + (o?.optInt("cantidad", 1) ?: 1).toString().length else base
+            } ?: 0
 
         // Elige orientación y columnas para gastar el menor número de hojas.
         val cellW = maxLen * 1.38 + 2.8

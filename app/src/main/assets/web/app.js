@@ -8,6 +8,13 @@
     edits: {}, delKeys: [], sort: { key: 'fecha', dir: 'desc' },
     originalCodes: []
   };
+  // Las correcciones viven en la sesión: avisar antes de cerrar o recargar.
+  window.addEventListener('beforeunload', function (e) {
+    if (Object.keys(state.edits).length) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
   var TIPOS = [
     ['TODOS', 'Todos'], ['ENTRADA', 'Entradas'], ['DESPACHO', 'Salidas'],
     ['ACCESORIOS', 'Accesorios'], ['DEVOLUCION', 'Devoluciones'], ['CONTEO', 'Conteos']
@@ -197,6 +204,46 @@
       : (d.codigos || []).length;
   }
 
+  // Totales de la sesión: al agregar o borrar códigos, cajas/sacos/cartuchos deben seguirlos.
+  function recalcTotals(d) {
+    if (!d.totales || d.tipo === 'CONTEO') return;
+    var total = totalDe(d);
+    d.totales.piezas = total;
+    if (d.tipo === 'ACCESORIOS') {
+      d.totales.accesorios = total;
+      return;
+    }
+    var cajas = 0, sacos = 0, cartuchos = 0;
+    (d.codigos || []).forEach(function (c) {
+      var n = String(c.codigo || '').trim().length;
+      if (n === 30) cajas++;
+      else if (n === 18) sacos++;
+      else if (n === 16) cartuchos++;
+    });
+    d.totales.cajas = cajas;
+    d.totales.sacos = sacos;
+    d.totales.cartuchos = cartuchos;
+  }
+
+  // La terminal resuelve producto y empaque de los códigos nuevos; la pantalla usa el mismo cálculo.
+  async function recalcular(d) {
+    try {
+      var r = await fetch('/api/vale-detalle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(d)
+      });
+      if (r.status === 401) { location.href = '/login'; return d; }
+      if (!r.ok) return d;
+      var j = await r.json();
+      if (j.items) d.items = j.items;
+      if (j.totales) d.totales = j.totales;
+    } catch (e) {
+      // Sin conexión: se conservan los totales calculados en el navegador.
+    }
+    return d;
+  }
+
   function resumenHtml(d) {
     var t = d.totales || {};
     var total = t.piezas || 0;
@@ -225,9 +272,7 @@
     }
     if (edit.codigos) d.codigos = edit.codigos.map(function (c) { return Object.assign({}, c); });
     if (d.totales) {
-      var total = totalDe(d);
-      d.totales.piezas = total;
-      if (d.tipo === 'ACCESORIOS') d.totales.accesorios = total;
+      recalcTotals(d);
     }
     return d;
   }
@@ -306,6 +351,15 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-del]'), function (b) {
       b.onclick = function () {
         state.draft.codigos.splice(parseInt(b.dataset.del, 10), 1);
+        recalcTotals(state.draft);
+        renderDetail(state.draft);
+      };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-qty]'), function (i) {
+      i.onchange = function () {
+        var c = state.draft.codigos[parseInt(i.dataset.qty, 10)];
+        if (c) c.cantidad = Math.max(1, parseInt(i.value, 10) || 1);
+        recalcTotals(state.draft);
         renderDetail(state.draft);
       };
     });
@@ -324,9 +378,9 @@
       state.draft.codigos.push({
         codigo: code,
         hora: hora,
-        cantidad: $('#newQty') ? (parseInt($('#newQty').value, 10) || 1) : 1
+        cantidad: $('#newQty') ? Math.max(1, parseInt($('#newQty').value, 10) || 1) : 1
       });
-      state.draft.totales.piezas = totalDe(state.draft);
+      recalcTotals(state.draft);
       renderDetail(state.draft);
     };
   }
@@ -367,6 +421,7 @@
       var d = await api('/api/vale?key=' + encodeURIComponent(key));
       if (state.abierto !== key) return;
       d = applyLocal(d, state.edits[key]);
+      if (state.edits[key]) d = await recalcular(d);
       state.originalCodes = (d.codigos || []).map(function (c) {
         return String(c.codigo || '').trim().toUpperCase();
       });
@@ -390,7 +445,7 @@
     if (state.foco && state.foco.focus) state.foco.focus();
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     var d = state.draft;
     Array.prototype.forEach.call(document.querySelectorAll('[data-field]'), function (i) {
       var c = d.campos.find(function (x) { return x.field === i.dataset.field; });
@@ -406,7 +461,7 @@
     });
     Array.prototype.forEach.call(document.querySelectorAll('[data-qty]'), function (i) {
       var c = d.codigos[parseInt(i.dataset.qty, 10)];
-      if (c) c.cantidad = parseInt(i.value, 10) || 1;
+      if (c) c.cantidad = Math.max(1, parseInt(i.value, 10) || 1);
     });
     var datos = {};
     d.campos.forEach(function (c) { datos[c.field] = c.value; });
@@ -415,7 +470,7 @@
     for (var j = 0; j < d.codigos.length; j++) {
       var hora = normStamp(d.codigos[j].hora, fechaVale);
       if (hora === null) { toast('Fecha y hora inválidas en el código ' + (d.codigos[j].codigo || '') + ': usa YYYY-MM-DD HH:MM:SS'); return; }
-      codigos.push({ codigo: d.codigos[j].codigo, hora: hora, cantidad: d.codigos[j].cantidad || 1 });
+      codigos.push({ codigo: d.codigos[j].codigo, hora: hora, cantidad: Math.max(1, parseInt(d.codigos[j].cantidad, 10) || 1) });
     }
     var origCount = {};
     (state.originalCodes || []).forEach(function (k) {
@@ -459,8 +514,8 @@
     }
     d.datos = d.campos.map(function (c) { return { label: c.label, value: c.value }; });
     d.codigos = codigos;
-    d.totales.piezas = totalDe(d);
-    if (d.tipo === 'ACCESORIOS') d.totales.accesorios = d.totales.piezas;
+    recalcTotals(d);
+    d = await recalcular(d);
     state.detalle = d;
     state.originalCodes = codigos.map(function (c) {
       return String(c.codigo || '').trim().toUpperCase();
@@ -999,8 +1054,25 @@
       if (state.abierto) abrirBorrado([state.abierto]);
     });
     $('#pPrint').addEventListener('click', function () {
-      if (!state.abierto) return;
-      window.open('/vale-a4?key=' + encodeURIComponent(state.abierto), '_blank');
+      if (!state.abierto || !state.detalle) return;
+      // Sin correcciones: se imprime el vale tal como está en la terminal.
+      if (!state.edits[state.abierto]) {
+        window.open('/vale-a4?key=' + encodeURIComponent(state.abierto), '_blank');
+        return;
+      }
+      // Con correcciones: la hoja se arma con el detalle de la sesión.
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/vale-a4';
+      form.target = '_blank';
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'detalle';
+      input.value = JSON.stringify(state.detalle);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      setTimeout(function () { form.remove(); }, 1000);
     });
     $('#dlgDelCancel').addEventListener('click', function () { $('#dlgDel').close(); });
     $('#dlgDelOk').addEventListener('click', confirmarBorrado);

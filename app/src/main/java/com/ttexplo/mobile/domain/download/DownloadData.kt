@@ -14,6 +14,7 @@ import com.ttexplo.mobile.domain.model.DespachoRecord
 import com.ttexplo.mobile.domain.model.DevolucionRecord
 import com.ttexplo.mobile.domain.model.EntradaRecord
 import com.ttexplo.mobile.domain.model.ScannedCodeRecord
+import com.ttexplo.mobile.domain.model.ProductClassifier
 import com.ttexplo.mobile.domain.model.StandardUnits
 import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import com.ttexplo.mobile.printer.ValePrintHelper
@@ -34,6 +35,8 @@ class DownloadData(
 
     private fun esc(value: String?): String =
         "\"" + (value ?: "").replace("\"", "\"\"") + "\""
+
+    private val accessoryKeyRegex = Regex("^X\\d{6}$")
 
     private fun csvRow(vararg cells: String?): String =
         cells.joinToString(",") { esc(it) } + "\r\n"
@@ -480,12 +483,90 @@ class DownloadData(
     }
 
     private suspend fun accessoryName(code: String): String {
-        val key = if (code.length > 7 && code.take(7).matches(Regex("^X\\d{6}$"))) code.take(7) else code
+        val key = if (code.length > 7 && code.take(7).matches(accessoryKeyRegex)) code.take(7) else code
         val product = db.productoDao().getById(key)
             ?: db.productoDao().getByCodBarras(key)
             ?: db.productoDao().getByCodBarras(code)
             ?: db.productoDao().getById(code)
         return product?.producto ?: code
+    }
+
+    /**
+     * Detalle para imprimir. Recalcula materiales y totales desde los códigos para que
+     * la hoja refleje las correcciones de la sesión web y no solo la captura original.
+     */
+    suspend fun recalcDetail(json: String): String? {
+        val root = runCatching { JSONObject(json) }.getOrNull() ?: return null
+        val tipo = root.optString("tipo").uppercase()
+        if (tipo.isBlank()) return null
+        if (tipo == "CONTEO") return root.toString()
+
+        val codigos = root.optJSONArray("codigos") ?: JSONArray()
+        val productos = db.productoDao().getAll()
+        val porId = HashMap<String, String>()
+        val porBarras = HashMap<String, String>()
+        productos.forEach { p ->
+            val nombre = p.producto.trim().ifBlank { p.idProducto }
+            porId[p.idProducto.uppercase()] = nombre
+            porBarras[p.codBarras.uppercase()] = nombre
+        }
+        val agrupados = LinkedHashMap<Pair<String, String>, Int>()
+        val totales = JSONObject()
+        if (tipo == "ACCESORIOS") {
+            var total = 0
+            for (i in 0 until codigos.length()) {
+                val c = codigos.optJSONObject(i) ?: continue
+                val code = c.optString("codigo").trim()
+                if (code.isEmpty()) continue
+                val cantidad = kotlin.math.abs(c.optInt("cantidad", 1)).coerceAtLeast(1)
+                val clave = if (code.length > 7 && code.take(7).matches(accessoryKeyRegex)) {
+                    code.take(7)
+                } else {
+                    code
+                }.uppercase()
+                val nombre = porId[clave] ?: porBarras[clave]
+                    ?: porBarras[code.uppercase()] ?: porId[code.uppercase()] ?: code
+                val key = nombre to "ACCESORIO"
+                agrupados[key] = (agrupados[key] ?: 0) + cantidad
+                total += cantidad
+            }
+            totales.put("piezas", total).put("cajas", 0).put("sacos", 0)
+                .put("cartuchos", 0).put("accesorios", total)
+        } else {
+            var piezas = 0
+            var cajas = 0
+            var sacos = 0
+            var cartuchos = 0
+            for (i in 0 until codigos.length()) {
+                val c = codigos.optJSONObject(i) ?: continue
+                val code = c.optString("codigo").trim()
+                if (code.isEmpty()) continue
+                val prefix = ProductClassifier.extractPrefix(code).uppercase()
+                val nombre = porId[prefix] ?: porBarras[prefix]
+                    ?: porBarras[code.uppercase()] ?: porId[code.uppercase()]
+                    ?: "Material ${code.take(3)}"
+                val empaque = empaqueFor(code)
+                val key = nombre to empaque
+                agrupados[key] = (agrupados[key] ?: 0) + 1
+                piezas++
+                when (empaque) {
+                    "CAJA" -> cajas++
+                    "SACO" -> sacos++
+                    "CARTUCHO" -> cartuchos++
+                }
+            }
+            totales.put("piezas", piezas).put("cajas", cajas).put("sacos", sacos)
+                .put("cartuchos", cartuchos).put("accesorios", 0)
+        }
+
+        val items = JSONArray()
+        agrupados.forEach { (k, n) ->
+            items.put(JSONObject().put("nombre", k.first).put("empaque", k.second).put("cantidad", n))
+        }
+        root.put("items", items)
+        root.put("totales", totales)
+        root.put("alerta", false)
+        return root.toString()
     }
 
     /** Detalle estructurado de un vale para el panel web. */
