@@ -5,7 +5,8 @@
   var state = {
     vales: [], tipo: 'TODOS', q: '', sel: new Set(),
     abierto: null, detalle: null, draft: null, editando: false, foco: null,
-    edits: {}, delKeys: [], sort: { key: 'fecha', dir: 'desc' }
+    edits: {}, delKeys: [], sort: { key: 'fecha', dir: 'desc' },
+    originalCodes: []
   };
   var TIPOS = [
     ['TODOS', 'Todos'], ['ENTRADA', 'Entradas'], ['DESPACHO', 'Salidas'],
@@ -366,6 +367,9 @@
       var d = await api('/api/vale?key=' + encodeURIComponent(key));
       if (state.abierto !== key) return;
       d = applyLocal(d, state.edits[key]);
+      state.originalCodes = (d.codigos || []).map(function (c) {
+        return String(c.codigo || '').trim().toUpperCase();
+      });
       state.detalle = d;
       state.draft = clone(d);
       state.editando = false;
@@ -413,20 +417,35 @@
       if (hora === null) { toast('Fecha y hora inválidas en el código ' + (d.codigos[j].codigo || '') + ': usa YYYY-MM-DD HH:MM:SS'); return; }
       codigos.push({ codigo: d.codigos[j].codigo, hora: hora, cantidad: d.codigos[j].cantidad || 1 });
     }
-    var seen = {};
-    var avisoDuplicado = '';
+    var origCount = {};
+    (state.originalCodes || []).forEach(function (k) {
+      origCount[k] = (origCount[k] || 0) + 1;
+    });
+    var draftCount = {};
     for (var i = 0; i < codigos.length; i++) {
       var c = String(codigos[i].codigo || '').trim().toUpperCase();
       if (!c) { toast('Hay un código vacío'); return; }
-      if (seen[c] && !avisoDuplicado) {
+      draftCount[c] = (draftCount[c] || 0) + 1;
+    }
+    var avisoDuplicado = '';
+    Object.keys(draftCount).forEach(function (c) {
+      var extra = draftCount[c] - (origCount[c] || 0);
+      if (extra <= 0) return;
+      if ((origCount[c] || 0) > 0) {
+        // Se agregó otra vez un código que ya existía en el vale.
+        if (!avisoDuplicado) avisoDuplicado = 'Código ' + c + ' repetido en este vale';
+        return;
+      }
+      // Código nuevo: solo ahí se busca en los demás vales de la terminal.
+      var other = codeInOtherVale(c, state.abierto);
+      if (other) {
+        if (!avisoDuplicado) {
+          avisoDuplicado = 'Código ' + c + ' repetido en ' + (other.tipoLabel || other.tipo) + ' ' + (other.folio || other.key);
+        }
+      } else if (extra > 1 && !avisoDuplicado) {
         avisoDuplicado = 'Código ' + c + ' repetido en este vale';
       }
-      seen[c] = true;
-      var other = codeInOtherVale(c, state.abierto);
-      if (other && !avisoDuplicado) {
-        avisoDuplicado = 'Código ' + c + ' repetido en ' + (other.tipoLabel || other.tipo) + ' ' + (other.folio || other.key);
-      }
-    }
+    });
     if (avisoDuplicado && !confirm(avisoDuplicado + '.\n\n¿Guardar de todos modos?')) return;
     state.edits[state.abierto] = { datos: datos, codigos: codigos };
     var prev = {};
@@ -443,6 +462,9 @@
     d.totales.piezas = totalDe(d);
     if (d.tipo === 'ACCESORIOS') d.totales.accesorios = d.totales.piezas;
     state.detalle = d;
+    state.originalCodes = codigos.map(function (c) {
+      return String(c.codigo || '').trim().toUpperCase();
+    });
     state.editando = false;
     renderDetail(d);
 
