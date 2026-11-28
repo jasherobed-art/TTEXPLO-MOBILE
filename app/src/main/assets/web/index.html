@@ -10,65 +10,161 @@
 </head>
 <body>
 <header>
-  <div class="brand">T&amp;T EXPLO <span>· Centro de descargas</span></div>
-  <nav>
+  <h1 class="brand">T&amp;T EXPLO <span>Centro de descargas</span></h1>
+  <nav aria-label="Secciones">
     <button type="button" class="on" id="tabDl" aria-pressed="true">Descargas</button>
     <button type="button" id="tabTools" aria-pressed="false">Herramientas</button>
   </nav>
-  <div class="status"><span class="dot" aria-hidden="true"></span>EN VIVO</div>
+  <div class="status"><span class="dot" id="dot" aria-hidden="true"></span><span id="sync">Conectado</span></div>
 </header>
 
 <main>
   <section id="viewDl">
-    <div class="kpis" id="kpis" aria-label="Resumen"></div>
-
     <div class="toolbar">
       <div class="chips" id="chips" role="group" aria-label="Filtrar por tipo"></div>
-      <label class="sr-only" for="q" hidden>Buscar vales</label>
-      <input class="search" id="q" type="search" autocomplete="off" placeholder="Buscar folio, empresa o fecha…">
+      <label class="sr-only" for="q">Buscar vales por folio, empresa, fecha o código</label>
+      <input class="search" id="q" type="search" autocomplete="off" placeholder="Buscar folio, empresa, fecha o código…">
       <span class="count" id="regs" role="status" aria-live="polite"></span>
     </div>
 
     <section class="card" aria-labelledby="listH">
       <div class="list-hd">
         <h2 id="listH">Vales registrados</h2>
-        <label class="check-all"><input type="checkbox" id="all">Seleccionar filtrados</label>
+        <label class="check-all"><input type="checkbox" id="all" aria-label="Seleccionar los vales visibles"><span class="check-all__txt">Seleccionar visibles</span></label>
         <span class="sp"></span>
         <span class="count" id="selCount" role="status" aria-live="polite">0 marcados</span>
       </div>
-      <div id="list" class="list" aria-live="polite"></div>
+      <div class="thead" aria-hidden="true">
+        <span>Tipo</span><span>Folio / detalle</span><span>Fecha</span><span>Piezas</span>
+      </div>
+      <div id="list" class="list"></div>
     </section>
   </section>
 
   <section id="viewTools" hidden>
     <div class="card tools">
       <h2>Alto explosivo y agente</h2>
-      <p class="note">Productos de alto explosivo y agentes de voladura. Descarga en CSV.</p>
-      <a class="btn btn--primary" href="/export/catalogo-alto.csv">Descargar alto y agente (CSV)</a>
+      <p class="note">Productos de alto explosivo y agentes de voladura.</p>
+      <a class="btn btn--ghost" href="/export/catalogo-alto.csv">Descargar CSV</a>
+      <div class="sep"></div>
+      <h3>Actualizar catálogo</h3>
+      <p class="note">Sube el CSV con el formato del catálogo: <code>IdProducto, Producto, Presentacion, noSAP, Unidad, Cantidad, CodBarras, peso, PG, PU, tipo</code>. Se aplica en la terminal al instante y las unidades se estandarizan a KG, MTS o PZA.</p>
+      <div class="upload">
+        <input type="file" id="fileAlto" accept=".csv,text/csv" aria-label="Archivo CSV de alto explosivo y agente">
+        <button type="button" class="btn btn--primary" id="upAlto" disabled>Subir y actualizar</button>
+      </div>
+      <p class="note" id="msgAlto" role="status" aria-live="polite"></p>
+      <div class="sep"></div>
+      <h3>Consultar catálogo</h3>
+      <div class="cat-hd">
+        <input class="search cat-q" id="qAlto" type="search" autocomplete="off" placeholder="Buscar por nombre, ID o código…" aria-label="Buscar en el catálogo de alto explosivo y agente">
+        <span class="count" id="nAlto"></span>
+        <button type="button" class="btn btn--ghost btn--mini" id="addAlto">Agregar</button>
+      </div>
+      <div class="cat-list" id="listAlto"></div>
     </div>
     <div class="card tools">
       <h2>Accesorios y artificios</h2>
-      <p class="note">Detonadores, cordón, mecha y demás accesorios. Descarga en CSV.</p>
-      <a class="btn btn--primary" href="/export/catalogo-accesorios.csv">Descargar accesorios (CSV)</a>
+      <p class="note">Detonadores, cordón, mecha y demás accesorios.</p>
+      <a class="btn btn--ghost" href="/export/catalogo-accesorios.csv">Descargar CSV</a>
+      <div class="sep"></div>
+      <h3>Actualizar catálogo</h3>
+      <p class="note">Mismo formato. Los productos con <code>IdProducto</code> que empieza con <code>X</code> se clasifican como accesorios.</p>
+      <div class="upload">
+        <input type="file" id="fileAcc" accept=".csv,text/csv" aria-label="Archivo CSV de accesorios y artificios">
+        <button type="button" class="btn btn--primary" id="upAcc" disabled>Subir y actualizar</button>
+      </div>
+      <p class="note" id="msgAcc" role="status" aria-live="polite"></p>
+      <div class="sep"></div>
+      <h3>Consultar catálogo</h3>
+      <div class="cat-hd">
+        <input class="search cat-q" id="qAcc" type="search" autocomplete="off" placeholder="Buscar por nombre, ID o código…" aria-label="Buscar en el catálogo de accesorios y artificios">
+        <span class="count" id="nAcc"></span>
+        <button type="button" class="btn btn--ghost btn--mini" id="addAcc">Agregar</button>
+      </div>
+      <div class="cat-list" id="listAcc"></div>
     </div>
   </section>
 </main>
 
 <div class="bar">
-  <span>Vales: <b id="barCount">0</b> seleccionados</span>
+  <span><b id="barCount">0</b> <span id="barWord">seleccionados</span></span>
+  <span class="tipos" id="barTipos"></span>
   <span class="sp"></span>
-  <a class="btn btn--ghost" href="/export/vales.txt">Descargar todos (.txt)</a>
+  <button class="btn btn--ghost" id="batchDate" hidden>Cambiar fecha</button>
+  <a class="btn btn--ghost" id="expAll" href="#" role="button">Descargar todos (.txt)</a>
   <button class="btn btn--primary" id="expSel" disabled>Descargar seleccionados (.txt)</button>
 </div>
+
+<dialog id="dlgProd" class="dlg" aria-labelledby="dlgProdH">
+  <h2 id="dlgProdH">Editar producto</h2>
+  <div class="dlg__row">
+    <label class="dlg__field"><span>Tipo</span>
+      <select id="pTipo">
+        <option value="ALTO_EXPLOSIVO">Alto explosivo</option>
+        <option value="AGENTE">Agente</option>
+        <option value="ACCESORIO">Accesorio</option>
+      </select>
+    </label>
+    <label class="dlg__field" id="pFamWrap" hidden><span>Familia</span>
+      <select id="pFamilia">
+        <option value="CORDON_DETONANTE">Cordón detonante</option>
+        <option value="CANUELAS">Cañuelas</option>
+        <option value="DETONADORES">Detonadores</option>
+      </select>
+    </label>
+  </div>
+  <label class="dlg__field"><span id="pIdLabel">ID</span><input id="pId" maxlength="40" autocomplete="off"></label>
+  <p class="note" id="dlgProdId"></p>
+  <label class="dlg__field"><span>Producto</span><input id="pNombre" maxlength="120"></label>
+  <label class="dlg__field"><span>Presentación</span><input id="pPres" maxlength="120"></label>
+  <div class="dlg__row">
+    <label class="dlg__field"><span>Unidad</span>
+      <select id="pUnidad">
+        <option value="KG">Kilos (KG)</option>
+        <option value="MTS">Metros (MTS)</option>
+        <option value="PZA">Piezas (PZA)</option>
+      </select>
+    </label>
+    <label class="dlg__field"><span id="pCantLabel">Cantidad (KG)</span><input id="pPeso" type="number" step="0.001" min="0"></label>
+  </div>
+  <div class="dlg__row" id="pAltoWrap" hidden>
+    <label class="dlg__field"><span>Cartuchos / caja</span><input id="pCart" type="number" step="1" min="0"></label>
+    <label class="dlg__field"><span>Peso unitario (KG)</span><input id="pUnit" type="number" step="0.000001" min="0"></label>
+  </div>
+  <label class="dlg__field"><span>No. SAP (opcional)</span><input id="pSap" maxlength="40"></label>
+  <p class="note">Se guarda en la base de la terminal. La unidad se estandariza a KG, MTS o PZA.</p>
+  <div class="dlg__ft">
+    <button type="button" class="btn btn--ghost" id="dlgProdCancel">Cancelar</button>
+    <button type="button" class="btn btn--primary" id="dlgProdSave">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="dlgDate" class="dlg" aria-labelledby="dlgDateH">
+  <h2 id="dlgDateH">Cambiar fecha del lote</h2>
+  <p class="note" id="dlgDateNote"></p>
+  <label class="dlg__field"><span>Nueva fecha</span><input type="date" id="dlgDateInput" required></label>
+  <p class="note">Se aplica a la fecha de cada código, conservando la hora. Solo en esta sesión.</p>
+  <div class="dlg__ft">
+    <button type="button" class="btn btn--ghost" id="dlgCancel">Cancelar</button>
+    <button type="button" class="btn btn--primary" id="dlgApply">Aplicar</button>
+  </div>
+</dialog>
 
 <div class="scrim" id="scrim" hidden></div>
 <aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="pFolio" hidden>
   <div class="panel__hd">
     <span class="t" id="pTag"></span>
     <h3 id="pFolio" tabindex="-1"></h3>
-    <button type="button" class="btn btn--ghost" id="pClose">Cerrar</button>
+    <button type="button" class="icobtn" id="pClose" aria-label="Cerrar detalle">×</button>
   </div>
   <div class="panel__body" id="pBody"></div>
+  <div class="panel__ft">
+    <button type="button" class="btn btn--ghost" id="pCancel" hidden>Cancelar</button>
+    <button type="button" class="btn btn--primary" id="pSave" hidden>Guardar cambios</button>
+    <button type="button" class="btn btn--ghost" id="pCerrar" hidden>Cerrar</button>
+    <button type="button" class="btn btn--primary" id="pEdit">Editar</button>
+  </div>
 </aside>
 <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
 </body>

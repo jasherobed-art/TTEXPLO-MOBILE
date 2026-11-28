@@ -7,6 +7,7 @@ import com.ttexplo.mobile.domain.model.InventoryCategory
 import com.ttexplo.mobile.domain.model.ProductClassifier
 import com.ttexplo.mobile.domain.model.ProductInfo
 import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.domain.model.StandardUnits
 
 interface CatalogRepository {
     suspend fun importCsv(csvContent: String): Int
@@ -25,88 +26,111 @@ class CatalogRepositoryImpl(
         val lines = csvContent.lines()
         val entities = mutableListOf<ProductoEntity>()
         val existingById = productoDao.getAll().associateBy { it.idProducto }
+        var columns: Map<String, Int>? = null
+        var headerChecked = false
 
-        for ((index, line) in lines.withIndex()) {
-            val trimmed = line.trim()
+        for (line in lines) {
+            val trimmed = line.trim().removePrefix("\uFEFF")
             if (trimmed.isEmpty()) continue
-            if (index == 0 && (trimmed.startsWith("\"IdProducto\"") || trimmed.startsWith("IdProducto"))) {
-                continue // Skip header row
-            }
-
             val tokens = parseCsvLine(trimmed)
-            if (tokens.size >= 8) {
-                val id = tokens.getOrNull(0)?.trim() ?: ""
-                val producto = tokens.getOrNull(1)?.trim() ?: ""
-                val presentacion = tokens.getOrNull(2)?.trim() ?: ""
-                val noSap = tokens.getOrNull(3)?.trim() ?: ""
-                val unidad = tokens.getOrNull(4)?.trim()?.ifBlank { "KG" } ?: "KG"
-                val cantidad = tokens.getOrNull(5)?.trim()?.toDoubleOrNull() ?: 0.0
-                val codBarras = tokens.getOrNull(6)?.trim() ?: id
-                val peso = tokens.getOrNull(7)?.trim()?.toDoubleOrNull() ?: 0.0
-                val pg = tokens.getOrNull(8)?.trim() ?: ""
-                val pu = tokens.getOrNull(9)?.trim()?.toDoubleOrNull() ?: 0.0
-
-                // Infer tipo: Check if there's an 11th column with explicit type, else infer from name
-                val explicitTipo = tokens.getOrNull(10)?.trim()?.uppercase()
-                val tipo = when (explicitTipo) {
-                    "AGENTE", "ALTO_EXPLOSIVO", "ACCESORIO" -> explicitTipo
-                    else -> if (id.startsWith("X", ignoreCase = true)) {
-                        ProductType.ACCESORIO.name
-                    } else {
-                        ProductClassifier.inferType(producto).name
-                    }
-                }
-
-                // Preserve previously calibrated unit weight / cartridges per box if CSV does not provide them
-                val existing = existingById[id]
-                val csvUnitWeight = tokens.getOrNull(11)?.trim()?.toDoubleOrNull() ?: 0.0
-                val csvCartridges = tokens.getOrNull(12)?.trim()?.toIntOrNull() ?: 0
-                val csvCategory = InventoryCategory.fromStringOrNull(tokens.getOrNull(13))
-
-                val resolvedCartridges = when {
-                    csvCartridges > 0 -> csvCartridges
-                    existing != null && existing.cartuchosPorCaja > 0 -> existing.cartuchosPorCaja
-                    else -> 0
-                }
-                val resolvedUnitWeight = when {
-                    csvUnitWeight > 0.0 -> csvUnitWeight
-                    existing != null && existing.pesoUnitarioKg > 0.0 -> existing.pesoUnitarioKg
-                    resolvedCartridges > 0 && peso > 0.0 ->
-                        BoxUnitWeightCalculator.calculateUnitWeightKg(peso, resolvedCartridges) ?: 0.0
-                    pu > 0.0 -> pu
-                    else -> 0.0
-                }
-
-                val parsedType = try {
-                    ProductType.valueOf(tipo)
-                } catch (_: Exception) {
-                    ProductType.ALTO_EXPLOSIVO
-                }
-                val resolvedCategory = csvCategory
-                    ?: existing?.let { InventoryCategory.fromStringOrNull(it.categoriaInventario) }
-                    ?: InventoryCategory.inferCategory(parsedType, id, producto, unidad)
-
-                if (id.isNotEmpty()) {
-                    entities.add(
-                        ProductoEntity(
-                            idProducto = id,
-                            producto = producto,
-                            presentacion = presentacion,
-                            noSap = noSap,
-                            unidad = unidad,
-                            cantidad = cantidad,
-                            codBarras = codBarras,
-                            peso = peso,
-                            pg = pg,
-                            pu = pu,
-                            tipo = tipo,
-                            pesoUnitarioKg = resolvedUnitWeight,
-                            cartuchosPorCaja = resolvedCartridges,
-                            categoriaInventario = resolvedCategory.name
-                        )
-                    )
+            if (!headerChecked) {
+                headerChecked = true
+                val names = tokens.map(::normalizeHeader)
+                if (names.any { it == "idproducto" || it == "id" }) {
+                    columns = names.withIndex()
+                        .filter { it.value.isNotEmpty() }
+                        .associate { it.value to it.index }
+                    continue
                 }
             }
+            val cols = columns
+
+            // Con encabezado se busca por nombre; sin encabezado, por posición (formato original).
+            fun col(position: Int, vararg names: String): String {
+                if (cols != null) {
+                    for (name in names) {
+                        val at = cols[name] ?: continue
+                        return tokens.getOrNull(at)?.trim() ?: ""
+                    }
+                    return ""
+                }
+                return tokens.getOrNull(position)?.trim() ?: ""
+            }
+
+            if (cols == null && tokens.size < 8) continue
+            val id = col(0, "idproducto", "id")
+            if (id.isEmpty()) continue
+            val existing = existingById[id]
+
+            val producto = col(1, "producto").ifBlank { existing?.producto ?: "" }
+            val presentacion = col(2, "presentacion").ifBlank { existing?.presentacion ?: "" }
+            val noSap = col(3, "nosap").ifBlank { existing?.noSap ?: "" }
+            val unidadRaw = col(4, "unidad").ifBlank { existing?.unidad ?: "" }
+            val cantidad = col(5, "cantidad").toDoubleOrNull() ?: existing?.cantidad ?: 0.0
+            val codBarras = col(6, "codbarras").ifBlank { existing?.codBarras ?: id }
+            val peso = col(7, "peso").toDoubleOrNull() ?: existing?.peso ?: 0.0
+            val pg = col(8, "pg").ifBlank { existing?.pg ?: "" }
+            val pu = col(9, "pu").toDoubleOrNull() ?: existing?.pu ?: 0.0
+
+            // Tipo explícito si viene; si no, se conserva el del producto ya cargado o se infiere.
+            val explicitTipo = col(10, "tipo").uppercase()
+            val tipo = when {
+                explicitTipo == "AGENTE" || explicitTipo == "ALTO_EXPLOSIVO" ||
+                    explicitTipo == "ACCESORIO" -> explicitTipo
+                cols != null && explicitTipo.isEmpty() && existing != null -> existing.tipo
+                id.startsWith("X", ignoreCase = true) -> ProductType.ACCESORIO.name
+                else -> ProductClassifier.inferType(producto).name
+            }
+
+            // Kilos, metros o piezas: la unidad se estandariza aunque el CSV traiga "KGS", "METRO" o venga vacía.
+            val unidad = StandardUnits.normalize(unidadRaw, tipo, id, producto)
+
+            // Preserve previously calibrated unit weight / cartridges per box if CSV does not provide them
+            val csvUnitWeight = col(11, "pesounitario").toDoubleOrNull() ?: 0.0
+            val csvCartridges = col(12, "cartuchoscaja", "cartuchosporcaja").toIntOrNull() ?: 0
+            val csvCategory = InventoryCategory.fromStringOrNull(col(13, "categoria", "categoriainventario"))
+
+            val resolvedCartridges = when {
+                csvCartridges > 0 -> csvCartridges
+                existing != null && existing.cartuchosPorCaja > 0 -> existing.cartuchosPorCaja
+                else -> 0
+            }
+            val resolvedUnitWeight = when {
+                csvUnitWeight > 0.0 -> csvUnitWeight
+                existing != null && existing.pesoUnitarioKg > 0.0 -> existing.pesoUnitarioKg
+                resolvedCartridges > 0 && peso > 0.0 ->
+                    BoxUnitWeightCalculator.calculateUnitWeightKg(peso, resolvedCartridges) ?: 0.0
+                pu > 0.0 -> pu
+                else -> 0.0
+            }
+
+            val parsedType = try {
+                ProductType.valueOf(tipo)
+            } catch (_: Exception) {
+                ProductType.ALTO_EXPLOSIVO
+            }
+            val resolvedCategory = csvCategory
+                ?: existing?.let { InventoryCategory.fromStringOrNull(it.categoriaInventario) }
+                ?: InventoryCategory.inferCategory(parsedType, id, producto, unidad)
+
+            entities.add(
+                ProductoEntity(
+                    idProducto = id,
+                    producto = producto,
+                    presentacion = presentacion,
+                    noSap = noSap,
+                    unidad = unidad,
+                    cantidad = cantidad,
+                    codBarras = codBarras,
+                    peso = peso,
+                    pg = pg,
+                    pu = pu,
+                    tipo = tipo,
+                    pesoUnitarioKg = resolvedUnitWeight,
+                    cartuchosPorCaja = resolvedCartridges,
+                    categoriaInventario = resolvedCategory.name
+                )
+            )
         }
 
         if (entities.isNotEmpty()) {
@@ -195,6 +219,11 @@ class CatalogRepositoryImpl(
     }
 
     companion object {
+        /** Encabezado legible: sin BOM, comillas, espacios ni guiones bajos. */
+        fun normalizeHeader(value: String): String =
+            value.trim().removePrefix("\uFEFF").removeSurrounding("\"")
+                .lowercase().replace(" ", "").replace("_", "")
+
         fun parseCsvLine(line: String): List<String> {
             val tokens = mutableListOf<String>()
             val sb = java.lang.StringBuilder()

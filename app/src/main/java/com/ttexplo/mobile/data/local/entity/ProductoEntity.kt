@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import com.ttexplo.mobile.domain.model.InventoryCategory
 import com.ttexplo.mobile.domain.model.ProductInfo
 import com.ttexplo.mobile.domain.model.ProductType
+import com.ttexplo.mobile.domain.model.StandardUnits
 
 @Entity(tableName = "productos")
 data class ProductoEntity(
@@ -83,7 +84,7 @@ data class ProductoEntity(
             name = producto.trim(),
             presentation = presentacion.trim(),
             noSap = noSap.trim(),
-            unit = unidad.trim().ifBlank { category.defaultUnit },
+            unit = StandardUnits.normalize(unidad, tipo, idProducto, producto),
             weightKg = peso,
             type = parsedType,
             pg = pg.trim(),

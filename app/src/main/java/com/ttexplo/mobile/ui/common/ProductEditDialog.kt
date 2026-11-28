@@ -275,7 +275,7 @@ fun ProductEditDialog(
                                     }
                                 }
                             },
-                            label = { Text(if (selectedType == ProductType.AGENTE) "Peso Saco (kg)" else "Peso Caja (kg)") },
+                            label = { Text(if (selectedType == ProductType.AGENTE) "Peso Saco (KG)" else "Peso Caja (KG)") },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -347,7 +347,12 @@ fun ProductEditDialog(
                 enabled = idValid && nombre.isNotBlank(),
                 onClick = {
                     val cleanId = id.trim().uppercase()
-                    val parsedPeso = if (isAccessory) 0.0 else (pesoText.toDoubleOrNull() ?: 25.0)
+                    // En accesorios se conserva la cantidad capturada desde la web (no se muestra aquí).
+                    val parsedPeso = if (isAccessory) {
+                        initial?.peso ?: 0.0
+                    } else {
+                        pesoText.toDoubleOrNull() ?: 25.0
+                    }
                     val parsedCarts = if (selectedType == ProductType.ALTO_EXPLOSIVO) {
                         cartuchosText.toIntOrNull() ?: 0
                     } else {

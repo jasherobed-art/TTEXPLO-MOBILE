@@ -3,6 +3,8 @@ package com.ttexplo.mobile.net
 import android.content.Context
 import com.ttexplo.mobile.TTExploApp
 import com.ttexplo.mobile.domain.download.DownloadData
+import com.ttexplo.mobile.domain.download.parseEdits
+import com.ttexplo.mobile.domain.scanner.DateTimeUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import java.io.BufferedReader
@@ -130,7 +132,7 @@ class DownloadServer(
                         line.substring(idx + 1).trim()
                 }
                 val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
-                val body = if (contentLength in 1..8192) {
+                val body = if (contentLength in 1..MAX_BODY) {
                     val chars = CharArray(contentLength)
                     var read = 0
                     while (read < contentLength) {
@@ -199,14 +201,62 @@ class DownloadServer(
                         runBlocking { data.catalogCsv(setOf("ACCESORIO")) }
                     }
                     path == "/export/vales.txt" -> {
-                        val keys = queryParams["keys"]?.split(',')
+                        val params = if (method == "POST") parseQuery(body) else queryParams
+                        val keys = params["keys"]?.split(',')
                             ?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
-                        export(s, "vales.txt", "text/plain; charset=utf-8") {
-                            runBlocking { data.valesTxt(keys) }
+                        val edits = params["edits"]?.let {
+                            runCatching { parseEdits(it) }.getOrNull()
+                        }
+                        // Nombre con fecha y hora: varios consolidados del mismo día no se pisan.
+                        val stamp = DateTimeUtils.currentTimestamp().take(16)
+                            .replace(" ", "_").replace(":", "")
+                        export(s, "vales-consolidado-$stamp.txt", "text/plain; charset=utf-8") {
+                            runBlocking { data.valesTxt(keys, edits) }
                         }
                     }
                     path == "/export/todo.json" -> export(s, "ttexplo_datos.json", "application/json; charset=utf-8") {
                         runBlocking { data.allJson() }
+                    }
+                    path == "/api/catalogo/producto" && method == "POST" -> {
+                        val code = runBlocking { data.saveProductJson(body) }
+                        when (code) {
+                            0 -> writeResponse(s, 200, "application/json; charset=utf-8", "{\"ok\":true}")
+                            2 -> writeResponse(s, 409, "application/json; charset=utf-8",
+                                "{\"error\":\"ya_existe\"}")
+                            else -> writeResponse(s, 404, "application/json; charset=utf-8",
+                                "{\"error\":\"no_encontrado\"}")
+                        }
+                    }
+                    path == "/api/catalogo" && method == "GET" -> {
+                        val tipos = when (queryParams["tipo"].orEmpty().uppercase()) {
+                            "ALTO" -> setOf("ALTO_EXPLOSIVO", "AGENTE")
+                            "ACCESORIOS" -> setOf("ACCESORIO")
+                            else -> null
+                        }
+                        val json = runBlocking { data.catalogJson(tipos, queryParams["q"]) }
+                        writeResponse(s, 200, "application/json; charset=utf-8", json)
+                    }
+                    path == "/api/catalogo" && method == "POST" -> {
+                        when {
+                            contentLength > MAX_BODY -> writeResponse(
+                                s, 413, "application/json; charset=utf-8",
+                                "{\"error\":\"archivo_muy_grande\"}"
+                            )
+                            body.isBlank() -> writeResponse(
+                                s, 400, "application/json; charset=utf-8",
+                                "{\"error\":\"sin_datos\"}"
+                            )
+                            else -> {
+                                val imported = runBlocking { data.importCatalogCsv(body) }
+                                if (imported <= 0) writeResponse(
+                                    s, 422, "application/json; charset=utf-8",
+                                    "{\"error\":\"sin_productos\"}"
+                                ) else writeResponse(
+                                    s, 200, "application/json; charset=utf-8",
+                                    "{\"importados\":$imported}"
+                                )
+                            }
+                        }
                     }
                     path == "/api/vale" -> {
                         val key = queryParams["key"].orEmpty()
@@ -303,6 +353,7 @@ class DownloadServer(
     companion object {
         private const val PRESENCE_TTL_MS = 45_000L
         private const val PRESENCE_POLL_MS = 15_000L
+        private const val MAX_BODY = 1_000_000
 
         private val SEC_HEADERS = listOf(
             "X-Content-Type-Options: nosniff",
